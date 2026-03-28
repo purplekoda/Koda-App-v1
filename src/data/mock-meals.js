@@ -10,7 +10,7 @@ export const mockWeeklyMeals = [
   {
     day: 'Tue', dayOfWeek: 2, isToday: true,
     meals: [
-      { type: 'breakfast', name: 'Scrambled eggs & toast' },
+      { type: 'breakfast', name: 'Avocado toast' },
       { type: 'lunch', name: 'Chicken salad' },
       { type: 'dinner', name: 'Taco night' },
     ],
@@ -42,7 +42,7 @@ export const mockWeeklyMeals = [
 ]
 
 export const mockTodayMeals = [
-  { type: 'breakfast', name: 'Scrambled eggs & toast', time: '7:30 AM' },
-  { type: 'lunch', name: 'Chicken salad', time: '12:00 PM' },
-  { type: 'dinner', name: 'Taco night', time: '6:00 PM' },
+  { type: 'breakfast', name: 'Avocado toast', time: '7:30am' },
+  { type: 'lunch', name: 'Chicken salad', time: '12pm' },
+  { type: 'dinner', name: 'Taco night', time: '6:30pm' },
 ]

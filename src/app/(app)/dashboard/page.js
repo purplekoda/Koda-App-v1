@@ -2,16 +2,17 @@
 
 import { useState } from 'react'
 import styled from 'styled-components'
+import MobileTopBar from '@/components/dashboard/MobileTopBar'
 import DashboardGreeting from '@/components/dashboard/DashboardGreeting'
 import DailyWeeklyToggle from '@/components/dashboard/DailyWeeklyToggle'
 import AIBar from '@/components/ai/AIBar'
 import WeeklyGrid from '@/components/meals/WeeklyGrid'
+import DailyMealsCard from '@/components/dashboard/DailyMealsCard'
+import TodayScheduleWidget from '@/components/dashboard/TodayScheduleWidget'
 import UpcomingEventsWidget from '@/components/dashboard/UpcomingEventsWidget'
 import TodoListWidget from '@/components/dashboard/TodoListWidget'
-import MealCard from '@/components/meals/MealCard'
-import SectionHeader from '@/components/common/SectionHeader'
 import { mockWeeklyMeals, mockTodayMeals } from '@/data/mock-meals'
-import { mockUpcomingEvents, mockTodos } from '@/data/mock-events'
+import { mockUpcomingEvents, mockTodaySchedule, mockTodos } from '@/data/mock-events'
 
 const TwoColumn = styled.div`
   display: grid;
@@ -20,33 +21,36 @@ const TwoColumn = styled.div`
 
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
+    gap: ${({ theme }) => theme.spacing.md};
   }
 `
 
-const DailyMeals = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.xl};
+const TwoColumnCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  padding: ${({ theme }) => theme.spacing.lg};
 `
 
-const DailyGrid = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.md};
-
+/* Desktop-only: toggle + greeting row */
+const DesktopToggle = styled.div`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    flex-direction: column;
+    display: none;
   }
-`
-
-const DailyCard = styled.div`
-  flex: 1;
 `
 
 function getDayName() {
   return new Date().toLocaleDateString('en-US', { weekday: 'long' })
 }
 
-function getSubtitle() {
+function getMobileSubtitle() {
   const day = getDayName()
-  return `${day} \u00B7 3 meals planned today \u00B7 Emma's birthday in 12 days`
+  return `${day} \u00B7 today\u2019s meals & schedule`
+}
+
+function getDesktopSubtitle() {
+  const day = getDayName()
+  return `${day} \u00B7 3 meals planned today \u00B7 Emma\u2019s birthday in 12 days`
 }
 
 export default function DashboardPage() {
@@ -54,32 +58,44 @@ export default function DashboardPage() {
 
   return (
     <>
+      {/* Mobile: top bar with logo + toggle + avatar */}
+      <MobileTopBar view={view} onToggle={setView} initials="JM" />
+
+      {/* Greeting */}
       <DashboardGreeting
         displayName="Jessica"
         initials="JM"
-        subtitle={getSubtitle()}
+        subtitle={getMobileSubtitle()}
+        desktopSubtitle={getDesktopSubtitle()}
       />
-      <DailyWeeklyToggle view={view} onToggle={setView} />
-      <AIBar placeholder={'Ask Koda anything \u2014 "what can I make tonight?" or "plan Emma\'s party"'} />
 
+      {/* Desktop only: toggle below greeting */}
+      <DesktopToggle>
+        <DailyWeeklyToggle view={view} onToggle={setView} />
+      </DesktopToggle>
+
+      {/* AI bar */}
+      <AIBar placeholder={'Ask Koda anything\u2026'} />
+
+      {/* Meal section */}
       {view === 'weekly' ? (
         <WeeklyGrid meals={mockWeeklyMeals} />
       ) : (
-        <DailyMeals>
-          <SectionHeader title="Today's meals" linkText="Full planner" linkHref="/meals" />
-          <DailyGrid>
-            {mockTodayMeals.map((meal) => (
-              <DailyCard key={meal.type}>
-                <MealCard type={meal.type} name={meal.name} isToday />
-              </DailyCard>
-            ))}
-          </DailyGrid>
-        </DailyMeals>
+        <DailyMealsCard meals={mockTodayMeals} />
       )}
 
+      {/* Bottom section: schedule + to-do (daily) or events + to-do (weekly) */}
       <TwoColumn>
-        <UpcomingEventsWidget events={mockUpcomingEvents} />
-        <TodoListWidget todos={mockTodos} />
+        <TwoColumnCard>
+          {view === 'daily' ? (
+            <TodayScheduleWidget schedule={mockTodaySchedule} />
+          ) : (
+            <UpcomingEventsWidget events={mockUpcomingEvents} />
+          )}
+        </TwoColumnCard>
+        <TwoColumnCard>
+          <TodoListWidget todos={mockTodos} />
+        </TwoColumnCard>
       </TwoColumn>
     </>
   )

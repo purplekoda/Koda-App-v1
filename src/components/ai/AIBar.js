@@ -13,6 +13,11 @@ const BarWrapper = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.input};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
   gap: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+    border-radius: ${({ theme }) => theme.radii.pill};
+  }
 `
 
 const PurpleDot = styled.span`
@@ -31,6 +36,10 @@ const Input = styled.input`
 
   &::placeholder {
     color: ${({ theme }) => theme.colors.textMuted};
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    font-size: 14px;
   }
 `
 
@@ -51,6 +60,26 @@ const AskButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    border: none;
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 50%;
+    background: ${({ theme }) => theme.colors.borderLight};
+    justify-content: center;
+  }
+`
+
+const AskText = styled.span`
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    display: none;
+  }
+`
+
+const ArrowIcon = styled.span`
+  font-size: 16px;
 `
 
 export default function AIBar({ placeholder, onSubmit }) {
@@ -76,7 +105,8 @@ export default function AIBar({ placeholder, onSubmit }) {
           maxLength={500}
         />
         <AskButton type="submit">
-          Ask {'\u2197'}
+          <AskText>Ask</AskText>
+          <ArrowIcon>{'\u2197'}</ArrowIcon>
         </AskButton>
       </BarWrapper>
     </form>

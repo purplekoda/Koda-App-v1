@@ -4,29 +4,43 @@ import { useState } from 'react'
 import styled from 'styled-components'
 import SectionHeader from '@/components/common/SectionHeader'
 
+const Wrapper = styled.div``
+
+const SectionLabel = styled.div`
+  font-size: ${({ theme }) => theme.fontSizes.md};
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textMuted};
+  letter-spacing: 0.03em;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  margin-top: ${({ theme }) => theme.spacing.lg};
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+`
+
 const List = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.xs};
+  gap: 2px;
 `
 
 const TodoRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.sm} 0;
   min-height: ${({ theme }) => theme.touchTarget};
   cursor: pointer;
-  border-radius: ${({ theme }) => theme.radii.sm};
 
   &:hover {
-    background: ${({ theme }) => theme.colors.borderLight};
+    opacity: 0.85;
   }
 `
 
 const Checkbox = styled.div`
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
   border: 1.5px solid ${({ $done, theme }) => $done ? theme.colors.teal : theme.colors.border};
   background: ${({ $done, theme }) => $done ? theme.colors.teal : 'transparent'};
@@ -36,7 +50,7 @@ const Checkbox = styled.div`
   flex-shrink: 0;
   transition: all 0.15s ease;
   color: white;
-  font-size: 10px;
+  font-size: 12px;
 `
 
 const TodoText = styled.span`
@@ -46,16 +60,57 @@ const TodoText = styled.span`
   text-decoration: ${({ $done }) => $done ? 'line-through' : 'none'};
 `
 
+const categoryColors = {
+  bday: '#D85A30',
+  meals: '#1D9E75',
+  Thu: '#D85A30',
+  Fri: '#7F77DD',
+}
+
 const CategoryTag = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.xs};
   padding: 2px 8px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ theme }) => theme.colors.grayLight};
-  color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ $category }) => {
+    const color = categoryColors[$category]
+    return color ? color + '18' : '#F1EFE8'
+  }};
+  color: ${({ $category, theme }) => {
+    const color = categoryColors[$category]
+    return color || theme.colors.textSecondary
+  }};
+  font-weight: 500;
+`
+
+const AddTask = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.sm} 0;
+  min-height: ${({ theme }) => theme.touchTarget};
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 14px;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+`
+
+const PlusIcon = styled.span`
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 `
 
 export default function TodoListWidget({ todos: initialTodos }) {
   const [todos, setTodos] = useState(initialTodos)
+
+  const todayTodos = todos.filter(t => t.section === 'today')
+  const upcomingTodos = todos.filter(t => t.section === 'upcoming')
 
   function toggleTodo(id) {
     setTodos(prev =>
@@ -64,19 +119,39 @@ export default function TodoListWidget({ todos: initialTodos }) {
   }
 
   return (
-    <div>
-      <SectionHeader title="To-do" />
+    <Wrapper>
+      <SectionHeader title="To do" linkText="All" linkHref="#" />
+
+      <SectionLabel>TODAY</SectionLabel>
       <List>
-        {todos.map((todo) => (
+        {todayTodos.map((todo) => (
           <TodoRow key={todo.id} onClick={() => toggleTodo(todo.id)}>
             <Checkbox $done={todo.done}>
               {todo.done && '\u2713'}
             </Checkbox>
             <TodoText $done={todo.done}>{todo.text}</TodoText>
-            <CategoryTag>{todo.category}</CategoryTag>
+            <CategoryTag $category={todo.category}>{todo.category}</CategoryTag>
           </TodoRow>
         ))}
       </List>
-    </div>
+
+      <SectionLabel>UPCOMING</SectionLabel>
+      <List>
+        {upcomingTodos.map((todo) => (
+          <TodoRow key={todo.id} onClick={() => toggleTodo(todo.id)}>
+            <Checkbox $done={todo.done}>
+              {todo.done && '\u2713'}
+            </Checkbox>
+            <TodoText $done={todo.done}>{todo.text}</TodoText>
+            <CategoryTag $category={todo.category}>{todo.category}</CategoryTag>
+          </TodoRow>
+        ))}
+      </List>
+
+      <AddTask>
+        <PlusIcon>+</PlusIcon>
+        Add task...
+      </AddTask>
+    </Wrapper>
   )
 }

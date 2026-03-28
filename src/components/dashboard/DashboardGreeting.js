@@ -18,15 +18,32 @@ const Title = styled.h1`
   margin-bottom: 4px;
 `
 
-const Subtitle = styled.p`
+const MobileSubtitle = styled.p`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (min-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    display: none;
+  }
+`
+
+const DesktopSubtitle = styled.p`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    display: none;
+  }
 `
 
 const Right = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    display: none;
+  }
 `
 
 const NotificationDot = styled.div`
@@ -59,12 +76,13 @@ function getGreeting() {
   return 'Good evening'
 }
 
-export default function DashboardGreeting({ displayName, initials, subtitle }) {
+export default function DashboardGreeting({ displayName, initials, subtitle, desktopSubtitle }) {
   return (
     <Wrapper>
       <Left>
         <Title>{getGreeting()}, {displayName || 'there'}</Title>
-        <Subtitle>{subtitle}</Subtitle>
+        <MobileSubtitle>{subtitle}</MobileSubtitle>
+        <DesktopSubtitle>{desktopSubtitle || subtitle}</DesktopSubtitle>
       </Left>
       <Right>
         <NotificationDot />
