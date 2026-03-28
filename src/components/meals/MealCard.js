@@ -17,7 +17,12 @@ const Card = styled.div`
   padding: 10px 12px;
   min-height: 56px;
   cursor: pointer;
-  transition: transform 0.1s ease;
+  transition: all 0.15s ease;
+  border: 2px solid ${({ $isSelected, $type, theme }) => {
+    if (!$isSelected) return 'transparent'
+    const colors = mealColors[$type] || mealColors.lunch
+    return theme.colors[colors.text]
+  }};
 
   &:hover {
     transform: scale(1.02);
@@ -61,13 +66,13 @@ const EmptySlot = styled.div`
   }
 `
 
-export default function MealCard({ type, name, isToday, onClick }) {
+export default function MealCard({ type, name, isToday, isSelected, onClick }) {
   if (!name) {
     return <EmptySlot onClick={onClick}>+</EmptySlot>
   }
 
   return (
-    <Card $type={type} $isToday={isToday} onClick={onClick}>
+    <Card $type={type} $isToday={isToday} $isSelected={isSelected} onClick={onClick}>
       <MealType $type={type}>{type}</MealType>
       <MealName>{name}</MealName>
     </Card>
