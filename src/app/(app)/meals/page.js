@@ -212,7 +212,7 @@ export default function MealsPage() {
         <FillWeekButton onFill={handleFillWeek} />
       </PageHeader>
 
-      <AIBar placeholder={'What should we have for dinner tonight?'} />
+      <AIBar placeholder={'What should we have for dinner tonight?'} context="meals" />
 
       <WeekNav>
         <NavButton>{'\u2039'}</NavButton>

@@ -75,7 +75,7 @@ export default function DashboardPage() {
       </DesktopToggle>
 
       {/* AI bar */}
-      <AIBar placeholder={'Ask Koda anything\u2026'} />
+      <AIBar placeholder={'Ask Koda anything\u2026'} context="dashboard" />
 
       {/* Meal section */}
       {view === 'weekly' ? (

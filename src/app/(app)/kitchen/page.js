@@ -103,7 +103,7 @@ export default function KitchenPage() {
         <Subtitle>{screenSubtitles[screen]}</Subtitle>
       </PageHeader>
 
-      <AIBar placeholder={'What can I make with what\u2019s in my fridge?'} />
+      <AIBar placeholder={'What can I make with what\u2019s in my fridge?'} context="kitchen" />
 
       {screen === 'entry' && (
         <ScanEntry lastScan={mockLastScan} onStartScan={handleStartScan} />

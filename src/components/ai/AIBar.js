@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import styled from 'styled-components'
+import AIResponse from './AIResponse'
+import { getMockAIResponse } from '@/lib/mock-ai'
 
 const BarWrapper = styled.div`
   display: flex;
@@ -82,33 +84,62 @@ const ArrowIcon = styled.span`
   font-size: 16px;
 `
 
-export default function AIBar({ placeholder, onSubmit }) {
+export default function AIBar({ placeholder, context, onSubmit }) {
   const [query, setQuery] = useState('')
+  const [response, setResponse] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e) {
+  const handleSubmit = useCallback((e) => {
     e.preventDefault()
-    if (query.trim() && onSubmit) {
-      onSubmit(query.trim())
+    const trimmed = query.trim()
+    if (!trimmed) return
+
+    setLoading(true)
+
+    // Simulate AI delay
+    setTimeout(() => {
+      const aiResponse = getMockAIResponse(context || 'default', trimmed)
+      setResponse(aiResponse)
+      setLoading(false)
       setQuery('')
-    }
+      if (onSubmit) onSubmit(trimmed)
+    }, 500)
+  }, [query, context, onSubmit])
+
+  function handleChipClick(chip) {
+    setLoading(true)
+    setTimeout(() => {
+      const aiResponse = getMockAIResponse(context || 'default', chip)
+      setResponse(aiResponse)
+      setLoading(false)
+    }, 500)
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <BarWrapper>
-        <PurpleDot />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={placeholder || 'Ask Koda anything\u2026'}
-          type="text"
-          maxLength={500}
-        />
-        <AskButton type="submit">
-          <AskText>Ask</AskText>
-          <ArrowIcon>{'\u2197'}</ArrowIcon>
-        </AskButton>
-      </BarWrapper>
-    </form>
+    <>
+      <form onSubmit={handleSubmit}>
+        <BarWrapper>
+          <PurpleDot />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={loading ? 'Koda is thinking\u2026' : (placeholder || 'Ask Koda anything\u2026')}
+            type="text"
+            maxLength={500}
+            disabled={loading}
+          />
+          <AskButton type="submit" disabled={loading}>
+            <AskText>{loading ? '\u2026' : 'Ask'}</AskText>
+            <ArrowIcon>{'\u2197'}</ArrowIcon>
+          </AskButton>
+        </BarWrapper>
+      </form>
+
+      <AIResponse
+        response={response}
+        onClose={() => setResponse(null)}
+        onChipClick={handleChipClick}
+      />
+    </>
   )
 }

@@ -98,7 +98,7 @@ export default function GroceryPage() {
         <Subtitle>{stepSubtitles[step]}</Subtitle>
       </PageHeader>
 
-      <AIBar placeholder={'Add items or ask about substitutions\u2026'} />
+      <AIBar placeholder={'Add items or ask about substitutions\u2026'} context="grocery" />
 
       <GroceryStepBar currentStep={step} />
 
