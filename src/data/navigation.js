@@ -19,7 +19,7 @@ export const sidebarSections = [
     items: [
       { id: 'calendar', name: 'Calendar', href: '/calendar', color: '#185FA5' },
       { id: 'events', name: 'Events', href: '/events', color: '#D85A30' },
-      { id: 'signups', name: 'Sign-up sheets', href: '/events', color: '#5F5E5A' },
+      { id: 'signups', name: 'Sign-up sheets', href: '/signups', color: '#5F5E5A' },
     ],
   },
 ]
