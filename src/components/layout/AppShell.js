@@ -11,6 +11,7 @@ const Shell = styled.div`
 
 const MainContent = styled.main`
   flex: 1;
+  min-width: 0;
   padding: ${({ theme }) => theme.spacing.xxl} ${({ theme }) => theme.spacing.xxxl};
   overflow-y: auto;
   background: ${({ theme }) => theme.colors.background};
