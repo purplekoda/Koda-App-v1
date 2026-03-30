@@ -1,5 +1,8 @@
 import DOMPurify from 'isomorphic-dompurify'
 
+// Keys that must never appear in sanitized objects — prevents prototype pollution
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
 /**
  * Sanitize a string input — strips all HTML tags and trims whitespace.
  * @param {string} input - The raw user input
@@ -13,15 +16,25 @@ export function sanitizeString(input, maxLength = 500) {
 }
 
 /**
- * Sanitize an email address.
+ * Sanitize an email address with RFC 5321 compliant validation.
  * @param {string} email
  * @returns {string|null} Valid email or null
  */
 export function sanitizeEmail(email) {
   if (typeof email !== 'string') return null
   const cleaned = email.trim().toLowerCase().slice(0, 254)
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(cleaned) ? cleaned : null
+
+  // RFC 5321: local@domain.tld
+  // - Local part: 1-64 chars, alphanumeric + . _ % + -
+  // - Domain: alphanumeric + . -, at least one dot, TLD 2+ chars
+  const emailRegex = /^[a-zA-Z0-9._%+-]{1,64}@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/
+  if (!emailRegex.test(cleaned)) return null
+
+  // Additional length check on local part
+  const [localPart] = cleaned.split('@')
+  if (localPart.length > 64) return null
+
+  return cleaned
 }
 
 /**
@@ -40,35 +53,52 @@ export function sanitizeInteger(value, min = 0, max = 10000) {
 /**
  * Sanitize a JSON object — recursively sanitize all string values.
  * Prevents XSS via JSONB fields stored in Supabase.
+ * Blocks prototype pollution via dangerous key filtering.
  * @param {*} obj
  * @param {number} maxStringLength
+ * @param {number} _depth - Internal recursion guard
  * @returns {*}
  */
-export function sanitizeJson(obj, maxStringLength = 500) {
+export function sanitizeJson(obj, maxStringLength = 500, _depth = 0) {
+  // Prevent deeply nested payloads (DoS via recursion)
+  if (_depth > 10) return null
+
   if (obj === null || obj === undefined) return null
 
   if (typeof obj === 'string') {
     return sanitizeString(obj, maxStringLength)
   }
 
-  if (typeof obj === 'number' || typeof obj === 'boolean') {
+  if (typeof obj === 'number') {
+    // Block NaN, Infinity — these can cause issues in JSON storage
+    if (!Number.isFinite(obj)) return null
+    return obj
+  }
+
+  if (typeof obj === 'boolean') {
     return obj
   }
 
   if (Array.isArray(obj)) {
-    return obj.slice(0, 100).map(item => sanitizeJson(item, maxStringLength))
+    return obj.slice(0, 100).map(item => sanitizeJson(item, maxStringLength, _depth + 1))
   }
 
   if (typeof obj === 'object') {
-    const cleaned = {}
+    const cleaned = Object.create(null) // No prototype — immune to pollution
     const keys = Object.keys(obj).slice(0, 50)
     for (const key of keys) {
+      // Block prototype pollution vectors
+      if (DANGEROUS_KEYS.has(key)) continue
+
       const cleanKey = sanitizeString(key, 100)
-      cleaned[cleanKey] = sanitizeJson(obj[key], maxStringLength)
+      if (!cleanKey) continue // Skip empty keys
+
+      cleaned[cleanKey] = sanitizeJson(obj[key], maxStringLength, _depth + 1)
     }
     return cleaned
   }
 
+  // Reject functions, symbols, bigints, etc.
   return null
 }
 

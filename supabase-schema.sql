@@ -45,7 +45,10 @@ CREATE TABLE family_members (
 );
 
 ALTER TABLE family_members ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own family" ON family_members FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own family" ON family_members FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own family" ON family_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own family" ON family_members FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own family" ON family_members FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 3. Dietary Restrictions
@@ -58,7 +61,10 @@ CREATE TABLE dietary_restrictions (
 );
 
 ALTER TABLE dietary_restrictions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own restrictions" ON dietary_restrictions FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own restrictions" ON dietary_restrictions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own restrictions" ON dietary_restrictions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own restrictions" ON dietary_restrictions FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own restrictions" ON dietary_restrictions FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 4. Recipes
@@ -80,7 +86,10 @@ CREATE TABLE recipes (
 );
 
 ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own recipes" ON recipes FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own recipes" ON recipes FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own recipes" ON recipes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own recipes" ON recipes FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own recipes" ON recipes FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 5. Meal Plans
@@ -94,7 +103,10 @@ CREATE TABLE meal_plans (
 );
 
 ALTER TABLE meal_plans ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own meal plans" ON meal_plans FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own meal plans" ON meal_plans FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own meal plans" ON meal_plans FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own meal plans" ON meal_plans FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own meal plans" ON meal_plans FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 6. Meal Slots
@@ -112,7 +124,10 @@ CREATE TABLE meal_slots (
 );
 
 ALTER TABLE meal_slots ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own meal slots" ON meal_slots FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own meal slots" ON meal_slots FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own meal slots" ON meal_slots FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own meal slots" ON meal_slots FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own meal slots" ON meal_slots FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 7. Grocery Lists
@@ -127,7 +142,10 @@ CREATE TABLE grocery_lists (
 );
 
 ALTER TABLE grocery_lists ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own grocery lists" ON grocery_lists FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own grocery lists" ON grocery_lists FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own grocery lists" ON grocery_lists FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own grocery lists" ON grocery_lists FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own grocery lists" ON grocery_lists FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 8. Grocery Items
@@ -144,7 +162,10 @@ CREATE TABLE grocery_items (
 );
 
 ALTER TABLE grocery_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own grocery items" ON grocery_items FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own grocery items" ON grocery_items FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own grocery items" ON grocery_items FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own grocery items" ON grocery_items FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own grocery items" ON grocery_items FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 9. Events
@@ -164,7 +185,10 @@ CREATE TABLE events (
 );
 
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own events" ON events FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own events" ON events FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own events" ON events FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own events" ON events FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own events" ON events FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 10. Store Connections
@@ -178,7 +202,10 @@ CREATE TABLE store_connections (
 );
 
 ALTER TABLE store_connections ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own store connections" ON store_connections FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own store connections" ON store_connections FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own store connections" ON store_connections FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own store connections" ON store_connections FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own store connections" ON store_connections FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 11. Pantry Items
@@ -194,13 +221,20 @@ CREATE TABLE pantry_items (
 );
 
 ALTER TABLE pantry_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own pantry items" ON pantry_items FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users select own pantry items" ON pantry_items FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own pantry items" ON pantry_items FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own pantry items" ON pantry_items FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own pantry items" ON pantry_items FOR DELETE USING (auth.uid() = user_id);
 
 
 -- 12. Pantry Scans (storage bucket)
 -- Run this separately in Supabase Storage settings:
 -- CREATE BUCKET 'pantry-scans' (public: false)
--- Storage policy: bucket_id = 'pantry-scans' AND auth.uid()::text = (storage.foldername(name))[1]
+-- Storage policies (apply ALL four):
+--   SELECT: bucket_id = 'pantry-scans' AND auth.uid()::text = (storage.foldername(name))[1]
+--   INSERT: bucket_id = 'pantry-scans' AND auth.uid()::text = (storage.foldername(name))[1]
+--   UPDATE: bucket_id = 'pantry-scans' AND auth.uid()::text = (storage.foldername(name))[1]
+--   DELETE: bucket_id = 'pantry-scans' AND auth.uid()::text = (storage.foldername(name))[1]
 
 
 -- ============================================
