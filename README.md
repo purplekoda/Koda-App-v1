@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Koda
+
+A household meal-planning and kitchen management app built with Next.js and Supabase.
+
+## Features
+
+- **Dashboard** — daily overview with meals, schedule, to-dos, and upcoming events
+- **Meals** — weekly meal planner with swap/fill helpers and detail views
+- **Kitchen** — pantry tracker, scan-to-add, and AI-powered dinner ideas
+- **Grocery** — step-by-step grocery list builder (choose store → review meals → pantry check → send)
+- **Recipes** — recipe browser
+- **Calendar & Events** — scheduling and event management
+- **AI Bar** — conversational AI assistant embedded across the app
+- **Auth** — login/signup powered by Supabase with SSR session handling
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router, React 19)
+- **Auth & Database:** Supabase (`@supabase/ssr`)
+- **Styling:** styled-components with a custom theme
+- **Sanitization:** isomorphic-dompurify
+- **Linting:** ESLint
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+
+- [Task](https://taskfile.dev/) (optional, but recommended)
+- A Supabase project (or run without env vars to use mock data)
+
+### Environment Variables
+
+Create a `.env.local` file:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+If these are omitted, the app runs in dev mode with mock data.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Install & Run
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+task install
+task dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/
+│   ├── (app)/        # Authenticated app routes (dashboard, meals, kitchen, etc.)
+│   ├── (auth)/       # Login, signup, and auth callback
+│   └── page.js       # Root redirect (→ dashboard or login)
+├── components/       # UI components organized by feature
+├── data/             # Mock data for development
+├── lib/              # Supabase clients, auth DAL, sanitization, rate limiting
+└── styles/           # Theme, global styles, styled-components registry
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tasks
 
-## Deploy on Vercel
+This project uses [Task](https://taskfile.dev/) as its task runner. Run `task` to see all available tasks.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command          | Description                        |
+| ---------------- | ---------------------------------- |
+| `task dev`       | Start dev server                   |
+| `task build`     | Create a production build          |
+| `task start`     | Start production server            |
+| `task lint`      | Run ESLint                         |
+| `task lint:fix`  | Run ESLint with auto-fix           |
+| `task clean`     | Remove build artifacts             |
+| `task install`   | Install dependencies               |
+| `task check`     | Run lint and build to verify       |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pass a custom port with `task dev PORT=4000`.

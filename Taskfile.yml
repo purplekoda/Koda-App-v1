@@ -1,0 +1,51 @@
+version: "3"
+
+vars:
+  PORT: '{{.PORT | default "3000"}}'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list-all
+
+  dev:
+    desc: Start the development server
+    cmds:
+      - npx next dev --port {{.PORT}}
+
+  build:
+    desc: Create a production build
+    cmds:
+      - npx next build
+
+  start:
+    desc: Start the production server
+    cmds:
+      - npx next start --port {{.PORT}}
+
+  lint:
+    desc: Run ESLint
+    cmds:
+      - npx eslint .
+
+  lint:fix:
+    desc: Run ESLint with auto-fix
+    cmds:
+      - npx eslint . --fix
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf .next
+
+  install:
+    desc: Install dependencies
+    cmds:
+      - npm install
+
+  check:
+    desc: Run lint and build to verify the project
+    cmds:
+      - task: lint
+      - task: build
