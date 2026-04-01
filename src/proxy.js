@@ -6,15 +6,30 @@ const PUBLIC_ROUTES = ['/login', '/signup', '/callback']
 // Routes that authenticated users shouldn't see (redirect to dashboard)
 const AUTH_ROUTES = ['/login', '/signup']
 
+// Allowed redirect destinations — prevents open redirect via ?redirect= param
+const ALLOWED_REDIRECT_PATHS = new Set([
+  '/dashboard', '/meals', '/grocery', '/kitchen', '/recipes',
+  '/calendar', '/events', '/signups', '/onboarding',
+])
+
+function sanitizeRedirectPath(pathname) {
+  if (!pathname || typeof pathname !== 'string') return '/dashboard'
+  if (!pathname.startsWith('/') || pathname.startsWith('//')) return '/dashboard'
+  const clean = pathname.split('?')[0].split('#')[0]
+  return ALLOWED_REDIRECT_PATHS.has(clean) ? clean : '/dashboard'
+}
+
 export function proxy(request) {
   const { pathname } = request.nextUrl
   const response = NextResponse.next()
 
   // ── Security Headers ──
-  // CSP: allow Supabase connections, Google Fonts, and inline styles for styled-components
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const isDev = process.env.NODE_ENV === 'development'
-  // React requires 'unsafe-eval' in development for error overlay and stack traces
+
+  // CSP: nonce-based script policy for production, unsafe-eval only in dev for React error overlay
+  // Note: 'unsafe-inline' is required for styled-components SSR injection.
+  // TODO: migrate to nonce-based styles when styled-components supports it.
   const scriptSrc = isDev
     ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
     : `script-src 'self' 'unsafe-inline'`
@@ -30,6 +45,7 @@ export function proxy(request) {
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "upgrade-insecure-requests",
     ].join('; ')
   )
 
@@ -38,9 +54,19 @@ export function proxy(request) {
     const origin = request.headers.get('origin')
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
-    if (origin && origin !== appUrl) {
-      return new NextResponse(null, { status: 403 })
+    // Block requests with no origin header (non-browser clients) and mismatched origins
+    if (!origin || origin !== appUrl) {
+      return new NextResponse(null, {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
+
+    // Set CORS response headers for allowed origins
+    response.headers.set('Access-Control-Allow-Origin', appUrl)
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
   }
 
   // ── Auth Redirect Logic ──
@@ -68,7 +94,8 @@ export function proxy(request) {
     }
 
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
+    // Sanitize the redirect path to prevent open redirect attacks
+    loginUrl.searchParams.set('redirect', sanitizeRedirectPath(pathname))
     return NextResponse.redirect(loginUrl)
   }
 

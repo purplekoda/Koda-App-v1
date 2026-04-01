@@ -162,7 +162,9 @@ export default function SignupPage() {
       })
 
       if (authError) {
-        setError(authError.message)
+        // Never expose raw Supabase errors — prevents user enumeration
+        console.error('Signup error:', authError.message)
+        setError('Account creation failed. Please check your details and try again.')
         return
       }
 
