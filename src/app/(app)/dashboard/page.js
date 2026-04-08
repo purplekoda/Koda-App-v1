@@ -1,102 +1,30 @@
-'use client'
+import { requireUser } from '@/lib/dal/require-user'
+import { getWeeklyMeals, getTodayMeals } from '@/lib/dal/meals'
+import { getUpcomingEvents, getTodaySchedule, getTodos } from '@/lib/dal/events'
+import DashboardPageClient from './DashboardPageClient'
 
-import { useState } from 'react'
-import styled from 'styled-components'
-import MobileTopBar from '@/components/dashboard/MobileTopBar'
-import DashboardGreeting from '@/components/dashboard/DashboardGreeting'
-import DailyWeeklyToggle from '@/components/dashboard/DailyWeeklyToggle'
-import AIBar from '@/components/ai/AIBar'
-import WeeklyGrid from '@/components/meals/WeeklyGrid'
-import DailyMealsCard from '@/components/dashboard/DailyMealsCard'
-import TodayScheduleWidget from '@/components/dashboard/TodayScheduleWidget'
-import UpcomingEventsWidget from '@/components/dashboard/UpcomingEventsWidget'
-import TodoListWidget from '@/components/dashboard/TodoListWidget'
-import { mockWeeklyMeals, mockTodayMeals } from '@/data/mock-meals'
-import { mockUpcomingEvents, mockTodaySchedule, mockTodos } from '@/data/mock-events'
+export default async function DashboardPage() {
+  const user = await requireUser()
+  const displayName = user.user_metadata?.display_name || 'User'
+  const initials = user.user_metadata?.initials || displayName.charAt(0).toUpperCase()
 
-const TwoColumn = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: ${({ theme }) => theme.spacing.xl};
-
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    grid-template-columns: 1fr;
-    gap: ${({ theme }) => theme.spacing.md};
-  }
-`
-
-const TwoColumnCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 0.5px solid ${({ theme }) => theme.colors.borderLight};
-  border-radius: ${({ theme }) => theme.radii.lg};
-  padding: ${({ theme }) => theme.spacing.lg};
-`
-
-/* Desktop-only: toggle + greeting row */
-const DesktopToggle = styled.div`
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    display: none;
-  }
-`
-
-function getDayName() {
-  return new Date().toLocaleDateString('en-US', { weekday: 'long' })
-}
-
-function getMobileSubtitle() {
-  const day = getDayName()
-  return `${day} \u00B7 today\u2019s meals & schedule`
-}
-
-function getDesktopSubtitle() {
-  const day = getDayName()
-  return `${day} \u00B7 3 meals planned today \u00B7 Emma\u2019s birthday in 12 days`
-}
-
-export default function DashboardPage() {
-  const [view, setView] = useState('daily')
+  const [weeklyMeals, todayMeals, upcomingEvents, todaySchedule, todos] =
+    await Promise.all([
+      getWeeklyMeals(user.id),
+      getTodayMeals(user.id),
+      getUpcomingEvents(user.id),
+      getTodaySchedule(user.id),
+      getTodos(user.id),
+    ])
 
   return (
-    <>
-      {/* Mobile: top bar with logo + toggle + avatar */}
-      <MobileTopBar view={view} onToggle={setView} initials="JM" />
-
-      {/* Greeting */}
-      <DashboardGreeting
-        displayName="Jessica"
-        initials="JM"
-        subtitle={getMobileSubtitle()}
-        desktopSubtitle={getDesktopSubtitle()}
-      />
-
-      {/* Desktop only: toggle below greeting */}
-      <DesktopToggle>
-        <DailyWeeklyToggle view={view} onToggle={setView} />
-      </DesktopToggle>
-
-      {/* AI bar */}
-      <AIBar placeholder={'Ask Koda anything\u2026'} context="dashboard" />
-
-      {/* Meal section */}
-      {view === 'weekly' ? (
-        <WeeklyGrid meals={mockWeeklyMeals} />
-      ) : (
-        <DailyMealsCard meals={mockTodayMeals} />
-      )}
-
-      {/* Bottom section: schedule + to-do (daily) or events + to-do (weekly) */}
-      <TwoColumn>
-        <TwoColumnCard>
-          {view === 'daily' ? (
-            <TodayScheduleWidget schedule={mockTodaySchedule} />
-          ) : (
-            <UpcomingEventsWidget events={mockUpcomingEvents} />
-          )}
-        </TwoColumnCard>
-        <TwoColumnCard>
-          <TodoListWidget todos={mockTodos} />
-        </TwoColumnCard>
-      </TwoColumn>
-    </>
+    <DashboardPageClient
+      weeklyMeals={weeklyMeals}
+      todayMeals={todayMeals}
+      upcomingEvents={upcomingEvents}
+      todaySchedule={todaySchedule}
+      todos={todos}
+      user={{ displayName, initials }}
+    />
   )
 }

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useTransition } from 'react'
 import styled from 'styled-components'
 import AIResponse from './AIResponse'
-import { getMockAIResponse } from '@/lib/mock-ai'
+import { askAI } from '@/lib/actions/ai'
 
 const BarWrapper = styled.div`
   display: flex;
@@ -88,6 +88,7 @@ export default function AIBar({ placeholder, context, onSubmit }) {
   const [query, setQuery] = useState('')
   const [response, setResponse] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault()
@@ -96,23 +97,26 @@ export default function AIBar({ placeholder, context, onSubmit }) {
 
     setLoading(true)
 
-    // Simulate AI delay
-    setTimeout(() => {
-      const aiResponse = getMockAIResponse(context || 'default', trimmed)
-      setResponse(aiResponse)
+    startTransition(async () => {
+      const result = await askAI(trimmed, context || 'general')
+      if (result.success && result.data) {
+        setResponse(result.data)
+      }
       setLoading(false)
       setQuery('')
       if (onSubmit) onSubmit(trimmed)
-    }, 500)
-  }, [query, context, onSubmit])
+    })
+  }, [query, context, onSubmit, startTransition])
 
   function handleChipClick(chip) {
     setLoading(true)
-    setTimeout(() => {
-      const aiResponse = getMockAIResponse(context || 'default', chip)
-      setResponse(aiResponse)
+    startTransition(async () => {
+      const result = await askAI(chip, context || 'general')
+      if (result.success && result.data) {
+        setResponse(result.data)
+      }
       setLoading(false)
-    }, 500)
+    })
   }
 
   return (

@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import styled from 'styled-components'
 import SectionHeader from '@/components/common/SectionHeader'
 
@@ -106,16 +105,14 @@ const PlusIcon = styled.span`
   font-size: 16px;
 `
 
-export default function TodoListWidget({ todos: initialTodos }) {
-  const [todos, setTodos] = useState(initialTodos)
-
+export default function TodoListWidget({ todos, onToggleTodo }) {
   const todayTodos = todos.filter(t => t.section === 'today')
   const upcomingTodos = todos.filter(t => t.section === 'upcoming')
 
   function toggleTodo(id) {
-    setTodos(prev =>
-      prev.map(t => t.id === id ? { ...t, done: !t.done } : t)
-    )
+    if (onToggleTodo) {
+      onToggleTodo(id)
+    }
   }
 
   return (
