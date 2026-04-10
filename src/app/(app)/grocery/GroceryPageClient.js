@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import styled from 'styled-components'
 import AIBar from '@/components/ai/AIBar'
 import GroceryStepBar from '@/components/grocery/GroceryStepBar'
@@ -63,6 +63,21 @@ const NavButton = styled.button`
   }
 `
 
+const Toast = styled.div`
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: ${({ theme }) => theme.colors.coral};
+  color: white;
+  padding: 12px 24px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 999;
+  box-shadow: ${({ theme }) => theme.shadows.elevated};
+`
+
 const stepSubtitles = [
   'Review your meals and see what ingredients you need',
   'Check what you already have at home',
@@ -80,16 +95,31 @@ export default function GroceryPageClient({
   const [selectedStore, setSelectedStore] = useState('target')
   const [groceryItems, setGroceryItems] = useState(initialGroceryItems)
   const [isPending, startTransition] = useTransition()
+  const [toast, setToast] = useState(null)
+  const toastTimeoutRef = useRef(null)
+
+  useEffect(() => () => clearTimeout(toastTimeoutRef.current), [])
 
   const selectedStoreObj = stores.find(s => s.id === selectedStore)
   const needCount = groceryItems.filter(i => i.status === 'need').length
 
+  function showToast(message) {
+    clearTimeout(toastTimeoutRef.current)
+    setToast(message)
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500)
+  }
+
   function handleNext() {
     if (step === 2) {
-      // Send to store action
       startTransition(async () => {
-        await sendToStore(selectedStore)
+        const result = await sendToStore(selectedStore)
+        if (result.success) {
+          setStep(3)
+        } else {
+          showToast('Failed to send list. Please try again.')
+        }
       })
+      return
     }
     if (step < 3) setStep(step + 1)
   }
@@ -149,11 +179,12 @@ export default function GroceryPageClient({
           ) : (
             <div />
           )}
-          <NavButton $variant="primary" onClick={handleNext}>
-            {step === 2 ? `Send to ${selectedStoreObj?.name || 'store'}` : 'Continue'} {'\u203A'}
+          <NavButton $variant="primary" onClick={handleNext} disabled={isPending}>
+            {isPending ? 'Sending...' : step === 2 ? `Send to ${selectedStoreObj?.name || 'store'}` : 'Continue'} {'\u203A'}
           </NavButton>
         </ButtonRow>
       )}
+      {toast && <Toast>{toast}</Toast>}
     </>
   )
 }

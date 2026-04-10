@@ -97,15 +97,17 @@ export default function KitchenPageClient({
   }
 
   function handleScanComplete() {
-    // Fetch results from server
     startTransition(async () => {
       const result = await startScan()
       if (result.success && result.data) {
         setPantryItems(result.data.pantryItems)
         setDinnerIdeas(result.data.dinnerIdeas)
         if (result.data.lastScan) setLastScan(result.data.lastScan)
+        setScreen('results')
+      } else {
+        showToast('Scan failed. Please try again.')
+        setScreen('entry')
       }
-      setScreen('results')
     })
   }
 
@@ -114,6 +116,8 @@ export default function KitchenPageClient({
       const result = await addToMealPlan(idea.id)
       if (result.success) {
         showToast(`Added "${result.data?.addedMeal || idea.name}" to tonight\u2019s dinner`)
+      } else {
+        showToast('Failed to add to meal plan. Please try again.')
       }
     })
   }

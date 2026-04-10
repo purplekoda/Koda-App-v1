@@ -6,12 +6,17 @@ import GroceryPageClient from './GroceryPageClient'
 export default async function GroceryPage() {
   const user = await requireUser()
 
-  const [groceryItems, stores, weekSummary, weeklyMeals] = await Promise.all([
-    getGroceryItems(user.id),
-    getStores(user.id),
-    getWeekSummary(user.id),
-    getWeeklyMeals(user.id),
-  ])
+  let groceryItems = [], stores = [], weekSummary = null, weeklyMeals = []
+  try {
+    ;[groceryItems, stores, weekSummary, weeklyMeals] = await Promise.all([
+      getGroceryItems(user.id),
+      getStores(user.id),
+      getWeekSummary(user.id),
+      getWeeklyMeals(user.id),
+    ])
+  } catch (err) {
+    console.error('[GroceryPage] Failed to load data:', err?.message)
+  }
 
   return (
     <GroceryPageClient

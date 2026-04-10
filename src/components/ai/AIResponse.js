@@ -58,7 +58,7 @@ const CloseButton = styled.button`
 
 const Text = styled.p`
   font-size: 14px;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ $error, theme }) => $error ? theme.colors.coral : theme.colors.textPrimary};
   line-height: 1.5;
   margin-bottom: ${({ theme }) => theme.spacing.md};
 `
@@ -99,7 +99,7 @@ export default function AIResponse({ response, onClose, onChipClick }) {
         <Label>Koda</Label>
         <CloseButton onClick={onClose}>{'\u2715'}</CloseButton>
       </Header>
-      <Text>{response.text}</Text>
+      <Text $error={response.isError}>{response.text}</Text>
       {response.chips && response.chips.length > 0 && (
         <ChipRow>
           {response.chips.map((chip) => (

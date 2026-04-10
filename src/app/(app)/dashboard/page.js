@@ -8,14 +8,19 @@ export default async function DashboardPage() {
   const displayName = user.user_metadata?.display_name || 'User'
   const initials = user.user_metadata?.initials || displayName.charAt(0).toUpperCase()
 
-  const [weeklyMeals, todayMeals, upcomingEvents, todaySchedule, todos] =
-    await Promise.all([
-      getWeeklyMeals(user.id),
-      getTodayMeals(user.id),
-      getUpcomingEvents(user.id),
-      getTodaySchedule(user.id),
-      getTodos(user.id),
-    ])
+  let weeklyMeals = [], todayMeals = [], upcomingEvents = [], todaySchedule = [], todos = []
+  try {
+    ;[weeklyMeals, todayMeals, upcomingEvents, todaySchedule, todos] =
+      await Promise.all([
+        getWeeklyMeals(user.id),
+        getTodayMeals(user.id),
+        getUpcomingEvents(user.id),
+        getTodaySchedule(user.id),
+        getTodos(user.id),
+      ])
+  } catch (err) {
+    console.error('[DashboardPage] Failed to load data:', err?.message)
+  }
 
   return (
     <DashboardPageClient

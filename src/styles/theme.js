@@ -81,8 +81,8 @@ const theme = {
     body: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
   fontSizes: {
-    xs: '9px',
-    sm: '10px',
+    xs: '11px',
+    sm: '12px',
     md: '12px',
     body: '16px',
     lg: '22px',

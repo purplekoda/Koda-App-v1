@@ -93,7 +93,7 @@ const Toast = styled.div`
   bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
-  background: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ $error, theme }) => $error ? theme.colors.coral : theme.colors.textPrimary};
   color: white;
   padding: 12px 24px;
   border-radius: ${({ theme }) => theme.radii.pill};
@@ -141,9 +141,9 @@ export default function MealsPageClient({ initialMeals, swapSuggestions }) {
 
   const stats = countStats(meals)
 
-  function showToast(message) {
+  function showToast(message, isError = false) {
     clearTimeout(toastTimeoutRef.current)
-    setToast(message)
+    setToast({ message, isError })
     toastTimeoutRef.current = setTimeout(() => setToast(null), 2500)
   }
 
@@ -166,10 +166,14 @@ export default function MealsPageClient({ initialMeals, swapSuggestions }) {
     setSwapMealTarget(null)
     showToast(`Swapped to ${newMeal.name}`)
 
+    const snapshot = meals
     startTransition(async () => {
       const result = await swapMeal(swapMealTarget.day, swapMealTarget.type, newMeal.name)
       if (result.success && result.data?.meals) {
         setMeals(result.data.meals)
+      } else if (!result.success) {
+        setMeals(snapshot)
+        showToast('Failed to swap meal. Please try again.', true)
       }
     })
   }
@@ -193,10 +197,14 @@ export default function MealsPageClient({ initialMeals, swapSuggestions }) {
     showToast(`Removed ${target.name}`)
     setSelectedMeal(null)
 
+    const snapshot = meals
     startTransition(async () => {
       const result = await removeMeal(target.day, target.type)
       if (result.success && result.data?.meals) {
         setMeals(result.data.meals)
+      } else if (!result.success) {
+        setMeals(snapshot)
+        showToast('Failed to remove meal. Please try again.', true)
       }
     })
   }
@@ -209,6 +217,8 @@ export default function MealsPageClient({ initialMeals, swapSuggestions }) {
       const result = await addToGrocery(target.day, target.type)
       if (result.success) {
         showToast(`Added ${result.data.addedCount} items to grocery list`)
+      } else {
+        showToast('Failed to add to grocery list. Please try again.', true)
       }
     })
   }
@@ -217,10 +227,10 @@ export default function MealsPageClient({ initialMeals, swapSuggestions }) {
     startTransition(async () => {
       const result = await fillWeek()
       if (result.success) {
-        if (result.data?.meals) {
-          setMeals(result.data.meals)
-        }
+        if (result.data?.meals) setMeals(result.data.meals)
         showToast('Koda filled your week!')
+      } else {
+        showToast('Failed to fill week. Please try again.', true)
       }
     })
   }
@@ -232,7 +242,7 @@ export default function MealsPageClient({ initialMeals, swapSuggestions }) {
           <Title>Meal planner</Title>
           <Subtitle>{stats.filled} of {stats.total} meals planned this week</Subtitle>
         </div>
-        <FillWeekButton onFill={handleFillWeek} />
+        <FillWeekButton onFill={handleFillWeek} isPending={isPending} />
       </PageHeader>
 
       <AIBar placeholder={'What should we have for dinner tonight?'} context="meals" />
@@ -280,7 +290,7 @@ export default function MealsPageClient({ initialMeals, swapSuggestions }) {
         />
       )}
 
-      {toast && <Toast>{toast}</Toast>}
+      {toast && <Toast $error={toast.isError}>{toast.message}</Toast>}
     </>
   )
 }

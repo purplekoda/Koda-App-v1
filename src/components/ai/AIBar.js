@@ -98,9 +98,11 @@ export default function AIBar({ placeholder, context, onSubmit }) {
       const result = await askAI(trimmed, context || 'general')
       if (result.success && result.data) {
         setResponse(result.data)
+        setQuery('')
+        if (onSubmit) onSubmit(trimmed)
+      } else {
+        setResponse({ text: result.error || 'Koda couldn\u2019t respond. Please try again.', isError: true })
       }
-      setQuery('')
-      if (onSubmit) onSubmit(trimmed)
     })
   }, [query, context, onSubmit, startTransition])
 
@@ -109,6 +111,8 @@ export default function AIBar({ placeholder, context, onSubmit }) {
       const result = await askAI(chip, context || 'general')
       if (result.success && result.data) {
         setResponse(result.data)
+      } else {
+        setResponse({ text: result.error || 'Koda couldn\u2019t respond. Please try again.', isError: true })
       }
     })
   }

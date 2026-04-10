@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+
 import styled, { keyframes } from 'styled-components'
 
 const shimmer = keyframes`
@@ -41,22 +41,11 @@ const PurpleDot = styled.span`
   background: ${({ $loading }) => $loading ? '#7F77DD' : 'rgba(255,255,255,0.6)'};
 `
 
-export default function FillWeekButton({ onFill }) {
-  const [loading, setLoading] = useState(false)
-
-  function handleClick() {
-    if (loading) return
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      if (onFill) onFill()
-    }, 1500)
-  }
-
+export default function FillWeekButton({ onFill, isPending }) {
   return (
-    <ButtonWrapper $loading={loading} onClick={handleClick}>
-      <PurpleDot $loading={loading} />
-      {loading ? 'Koda is planning...' : 'Fill week with AI'}
+    <ButtonWrapper $loading={isPending} onClick={() => !isPending && onFill?.()} disabled={isPending}>
+      <PurpleDot $loading={isPending} />
+      {isPending ? 'Koda is planning...' : 'Fill week with AI'}
     </ButtonWrapper>
   )
 }

@@ -5,10 +5,15 @@ import MealsPageClient from './MealsPageClient'
 export default async function MealsPage() {
   const user = await requireUser()
 
-  const [meals, swapSuggestions] = await Promise.all([
-    getWeeklyMeals(user.id),
-    getSwapSuggestions(user.id),
-  ])
+  let meals = [], swapSuggestions = []
+  try {
+    ;[meals, swapSuggestions] = await Promise.all([
+      getWeeklyMeals(user.id),
+      getSwapSuggestions(user.id),
+    ])
+  } catch (err) {
+    console.error('[MealsPage] Failed to load data:', err?.message)
+  }
 
   return (
     <MealsPageClient
