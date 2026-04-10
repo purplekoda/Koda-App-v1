@@ -27,12 +27,12 @@ export function proxy(request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const isDev = process.env.NODE_ENV === 'development'
 
-  // CSP: nonce-based script policy for production, unsafe-eval only in dev for React error overlay
-  // Note: 'unsafe-inline' is required for styled-components SSR injection.
-  // TODO: migrate to nonce-based styles when styled-components supports it.
+  // CSP: strict-dynamic in production removes the need for unsafe-inline on scripts.
+  // unsafe-eval is allowed only in dev for React error overlay.
+  // Note: 'unsafe-inline' on style-src is required for styled-components SSR injection.
   const scriptSrc = isDev
     ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
-    : `script-src 'self' 'unsafe-inline'`
+    : `script-src 'self' 'strict-dynamic'`
   response.headers.set(
     'Content-Security-Policy',
     [
@@ -52,10 +52,19 @@ export function proxy(request) {
   // ── CORS check for API routes ──
   if (pathname.startsWith('/api/')) {
     const origin = request.headers.get('origin')
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+
+    // In production, block all API requests if APP_URL is not configured
+    if (!isDevelopment && !appUrl) {
+      console.error('[proxy] NEXT_PUBLIC_APP_URL is not set — blocking all API requests in production')
+      return new NextResponse(null, { status: 503 })
+    }
+
+    const allowedOrigin = appUrl || 'http://localhost:3000'
 
     // Block requests with no origin header (non-browser clients) and mismatched origins
-    if (!origin || origin !== appUrl) {
+    if (!origin || origin !== allowedOrigin) {
       return new NextResponse(null, {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
@@ -63,7 +72,7 @@ export function proxy(request) {
     }
 
     // Set CORS response headers for allowed origins
-    response.headers.set('Access-Control-Allow-Origin', appUrl)
+    response.headers.set('Access-Control-Allow-Origin', allowedOrigin)
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     response.headers.set('Access-Control-Allow-Credentials', 'true')
@@ -76,9 +85,12 @@ export function proxy(request) {
     return response
   }
 
-  // Check for Supabase auth cookie
+  // Check for Supabase auth cookie — verify name pattern and non-empty value
   const hasAuthCookie = request.cookies.getAll().some(
-    cookie => cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')
+    cookie =>
+      cookie.name.startsWith('sb-') &&
+      cookie.name.endsWith('-auth-token') &&
+      cookie.value.length > 0
   )
 
   // Redirect unauthenticated users away from protected routes

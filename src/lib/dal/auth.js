@@ -52,25 +52,3 @@ export async function getSession() {
 
   return session
 }
-
-/**
- * Verify a JWT token from an API request. Returns the user or null.
- */
-export async function verifyApiAuth(request) {
-  const authHeader = request.headers.get('Authorization')
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null
-  }
-
-  const supabase = await getSupabaseServerClient()
-  const { data: { user }, error } = await supabase.auth.getUser(
-    authHeader.replace('Bearer ', '')
-  )
-
-  if (error || !user) {
-    return null
-  }
-
-  return user
-}

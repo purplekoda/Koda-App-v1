@@ -44,6 +44,10 @@ export async function GET(request) {
     if (!error) {
       return NextResponse.redirect(new URL(redirectTo, request.url))
     }
+
+    console.error('[auth/callback] exchangeCodeForSession failed:', error.message)
+  } else {
+    console.warn('[auth/callback] No code param in callback request')
   }
 
   // If no code or error, redirect to login
