@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import styled from 'styled-components'
 import AIBar from '@/components/ai/AIBar'
 import MealPlannerGrid from '@/components/meals/MealPlannerGrid'
@@ -135,12 +135,16 @@ export default function MealsPageClient({ initialMeals, swapSuggestions }) {
   const [swapMealTarget, setSwapMealTarget] = useState(null)
   const [toast, setToast] = useState(null)
   const [isPending, startTransition] = useTransition()
+  const toastTimeoutRef = useRef(null)
+
+  useEffect(() => () => clearTimeout(toastTimeoutRef.current), [])
 
   const stats = countStats(meals)
 
   function showToast(message) {
+    clearTimeout(toastTimeoutRef.current)
     setToast(message)
-    setTimeout(() => setToast(null), 2500)
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500)
   }
 
   function handleSwapConfirm(newMeal) {

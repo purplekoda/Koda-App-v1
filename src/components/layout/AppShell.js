@@ -22,7 +22,7 @@ const MainContent = styled.main`
   }
 `
 
-export default function AppShell({ children }) {
+export default function AppShell({ children, user }) {
   return (
     <Shell>
       <Sidebar />

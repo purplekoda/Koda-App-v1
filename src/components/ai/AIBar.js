@@ -87,7 +87,6 @@ const ArrowIcon = styled.span`
 export default function AIBar({ placeholder, context, onSubmit }) {
   const [query, setQuery] = useState('')
   const [response, setResponse] = useState(null)
-  const [loading, setLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const handleSubmit = useCallback((e) => {
@@ -95,27 +94,22 @@ export default function AIBar({ placeholder, context, onSubmit }) {
     const trimmed = query.trim()
     if (!trimmed) return
 
-    setLoading(true)
-
     startTransition(async () => {
       const result = await askAI(trimmed, context || 'general')
       if (result.success && result.data) {
         setResponse(result.data)
       }
-      setLoading(false)
       setQuery('')
       if (onSubmit) onSubmit(trimmed)
     })
   }, [query, context, onSubmit, startTransition])
 
   function handleChipClick(chip) {
-    setLoading(true)
     startTransition(async () => {
       const result = await askAI(chip, context || 'general')
       if (result.success && result.data) {
         setResponse(result.data)
       }
-      setLoading(false)
     })
   }
 
@@ -127,13 +121,13 @@ export default function AIBar({ placeholder, context, onSubmit }) {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={loading ? 'Koda is thinking\u2026' : (placeholder || 'Ask Koda anything\u2026')}
+            placeholder={isPending ? 'Koda is thinking\u2026' : (placeholder || 'Ask Koda anything\u2026')}
             type="text"
             maxLength={500}
-            disabled={loading}
+            disabled={isPending}
           />
-          <AskButton type="submit" disabled={loading}>
-            <AskText>{loading ? '\u2026' : 'Ask'}</AskText>
+          <AskButton type="submit" disabled={isPending}>
+            <AskText>{isPending ? '\u2026' : 'Ask'}</AskText>
             <ArrowIcon>{'\u2197'}</ArrowIcon>
           </AskButton>
         </BarWrapper>

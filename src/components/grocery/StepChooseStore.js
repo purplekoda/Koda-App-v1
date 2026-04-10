@@ -136,11 +136,11 @@ const storeDescriptions = {
   kroger: 'Pickup & delivery',
 }
 
-export default function StepChooseStore({ stores, selectedStore, onSelectStore, preferredStore }) {
+export default function StepChooseStore({ stores, needCount, selectedStore, onSelectStore, preferredStore }) {
   return (
     <Card>
       <Title>Where should we send your list?</Title>
-      <Subtitle>Your {stores.reduce((sum, s) => sum, 0) || 17} items will be added to your cart.</Subtitle>
+      <Subtitle>Your {needCount} item{needCount !== 1 ? 's' : ''} will be added to your cart.</Subtitle>
 
       <StoreGrid>
         {stores.map((store) => (

@@ -117,7 +117,7 @@ export default function TodoListWidget({ todos, onToggleTodo }) {
 
   return (
     <Wrapper>
-      <SectionHeader title="To do" linkText="All" linkHref="#" />
+      <SectionHeader title="To do" />
 
       <SectionLabel>TODAY</SectionLabel>
       <List>

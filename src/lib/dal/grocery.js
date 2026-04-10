@@ -20,7 +20,7 @@ export async function getGroceryItems(userId) {
   return data
 }
 
-export async function getStores() {
+export async function getStores(userId) {
   if (isMockMode()) {
     return getMockStores()
   }
@@ -30,6 +30,7 @@ export async function getStores() {
   const { data, error } = await supabase
     .from('store_connections')
     .select('*')
+    .eq('user_id', userId)
 
   if (error) throw new Error('Failed to load stores')
   return data

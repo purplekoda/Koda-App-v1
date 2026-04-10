@@ -8,7 +8,7 @@ export default async function GroceryPage() {
 
   const [groceryItems, stores, weekSummary, weeklyMeals] = await Promise.all([
     getGroceryItems(user.id),
-    getStores(),
+    getStores(user.id),
     getWeekSummary(user.id),
     getWeeklyMeals(user.id),
   ])

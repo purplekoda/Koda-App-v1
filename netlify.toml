@@ -1,0 +1,18 @@
+[build]
+  command   = "npm run build"
+  publish   = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Netlify environment variable groups:
+# Set the following in Netlify UI → Site configuration → Environment variables
+#
+# NEXT_PUBLIC_SUPABASE_URL
+# NEXT_PUBLIC_SUPABASE_ANON_KEY
+# NEXT_PUBLIC_APP_URL          — Required. Must match the deployed site URL (e.g. https://your-site.netlify.app).
+#                                Used by src/proxy.js for CORS origin enforcement on all /api/* routes.
+#                                If missing or wrong, all API calls will return 403.

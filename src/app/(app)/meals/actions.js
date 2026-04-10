@@ -1,7 +1,6 @@
 'use server'
 
 import { requireUser, isMockMode } from '@/lib/dal/require-user'
-import { validateMealSlot } from '@/lib/validators'
 import { sanitizeString, sanitizeEnum } from '@/lib/sanitize'
 import { apiLimiter } from '@/lib/rate-limit'
 import { ok, fail } from '@/lib/action-result'
@@ -36,14 +35,18 @@ export async function swapMeal(day, mealType, newMealName) {
       return ok({ meals, swappedTo: cleanName })
     }
 
-    // Supabase path
+    // Supabase path — schema stores day_of_week as integer 1–5
+    const DAY_TO_INT = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5 }
+    const dayInt = DAY_TO_INT[cleanDay]
+    if (!dayInt) return fail('Invalid day')
+
     const { getSupabaseServerClient } = await import('@/lib/supabase/server')
     const supabase = await getSupabaseServerClient()
     const { error } = await supabase
       .from('meal_slots')
       .update({ custom_meal_name: cleanName })
       .eq('user_id', user.id)
-      .eq('day_of_week', cleanDay)
+      .eq('day_of_week', dayInt)
       .eq('meal_type', cleanType)
 
     if (error) return fail('Failed to swap meal')
@@ -70,13 +73,17 @@ export async function removeMeal(day, mealType) {
       return ok({ meals })
     }
 
+    const DAY_TO_INT = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5 }
+    const dayInt = DAY_TO_INT[cleanDay]
+    if (!dayInt) return fail('Invalid day')
+
     const { getSupabaseServerClient } = await import('@/lib/supabase/server')
     const supabase = await getSupabaseServerClient()
     const { error } = await supabase
       .from('meal_slots')
       .delete()
       .eq('user_id', user.id)
-      .eq('day_of_week', cleanDay)
+      .eq('day_of_week', dayInt)
       .eq('meal_type', cleanType)
 
     if (error) return fail('Failed to remove meal')

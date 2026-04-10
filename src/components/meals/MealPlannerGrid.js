@@ -97,7 +97,7 @@ export default function MealPlannerGrid({
                 selectedMeal.type === meal.type
 
               return (
-                <span key={meal.type}>
+                <div key={meal.type}>
                   <MealCard
                     type={meal.type}
                     name={meal.name}
@@ -114,7 +114,7 @@ export default function MealPlannerGrid({
                       onRemove={() => onRemove && onRemove(selectedMeal)}
                     />
                   )}
-                </span>
+                </div>
               )
             })}
           </DayColumn>

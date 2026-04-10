@@ -142,9 +142,8 @@ export default function SignupPage() {
       return
     }
 
-    const cleanPassword = sanitizeString(password, 128)
-    if (!cleanPassword || cleanPassword.length < 6) {
-      setError('Password must be at least 6 characters.')
+    if (password.length < 6 || password.length > 128) {
+      setError('Password must be between 6 and 128 characters.')
       setLoading(false)
       return
     }
@@ -153,7 +152,7 @@ export default function SignupPage() {
       const supabase = getSupabaseBrowserClient()
       const { error: authError } = await supabase.auth.signUp({
         email: cleanEmail,
-        password: cleanPassword,
+        password,
         options: {
           data: {
             display_name: cleanName,

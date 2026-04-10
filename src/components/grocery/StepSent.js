@@ -94,6 +94,10 @@ const SecondaryButton = styled.button`
   }
 `
 
+const DeepLinkWrapper = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+`
+
 const ItemCount = styled.div`
   display: inline-flex;
   align-items: center;
@@ -122,7 +126,7 @@ export default function StepSent({ store, itemCount, onStartOver }) {
         {'\uD83D\uDED2'} {itemCount} items ready
       </ItemCount>
 
-      <div style={{ marginBottom: 24 }}>
+      <DeepLinkWrapper>
         <DeepLinkButton
           href={store.deepLinkBase}
           target="_blank"
@@ -132,17 +136,11 @@ export default function StepSent({ store, itemCount, onStartOver }) {
           <StoreIcon>{store.icon}</StoreIcon>
           Go to {store.name} cart {'\u2192'}
         </DeepLinkButton>
-      </div>
+      </DeepLinkWrapper>
 
       <SecondaryActions>
         <SecondaryButton onClick={onStartOver}>
           {'\u21BA'} Start over
-        </SecondaryButton>
-        <SecondaryButton>
-          {'\uD83D\uDCCB'} View list
-        </SecondaryButton>
-        <SecondaryButton>
-          {'\uD83D\uDCE4'} Share list
         </SecondaryButton>
       </SecondaryActions>
     </Card>

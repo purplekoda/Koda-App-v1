@@ -14,8 +14,8 @@ export async function getUpcomingEvents(userId) {
     .from('events')
     .select('*')
     .eq('user_id', userId)
-    .gte('date', new Date().toISOString())
-    .order('date')
+    .gte('event_date', new Date().toISOString())
+    .order('event_date')
     .limit(5)
 
   if (error) throw new Error('Failed to load events')
@@ -29,13 +29,18 @@ export async function getTodaySchedule(userId) {
 
   const { getSupabaseServerClient } = await import('@/lib/supabase/server')
   const supabase = await getSupabaseServerClient()
-  const today = new Date().toISOString().split('T')[0]
+  const startOfDay = new Date()
+  startOfDay.setHours(0, 0, 0, 0)
+  const endOfDay = new Date()
+  endOfDay.setHours(23, 59, 59, 999)
+
   const { data, error } = await supabase
     .from('events')
     .select('*')
     .eq('user_id', userId)
-    .eq('date', today)
-    .order('time')
+    .gte('event_date', startOfDay.toISOString())
+    .lte('event_date', endOfDay.toISOString())
+    .order('event_date')
 
   if (error) throw new Error('Failed to load schedule')
   return data

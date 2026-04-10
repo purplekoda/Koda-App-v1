@@ -33,6 +33,14 @@ export async function requireAuth() {
 
 /**
  * Get the current session. Returns null if no active session.
+ *
+ * WARNING: Do NOT use this for auth gates or security checks.
+ * getSession() trusts the client-side cookie without server revalidation —
+ * a tampered cookie will pass. Use getCurrentUser() or requireAuth() instead,
+ * both of which call getUser() and validate the JWT server-side.
+ *
+ * This function is only appropriate for non-security-sensitive reads where
+ * you need session metadata (e.g. token expiry) rather than user identity.
  */
 export async function getSession() {
   const supabase = await getSupabaseServerClient()

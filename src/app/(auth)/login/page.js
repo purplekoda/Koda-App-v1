@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import styled from 'styled-components'
 import Link from 'next/link'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { sanitizeString, sanitizeEmail } from '@/lib/sanitize'
+import { sanitizeEmail } from '@/lib/sanitize'
 
 const Container = styled.div`
   display: flex;
@@ -126,9 +126,8 @@ export default function LoginPage() {
       return
     }
 
-    const cleanPassword = sanitizeString(password, 128)
-    if (!cleanPassword || cleanPassword.length < 6) {
-      setError('Password must be at least 6 characters.')
+    if (password.length < 6 || password.length > 128) {
+      setError('Password must be between 6 and 128 characters.')
       setLoading(false)
       return
     }
@@ -137,7 +136,7 @@ export default function LoginPage() {
       const supabase = getSupabaseBrowserClient()
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
-        password: cleanPassword,
+        password,
       })
 
       if (authError) {

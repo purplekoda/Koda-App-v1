@@ -18,6 +18,7 @@
     "styled-components": "^6.3.12"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5",
     "eslint": "^9",
     "eslint-config-next": "16.2.1"
   }

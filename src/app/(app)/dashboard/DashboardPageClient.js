@@ -47,9 +47,28 @@ function getMobileSubtitle() {
   return `${day} \u00B7 today\u2019s meals & schedule`
 }
 
-function getDesktopSubtitle() {
+function getDesktopSubtitle(todayMeals, upcomingEvents) {
   const day = getDayName()
-  return `${day} \u00B7 3 meals planned today \u00B7 Emma\u2019s birthday in 12 days`
+  const mealCount = todayMeals.filter(m => m.name).length
+  const mealLabel = `${mealCount} meal${mealCount !== 1 ? 's' : ''} planned today`
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const nextEvent = upcomingEvents
+    .map(e => ({ ...e, dateObj: new Date(e.date) }))
+    .filter(e => e.dateObj >= today)
+    .sort((a, b) => a.dateObj - b.dateObj)[0]
+
+  if (!nextEvent) return `${day} \u00B7 ${mealLabel}`
+
+  const diffDays = Math.round((nextEvent.dateObj - today) / (1000 * 60 * 60 * 24))
+  const eventLabel = diffDays === 0
+    ? `${nextEvent.title} is today`
+    : diffDays === 1
+      ? `${nextEvent.title} tomorrow`
+      : `${nextEvent.title} in ${diffDays} days`
+
+  return `${day} \u00B7 ${mealLabel} \u00B7 ${eventLabel}`
 }
 
 export default function DashboardPageClient({
@@ -93,7 +112,7 @@ export default function DashboardPageClient({
         displayName={user.displayName}
         initials={user.initials}
         subtitle={getMobileSubtitle()}
-        desktopSubtitle={getDesktopSubtitle()}
+        desktopSubtitle={getDesktopSubtitle(todayMeals, upcomingEvents)}
       />
 
       {/* Desktop only: toggle below greeting */}

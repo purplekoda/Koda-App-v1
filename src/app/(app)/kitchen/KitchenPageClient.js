@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import styled from 'styled-components'
 import AIBar from '@/components/ai/AIBar'
 import ScanEntry from '@/components/kitchen/ScanEntry'
@@ -82,10 +82,14 @@ export default function KitchenPageClient({
   const [dinnerIdeas, setDinnerIdeas] = useState(initialDinnerIdeas)
   const [lastScan, setLastScan] = useState(initialLastScan)
   const [isPending, startTransition] = useTransition()
+  const toastTimeoutRef = useRef(null)
+
+  useEffect(() => () => clearTimeout(toastTimeoutRef.current), [])
 
   function showToast(message) {
+    clearTimeout(toastTimeoutRef.current)
     setToast(message)
-    setTimeout(() => setToast(null), 2500)
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500)
   }
 
   function handleStartScan() {

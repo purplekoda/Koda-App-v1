@@ -125,6 +125,7 @@ export default function GroceryPageClient({
       {step === 2 && (
         <StepChooseStore
           stores={stores}
+          needCount={needCount}
           selectedStore={selectedStore}
           onSelectStore={setSelectedStore}
           preferredStore="target"

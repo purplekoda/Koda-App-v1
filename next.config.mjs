@@ -3,6 +3,9 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
+  experimental: {
+    authInterrupts: true,
+  },
   async headers() {
     return [
       {
