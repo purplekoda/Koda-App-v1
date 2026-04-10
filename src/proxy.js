@@ -21,33 +21,54 @@ function sanitizeRedirectPath(pathname) {
 
 export function proxy(request) {
   const { pathname } = request.nextUrl
-  const response = NextResponse.next()
 
   // ── Security Headers ──
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const isDev = process.env.NODE_ENV === 'development'
 
-  // CSP: strict-dynamic in production removes the need for unsafe-inline on scripts.
-  // unsafe-eval is allowed only in dev for React error overlay.
-  // Note: 'unsafe-inline' on style-src is required for styled-components SSR injection.
+  // Generate a per-request cryptographic nonce for script-src CSP.
+  // Base64-encoding the UUID produces a URL-safe opaque token suitable for
+  // use inside a CSP 'nonce-…' source expression.
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+
+  // script-src: nonce replaces 'unsafe-inline'. 'strict-dynamic' allows
+  // scripts loaded by a trusted (nonce-bearing) script to run without
+  // being individually listed. 'unsafe-eval' is dev-only for React's
+  // error-overlay stack reconstruction.
+  // style-src: 'unsafe-inline' is required by styled-components for its
+  // runtime CSS injection and cannot be replaced by a nonce until
+  // styled-components ships server-nonce support.
   const scriptSrc = isDev
-    ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
-    : `script-src 'self' 'strict-dynamic'`
-  response.headers.set(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      scriptSrc,
-      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-      `font-src 'self' https://fonts.gstatic.com`,
-      `img-src 'self' data: blob: ${supabaseUrl}`,
-      `connect-src 'self' ${supabaseUrl} https://*.supabase.co wss://*.supabase.co`,
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "upgrade-insecure-requests",
-    ].join('; ')
-  )
+    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`
+
+  const csp = [
+    "default-src 'self'",
+    scriptSrc,
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+    `font-src 'self' https://fonts.gstatic.com`,
+    `img-src 'self' data: blob: ${supabaseUrl}`,
+    `connect-src 'self' ${supabaseUrl} https://*.supabase.co wss://*.supabase.co`,
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests",
+  ].join('; ')
+
+  // Forward the nonce to Server Components via a custom request header so
+  // the root layout can read it with next/headers and pass it to <Script>.
+  // The CSP must also be set on the request headers so Next.js can parse
+  // the 'nonce-…' token and stamp it on framework-emitted script tags.
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-nonce', nonce)
+  requestHeaders.set('Content-Security-Policy', csp)
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  })
+
+  // Set CSP on the response as well so the browser enforces it.
+  response.headers.set('Content-Security-Policy', csp)
 
   // ── CORS check for API routes ──
   if (pathname.startsWith('/api/')) {
