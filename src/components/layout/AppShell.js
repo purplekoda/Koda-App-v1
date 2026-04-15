@@ -25,7 +25,7 @@ const MainContent = styled.main`
 export default function AppShell({ children, user }) {
   return (
     <Shell>
-      <Sidebar />
+      <Sidebar user={user} />
       <MainContent>{children}</MainContent>
       <BottomTabBar />
     </Shell>

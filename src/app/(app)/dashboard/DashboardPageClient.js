@@ -9,7 +9,6 @@ import AIBar from '@/components/ai/AIBar'
 import WeeklyGrid from '@/components/meals/WeeklyGrid'
 import DailyMealsCard from '@/components/dashboard/DailyMealsCard'
 import TodayScheduleWidget from '@/components/dashboard/TodayScheduleWidget'
-import UpcomingEventsWidget from '@/components/dashboard/UpcomingEventsWidget'
 import TodoListWidget from '@/components/dashboard/TodoListWidget'
 import { toggleTodo } from './actions'
 
@@ -47,34 +46,16 @@ function getMobileSubtitle() {
   return `${day} \u00B7 today\u2019s meals & schedule`
 }
 
-function getDesktopSubtitle(todayMeals, upcomingEvents) {
+function getDesktopSubtitle(todayMeals) {
   const day = getDayName()
   const mealCount = todayMeals.filter(m => m.name).length
   const mealLabel = `${mealCount} meal${mealCount !== 1 ? 's' : ''} planned today`
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const nextEvent = upcomingEvents
-    .map(e => ({ ...e, dateObj: new Date(e.date) }))
-    .filter(e => e.dateObj >= today)
-    .sort((a, b) => a.dateObj - b.dateObj)[0]
-
-  if (!nextEvent) return `${day} \u00B7 ${mealLabel}`
-
-  const diffDays = Math.round((nextEvent.dateObj - today) / (1000 * 60 * 60 * 24))
-  const eventLabel = diffDays === 0
-    ? `${nextEvent.title} is today`
-    : diffDays === 1
-      ? `${nextEvent.title} tomorrow`
-      : `${nextEvent.title} in ${diffDays} days`
-
-  return `${day} \u00B7 ${mealLabel} \u00B7 ${eventLabel}`
+  return `${day} \u00B7 ${mealLabel}`
 }
 
 export default function DashboardPageClient({
   weeklyMeals,
   todayMeals,
-  upcomingEvents,
   todaySchedule,
   todos: initialTodos,
   user,
@@ -112,7 +93,7 @@ export default function DashboardPageClient({
         displayName={user.displayName}
         initials={user.initials}
         subtitle={getMobileSubtitle()}
-        desktopSubtitle={getDesktopSubtitle(todayMeals, upcomingEvents)}
+        desktopSubtitle={getDesktopSubtitle(todayMeals)}
       />
 
       {/* Desktop only: toggle below greeting */}
@@ -130,14 +111,10 @@ export default function DashboardPageClient({
         <DailyMealsCard meals={todayMeals} />
       )}
 
-      {/* Bottom section: schedule + to-do (daily) or events + to-do (weekly) */}
+      {/* Bottom section: schedule + to-do */}
       <TwoColumn>
         <TwoColumnCard>
-          {view === 'daily' ? (
-            <TodayScheduleWidget schedule={todaySchedule} />
-          ) : (
-            <UpcomingEventsWidget events={upcomingEvents} />
-          )}
+          <TodayScheduleWidget schedule={todaySchedule} />
         </TwoColumnCard>
         <TwoColumnCard>
           <TodoListWidget todos={todos} onToggleTodo={handleToggleTodo} />

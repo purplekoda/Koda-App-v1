@@ -9,7 +9,7 @@ const AUTH_ROUTES = ['/login', '/signup']
 // Allowed redirect destinations — prevents open redirect via ?redirect= param
 const ALLOWED_REDIRECT_PATHS = new Set([
   '/dashboard', '/meals', '/grocery', '/kitchen', '/recipes',
-  '/calendar', '/events', '/signups', '/onboarding',
+  '/calendar', '/onboarding',
 ])
 
 function sanitizeRedirectPath(pathname) {
