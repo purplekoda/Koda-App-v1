@@ -157,7 +157,7 @@ export default function LoginPage() {
     <Container>
       <Card>
         <Logo>Koda</Logo>
-        <Tagline>Your family planning companion</Tagline>
+        <Tagline>Your meal planning companion</Tagline>
         <Form onSubmit={handleSubmit}>
           <div>
             <Label htmlFor="email">Email</Label>

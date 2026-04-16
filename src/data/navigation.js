@@ -14,12 +14,6 @@ export const sidebarSections = [
       { id: 'recipes', name: 'Recipes', href: '/recipes', color: '#7F77DD' },
     ],
   },
-  {
-    label: 'LIFE',
-    items: [
-      { id: 'calendar', name: 'Calendar', href: '/calendar', color: '#185FA5' },
-    ],
-  },
 ]
 
 export const bottomTabs = [

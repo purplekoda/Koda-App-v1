@@ -251,3 +251,23 @@ CREATE INDEX idx_grocery_items_list ON grocery_items(grocery_list_id);
 CREATE INDEX idx_events_user_date ON events(user_id, event_date);
 CREATE INDEX idx_pantry_items_user ON pantry_items(user_id);
 CREATE INDEX idx_store_connections_user ON store_connections(user_id);
+
+
+-- 13. AI Conversations (rolling chat history, last 5 messages per context)
+CREATE TABLE ai_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  context TEXT NOT NULL DEFAULT 'general',
+  messages JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, context)
+);
+
+ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users select own AI conversations" ON ai_conversations FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own AI conversations" ON ai_conversations FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own AI conversations" ON ai_conversations FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own AI conversations" ON ai_conversations FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX idx_ai_conversations_user_context ON ai_conversations(user_id, context);
