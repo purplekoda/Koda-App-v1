@@ -2,8 +2,13 @@
 
 import { requireUser, isMockMode } from '@/lib/dal/require-user'
 import { validateAIPrompt } from '@/lib/validators'
+import { sanitizeEnum } from '@/lib/sanitize'
 import { aiLimiter } from '@/lib/rate-limit'
 import { ok, fail } from '@/lib/action-result'
+
+const VALID_CONTEXTS = [
+  'dashboard', 'meals', 'grocery', 'pantry', 'recipes', 'events', 'general',
+]
 
 /**
  * Derive follow-up suggestion chips from the AI response text.
@@ -78,7 +83,24 @@ export async function askAI(prompt, context) {
       text: responseText,
       chips: deriveChips(responseText),
     })
-  } catch {
+  } catch (err) {
+    console.error('[askAI] error:', err)
     return fail('Koda couldn\u2019t respond. Please try again.')
+  }
+}
+
+export async function getAIHistoryAction(context) {
+  try {
+    const user = await requireUser()
+    const cleanContext = sanitizeEnum(context, VALID_CONTEXTS) || 'general'
+
+    if (isMockMode()) return ok([])
+
+    const { getHistory } = await import('@/lib/dal/ai-history')
+    const history = await getHistory(user.id, cleanContext)
+    return ok(history)
+  } catch (err) {
+    console.error('[getAIHistoryAction] error:', err)
+    return fail('Could not load chat history')
   }
 }

@@ -132,6 +132,50 @@ export async function getMockLastScan() {
   })
 }
 
+// ── Recipes ────────────────────────────────────────────
+
+export async function getMockRecipes() {
+  return ensureInitialized('recipes', async () => {
+    const { mockRecipes } = await import('@/data/mock-recipes')
+    return mockRecipes
+  })
+}
+
+export async function getMockRecipeById(id) {
+  const recipes = await getMockRecipes()
+  return recipes.find(r => String(r.id) === String(id)) || null
+}
+
+export async function createMockRecipe(recipe) {
+  const recipes = await getMockRecipes()
+  const nextId = recipes.reduce((max, r) => Math.max(max, Number(r.id) || 0), 0) + 1
+  const now = new Date().toISOString()
+  const newRecipe = {
+    id: nextId,
+    ...recipe,
+    created_at: now,
+    updated_at: now,
+  }
+  recipes.push(newRecipe)
+  return newRecipe
+}
+
+export async function updateMockRecipe(id, updates) {
+  const recipes = await getMockRecipes()
+  const recipe = recipes.find(r => String(r.id) === String(id))
+  if (!recipe) return null
+  Object.assign(recipe, updates, { updated_at: new Date().toISOString() })
+  return recipe
+}
+
+export async function deleteMockRecipe(id) {
+  const recipes = await getMockRecipes()
+  const index = recipes.findIndex(r => String(r.id) === String(id))
+  if (index === -1) return false
+  recipes.splice(index, 1)
+  return true
+}
+
 // ── Events / Todos ─────────────────────────────────────
 
 export async function getMockEvents() {

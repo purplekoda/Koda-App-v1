@@ -1,11 +1,16 @@
-import PlaceholderPage from '@/components/common/PlaceholderPage'
+import { requireUser } from '@/lib/dal/require-user'
+import { getUserRecipes } from '@/lib/dal/recipes'
+import RecipesPageClient from './RecipesPageClient'
 
-export default function RecipesPage() {
-  return (
-    <PlaceholderPage
-      icon={'\uD83D\uDCD6'}
-      title="Recipes"
-      description="Save and organize your family's favorite recipes. Import from websites, add your own, and let Koda suggest new ones based on your preferences."
-    />
-  )
+export default async function RecipesPage() {
+  const user = await requireUser()
+
+  let recipes = []
+  try {
+    recipes = await getUserRecipes(user.id)
+  } catch (err) {
+    console.error('[RecipesPage] Failed to load recipes:', err?.message)
+  }
+
+  return <RecipesPageClient initialRecipes={recipes} />
 }

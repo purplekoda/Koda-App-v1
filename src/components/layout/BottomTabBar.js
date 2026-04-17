@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { bottomTabs } from '@/data/navigation'
+import { useChat } from '@/components/ai/ChatProvider'
 
 const TabBarContainer = styled.nav`
   display: none;
@@ -23,16 +24,31 @@ const TabBarContainer = styled.nav`
   }
 `
 
-const Tab = styled(Link)`
+const tabStyles = `
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   padding: 4px 12px;
-  min-height: ${({ theme }) => theme.touchTarget};
   justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+`
+
+const Tab = styled(Link)`
+  ${tabStyles}
+  min-height: ${({ theme }) => theme.touchTarget};
   border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ $active, theme }) => $active ? theme.colors.tealLight : 'transparent'};
+  background: ${({ $active, theme }) => ($active ? theme.colors.tealLight : 'transparent')};
+  transition: background 0.15s ease;
+`
+
+const TabButton = styled.button`
+  ${tabStyles}
+  min-height: ${({ theme }) => theme.touchTarget};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ $active, theme }) => ($active ? theme.colors.purpleLight : 'transparent')};
   transition: background 0.15s ease;
 `
 
@@ -40,18 +56,19 @@ const TabDot = styled.span`
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: ${({ $color, $active, theme }) => $active ? $color : theme.colors.textMuted};
-  opacity: ${({ $active }) => $active ? 1 : 0.5};
+  background: ${({ $color, $active, theme }) => ($active ? $color : theme.colors.textMuted)};
+  opacity: ${({ $active }) => ($active ? 1 : 0.5)};
 `
 
 const TabLabel = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.xs};
-  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textMuted};
-  font-weight: ${({ $active }) => $active ? 500 : 400};
+  color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textMuted)};
+  font-weight: ${({ $active }) => ($active ? 500 : 400)};
 `
 
 export default function BottomTabBar() {
   const pathname = usePathname()
+  const { isOpen, setIsOpen } = useChat()
 
   return (
     <TabBarContainer>
@@ -64,6 +81,16 @@ export default function BottomTabBar() {
           </Tab>
         )
       })}
+      <TabButton
+        type="button"
+        $active={isOpen}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-pressed={isOpen}
+        aria-label={isOpen ? 'Hide chat' : 'Show chat'}
+      >
+        <TabDot $color="#7F77DD" $active={isOpen} />
+        <TabLabel $active={isOpen}>Chat</TabLabel>
+      </TabButton>
     </TabBarContainer>
   )
 }

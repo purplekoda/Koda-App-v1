@@ -123,6 +123,78 @@ export function validateGroceryItem(body) {
 }
 
 /**
+ * Validate recipe input (create or update).
+ */
+export function validateRecipe(body) {
+  const errors = []
+  const data = {}
+
+  const name = sanitizeString(body.name, 200)
+  if (!name) errors.push('Recipe name is required')
+  else data.name = name
+
+  if (body.description !== undefined) {
+    data.description = sanitizeString(body.description, 1000)
+  }
+
+  if (body.instructions !== undefined) {
+    data.instructions = sanitizeString(body.instructions, 5000)
+  }
+
+  if (body.prep_time_minutes !== undefined && body.prep_time_minutes !== null && body.prep_time_minutes !== '') {
+    const prep = sanitizeInteger(body.prep_time_minutes, 0, 1440)
+    if (prep === null) errors.push('Prep time must be 0-1440 minutes')
+    else data.prep_time_minutes = prep
+  }
+
+  if (body.cook_time_minutes !== undefined && body.cook_time_minutes !== null && body.cook_time_minutes !== '') {
+    const cook = sanitizeInteger(body.cook_time_minutes, 0, 1440)
+    if (cook === null) errors.push('Cook time must be 0-1440 minutes')
+    else data.cook_time_minutes = cook
+  }
+
+  if (body.servings !== undefined && body.servings !== null && body.servings !== '') {
+    const servings = sanitizeInteger(body.servings, 1, 100)
+    if (servings === null) errors.push('Servings must be 1-100')
+    else data.servings = servings
+  }
+
+  if (body.source !== undefined) {
+    data.source = sanitizeString(body.source, 500)
+  }
+
+  if (Array.isArray(body.ingredients)) {
+    data.ingredients = body.ingredients
+      .slice(0, 100)
+      .map(item => ({
+        name: sanitizeString(item?.name, 200),
+        quantity: sanitizeString(item?.quantity, 50),
+      }))
+      .filter(item => item.name)
+  } else if (body.ingredients !== undefined) {
+    data.ingredients = []
+  }
+
+  if (Array.isArray(body.tags)) {
+    data.tags = body.tags
+      .slice(0, 20)
+      .map(tag => sanitizeString(tag, 50))
+      .filter(Boolean)
+  } else if (body.tags !== undefined) {
+    data.tags = []
+  }
+
+  if (body.image_url !== undefined && body.image_url !== null) {
+    const url = sanitizeString(body.image_url, 500_000)
+    if (url) data.image_url = url
+  }
+
+  return errors.length > 0
+    ? makeResult(false, null, errors)
+    : makeResult(true, data)
+}
+
+/**
  * Validate AI prompt input.
  */
 export function validateAIPrompt(body) {

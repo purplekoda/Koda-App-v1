@@ -5,7 +5,6 @@ import styled from 'styled-components'
 import MobileTopBar from '@/components/dashboard/MobileTopBar'
 import DashboardGreeting from '@/components/dashboard/DashboardGreeting'
 import DailyWeeklyToggle from '@/components/dashboard/DailyWeeklyToggle'
-import AIBar from '@/components/ai/AIBar'
 import WeeklyGrid from '@/components/meals/WeeklyGrid'
 import DailyMealsCard from '@/components/dashboard/DailyMealsCard'
 import TodayScheduleWidget from '@/components/dashboard/TodayScheduleWidget'
@@ -100,9 +99,6 @@ export default function DashboardPageClient({
       <DesktopToggle>
         <DailyWeeklyToggle view={view} onToggle={setView} />
       </DesktopToggle>
-
-      {/* AI bar */}
-      <AIBar placeholder={'Ask Koda anything\u2026'} context="dashboard" />
 
       {/* Meal section */}
       {view === 'weekly' ? (

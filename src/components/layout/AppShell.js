@@ -3,6 +3,8 @@
 import styled from 'styled-components'
 import Sidebar from './Sidebar'
 import BottomTabBar from './BottomTabBar'
+import FloatingChat from '@/components/ai/FloatingChat'
+import { ChatProvider } from '@/components/ai/ChatProvider'
 
 const Shell = styled.div`
   display: flex;
@@ -24,10 +26,13 @@ const MainContent = styled.main`
 
 export default function AppShell({ children, user }) {
   return (
-    <Shell>
-      <Sidebar user={user} />
-      <MainContent>{children}</MainContent>
-      <BottomTabBar />
-    </Shell>
+    <ChatProvider>
+      <Shell>
+        <Sidebar user={user} />
+        <MainContent>{children}</MainContent>
+        <BottomTabBar />
+        <FloatingChat />
+      </Shell>
+    </ChatProvider>
   )
 }

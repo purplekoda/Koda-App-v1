@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { sidebarSections } from '@/data/navigation'
 import { logout } from '@/app/(auth)/actions'
+import { useChat } from '@/components/ai/ChatProvider'
 
 const SidebarContainer = styled.aside`
   width: ${({ theme }) => theme.sidebarWidth};
@@ -60,6 +61,30 @@ const NavLink = styled(Link)`
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textSecondary};
   font-weight: ${({ $active }) => $active ? 500 : 400};
   border-left: 3px solid ${({ $active, theme }) => $active ? theme.colors.teal : 'transparent'};
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.borderLight};
+  }
+`
+
+const NavButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  width: 100%;
+  padding: 10px ${({ theme }) => theme.spacing.xl};
+  min-height: ${({ theme }) => theme.touchTarget};
+  font-size: 15px;
+  text-align: left;
+  color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textSecondary)};
+  font-weight: ${({ $active }) => ($active ? 500 : 400)};
+  background: transparent;
+  border: none;
+  border-left: 3px solid
+    ${({ $active, theme }) => ($active ? theme.colors.purple : 'transparent')};
+  cursor: pointer;
   transition: all 0.15s ease;
 
   &:hover {
@@ -133,6 +158,7 @@ const LogoutButton = styled.button`
 
 export default function Sidebar({ user }) {
   const pathname = usePathname()
+  const { isOpen, setIsOpen } = useChat()
 
   function handleLogout() {
     startTransition(() => {
@@ -161,6 +187,17 @@ export default function Sidebar({ user }) {
             ))}
           </div>
         ))}
+        <SectionLabel>ASSISTANT</SectionLabel>
+        <NavButton
+          type="button"
+          $active={isOpen}
+          onClick={() => setIsOpen(!isOpen)}
+          aria-pressed={isOpen}
+          aria-label={isOpen ? 'Hide chat' : 'Show chat'}
+        >
+          <NavDot $color="#7F77DD" />
+          Chat
+        </NavButton>
       </NavContent>
       {user && (
         <UserSection>
