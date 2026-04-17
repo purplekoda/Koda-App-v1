@@ -252,7 +252,11 @@ export default function RecipeDetailClient({ initialRecipe }) {
       <BackLink href="/recipes">{'\u2190 All recipes'}</BackLink>
 
       {recipe.image_url && (
-        <RecipeImage src={recipe.image_url} alt={recipe.name} />
+        <RecipeImage
+          src={recipe.image_url}
+          alt={recipe.name}
+          onError={e => { e.currentTarget.style.display = 'none' }}
+        />
       )}
 
       <Header>

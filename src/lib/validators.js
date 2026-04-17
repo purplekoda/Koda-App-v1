@@ -184,9 +184,14 @@ export function validateRecipe(body) {
     data.tags = []
   }
 
-  if (body.image_url !== undefined && body.image_url !== null) {
-    const url = sanitizeString(body.image_url, 500_000)
-    if (url) data.image_url = url
+  if (body.image_url !== undefined && body.image_url !== null && typeof body.image_url === 'string') {
+    const trimmed = body.image_url.trim()
+    // Cap at 400 KB encoded (≈ 300 KB image). Slicing base64 corrupts the URI.
+    if (trimmed.length > 400_000) {
+      errors.push('Recipe photo is too large. Please use a smaller image.')
+    } else if (trimmed.startsWith('data:image/') || trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+      data.image_url = trimmed
+    }
   }
 
   return errors.length > 0

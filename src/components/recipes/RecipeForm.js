@@ -234,7 +234,10 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
 
     const img = new Image()
     img.onload = () => {
-      const MAX = 1200
+      // Keep images small enough to survive the 500k-char validator cap and
+      // Supabase's row size budget. 800px / 0.72 quality ≈ 50-80 KB data URI.
+      const MAX = 800
+      const QUALITY = 0.72
       let { width, height } = img
       if (width > MAX || height > MAX) {
         const ratio = Math.min(MAX / width, MAX / height)
@@ -246,7 +249,18 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
       canvas.height = height
       const ctx = canvas.getContext('2d')
       ctx.drawImage(img, 0, 0, width, height)
-      setImageUrl(canvas.toDataURL('image/jpeg', 0.8))
+      const dataUrl = canvas.toDataURL('image/jpeg', QUALITY)
+      // Guard: if still over 300 KB encoded, re-compress at half size
+      if (dataUrl.length > 300_000) {
+        const canvas2 = document.createElement('canvas')
+        canvas2.width = Math.round(width * 0.6)
+        canvas2.height = Math.round(height * 0.6)
+        const ctx2 = canvas2.getContext('2d')
+        ctx2.drawImage(img, 0, 0, canvas2.width, canvas2.height)
+        setImageUrl(canvas2.toDataURL('image/jpeg', 0.65))
+      } else {
+        setImageUrl(dataUrl)
+      }
       URL.revokeObjectURL(img.src)
     }
     img.src = URL.createObjectURL(file)

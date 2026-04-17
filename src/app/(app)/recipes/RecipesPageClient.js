@@ -379,21 +379,36 @@ const Grid = styled.div`
 
 const Card = styled(Link)`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   background: ${({ theme }) => theme.colors.surface};
   border: 0.5px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.lg};
-  padding: ${({ theme }) => theme.spacing.lg};
   text-decoration: none;
   color: inherit;
   transition: all 0.15s ease;
   box-shadow: ${({ theme }) => theme.shadows.card};
+  overflow: hidden;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: ${({ theme }) => theme.shadows.elevated};
     border-color: ${({ theme }) => theme.colors.tealMid};
   }
+`
+
+const CardBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  padding: ${({ theme }) => theme.spacing.lg};
+`
+
+const CardThumb = styled.img`
+  width: 100px;
+  align-self: stretch;
+  object-fit: cover;
+  flex-shrink: 0;
 `
 
 const CardName = styled.h3`
@@ -1057,16 +1072,25 @@ export default function RecipesPageClient({ initialRecipes }) {
             const time = totalTime(recipe)
             return (
               <Card key={recipe.id} href={`/recipes/${recipe.id}`}>
-                <CardName>{recipe.name}</CardName>
-                {recipe.description && <CardDescription>{recipe.description}</CardDescription>}
-                <Meta>
-                  {time && <span>{'\u23F1 '}{time}</span>}
-                  {recipe.servings && <span>{'\uD83D\uDC65 '}{recipe.servings}</span>}
-                </Meta>
-                {recipe.tags && recipe.tags.length > 0 && (
-                  <TagRow>
-                    {recipe.tags.slice(0, 3).map(tag => <Tag key={tag}>{tag}</Tag>)}
-                  </TagRow>
+                <CardBody>
+                  <CardName>{recipe.name}</CardName>
+                  {recipe.description && <CardDescription>{recipe.description}</CardDescription>}
+                  <Meta>
+                    {time && <span>{'\u23F1 '}{time}</span>}
+                    {recipe.servings && <span>{'\uD83D\uDC65 '}{recipe.servings}</span>}
+                  </Meta>
+                  {recipe.tags && recipe.tags.length > 0 && (
+                    <TagRow>
+                      {recipe.tags.slice(0, 3).map(tag => <Tag key={tag}>{tag}</Tag>)}
+                    </TagRow>
+                  )}
+                </CardBody>
+                {recipe.image_url && (
+                  <CardThumb
+                    src={recipe.image_url}
+                    alt=""
+                    onError={e => { e.currentTarget.style.display = 'none' }}
+                  />
                 )}
               </Card>
             )
