@@ -18,10 +18,28 @@ export async function createRecipeAction(formData) {
     const rate = apiLimiter.check(user.id)
     if (!rate.success) return fail('Too many requests. Please wait a moment.')
 
+    // Debug: trace image_url through the pipeline
+    console.log('[createRecipe] payload image_url:', {
+      present: !!formData.image_url,
+      type: typeof formData.image_url,
+      length: formData.image_url?.length ?? 0,
+      prefix: formData.image_url?.slice(0, 30) ?? 'null',
+    })
+
     const validation = validateRecipe(formData)
+
+    console.log('[createRecipe] after validation:', {
+      valid: validation.valid,
+      errors: validation.errors,
+      image_url_in_data: !!validation.data?.image_url,
+    })
+
     if (!validation.valid) return fail(validation.errors.join(', '))
 
     const recipe = await createRecipe(user.id, validation.data)
+
+    console.log('[createRecipe] saved to DB, image_url:', !!recipe?.image_url)
+
     revalidatePath('/recipes')
     return ok(recipe)
   } catch {
@@ -37,11 +55,26 @@ export async function updateRecipeAction(recipeId, formData) {
 
     if (!recipeId) return fail('Recipe ID is required')
 
+    console.log('[updateRecipe] payload image_url:', {
+      present: !!formData.image_url,
+      length: formData.image_url?.length ?? 0,
+      prefix: formData.image_url?.slice(0, 30) ?? 'null',
+    })
+
     const validation = validateRecipe(formData)
+
+    console.log('[updateRecipe] after validation:', {
+      valid: validation.valid,
+      errors: validation.errors,
+      image_url_in_data: !!validation.data?.image_url,
+    })
+
     if (!validation.valid) return fail(validation.errors.join(', '))
 
     const recipe = await updateRecipe(user.id, recipeId, validation.data)
     if (!recipe) return fail('Recipe not found')
+
+    console.log('[updateRecipe] saved to DB, image_url:', !!recipe?.image_url)
 
     revalidatePath('/recipes')
     revalidatePath(`/recipes/${recipeId}`)
@@ -143,21 +176,22 @@ async function extractRecipeImage(html, pageUrl) {
     if (!imgSrc) return null
 
     const resolved = new URL(imgSrc, pageUrl).href
+    if (!resolved.startsWith('https://') && !resolved.startsWith('http://')) return null
+
+    // HEAD request only — confirms it's a real image without downloading the file
     const imgRes = await fetch(resolved, {
+      method: 'HEAD',
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Koda/1.0)' },
       redirect: 'follow',
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(5_000),
     })
     if (!imgRes.ok) return null
 
     const ct = imgRes.headers.get('content-type') || ''
     if (!ct.startsWith('image/')) return null
 
-    const buf = Buffer.from(await imgRes.arrayBuffer())
-    if (buf.length > 5 * 1024 * 1024) return null
-
-    const mimeType = ct.split(';')[0].trim()
-    return `data:${mimeType};base64,${buf.toString('base64')}`
+    // Return the URL directly — no download, no base64, no size limit problems
+    return resolved
   } catch (err) {
     console.error('[extractRecipeImage] error:', err?.message || err)
     return null
