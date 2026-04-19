@@ -18,28 +18,10 @@ export async function createRecipeAction(formData) {
     const rate = apiLimiter.check(user.id)
     if (!rate.success) return fail('Too many requests. Please wait a moment.')
 
-    // Debug: trace image_url through the pipeline
-    console.log('[createRecipe] payload image_url:', {
-      present: !!formData.image_url,
-      type: typeof formData.image_url,
-      length: formData.image_url?.length ?? 0,
-      prefix: formData.image_url?.slice(0, 30) ?? 'null',
-    })
-
     const validation = validateRecipe(formData)
-
-    console.log('[createRecipe] after validation:', {
-      valid: validation.valid,
-      errors: validation.errors,
-      image_url_in_data: !!validation.data?.image_url,
-    })
-
     if (!validation.valid) return fail(validation.errors.join(', '))
 
     const recipe = await createRecipe(user.id, validation.data)
-
-    console.log('[createRecipe] saved to DB, image_url:', !!recipe?.image_url)
-
     revalidatePath('/recipes')
     return ok(recipe)
   } catch {
@@ -55,26 +37,11 @@ export async function updateRecipeAction(recipeId, formData) {
 
     if (!recipeId) return fail('Recipe ID is required')
 
-    console.log('[updateRecipe] payload image_url:', {
-      present: !!formData.image_url,
-      length: formData.image_url?.length ?? 0,
-      prefix: formData.image_url?.slice(0, 30) ?? 'null',
-    })
-
     const validation = validateRecipe(formData)
-
-    console.log('[updateRecipe] after validation:', {
-      valid: validation.valid,
-      errors: validation.errors,
-      image_url_in_data: !!validation.data?.image_url,
-    })
-
     if (!validation.valid) return fail(validation.errors.join(', '))
 
     const recipe = await updateRecipe(user.id, recipeId, validation.data)
     if (!recipe) return fail('Recipe not found')
-
-    console.log('[updateRecipe] saved to DB, image_url:', !!recipe?.image_url)
 
     revalidatePath('/recipes')
     revalidatePath(`/recipes/${recipeId}`)
@@ -152,15 +119,63 @@ export async function scanRecipeAction(formData) {
   }
 }
 
+/**
+ * Extract a recipe image URL from the page HTML.
+ *
+ * Priority:
+ *  1. Recipe JSON-LD structured data image — this is the dish photo shown
+ *     in recipe cards (ingredients/instructions area), not the hero banner.
+ *  2. og:image / twitter:image meta tags as a fallback.
+ *
+ * Returns the https:// URL directly — no download, no base64, no size issues.
+ * If the URL turns out to be broken the onError handler in the card hides it.
+ */
 async function extractRecipeImage(html, pageUrl) {
   try {
+    // ── 1. Recipe JSON-LD structured data (most accurate) ──────────────────
+    // Recipe sites embed machine-readable data including a recipe-specific
+    // image (not the page hero). This is what Google uses for recipe cards.
+    const jsonLdPattern = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+    let match
+    // eslint-disable-next-line no-cond-assign
+    while ((match = jsonLdPattern.exec(html)) !== null) {
+      try {
+        const raw = JSON.parse(match[1])
+        const schemas = Array.isArray(raw) ? raw : [raw]
+        for (const schema of schemas) {
+          const type = schema?.['@type'] ?? ''
+          const isRecipe = type === 'Recipe' ||
+            (Array.isArray(type) && type.includes('Recipe'))
+          if (!isRecipe) continue
+
+          const img = schema.image
+          if (!img) continue
+
+          // image can be: string | ImageObject | Array<string | ImageObject>
+          const candidates = Array.isArray(img) ? img : [img]
+          for (const candidate of candidates) {
+            const url = typeof candidate === 'string'
+              ? candidate
+              : (candidate?.url ?? candidate?.contentUrl ?? null)
+            if (typeof url === 'string') {
+              const resolved = new URL(url, pageUrl).href
+              if (resolved.startsWith('https://') || resolved.startsWith('http://')) {
+                return resolved
+              }
+            }
+          }
+        }
+      } catch {
+        // malformed JSON-LD — skip and try next block
+      }
+    }
+
+    // ── 2. og:image / twitter:image fallback ───────────────────────────────
     let imgSrc = null
 
     const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
-    if (ogMatch) {
-      imgSrc = ogMatch[1]
-    }
+    if (ogMatch) imgSrc = ogMatch[1]
 
     if (!imgSrc) {
       const twitterMatch = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
@@ -168,29 +183,11 @@ async function extractRecipeImage(html, pageUrl) {
       if (twitterMatch) imgSrc = twitterMatch[1]
     }
 
-    if (!imgSrc) {
-      const jsonLdMatch = html.match(/"image"\s*:\s*"([^"]+)"/i)
-      if (jsonLdMatch) imgSrc = jsonLdMatch[1]
-    }
-
     if (!imgSrc) return null
 
     const resolved = new URL(imgSrc, pageUrl).href
     if (!resolved.startsWith('https://') && !resolved.startsWith('http://')) return null
 
-    // HEAD request only — confirms it's a real image without downloading the file
-    const imgRes = await fetch(resolved, {
-      method: 'HEAD',
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Koda/1.0)' },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(5_000),
-    })
-    if (!imgRes.ok) return null
-
-    const ct = imgRes.headers.get('content-type') || ''
-    if (!ct.startsWith('image/')) return null
-
-    // Return the URL directly — no download, no base64, no size limit problems
     return resolved
   } catch (err) {
     console.error('[extractRecipeImage] error:', err?.message || err)
