@@ -29,6 +29,81 @@ const SCAN_SYSTEM_PROMPT =
   'Use common household units. Estimate prep/cook times if not shown. ' +
   'Generate helpful tags (e.g. cuisine, meal type, dietary info).'
 
+const SKILL_LABELS = {
+  beginner: 'beginner — keep techniques simple, avoid complex methods',
+  intermediate: 'intermediate — comfortable with most kitchen techniques',
+  advanced: 'advanced — open to complex or professional techniques',
+}
+
+const TIME_LABELS = {
+  quick: 'quick meals preferred (under 30 minutes total)',
+  medium: 'moderate time okay (30-60 minutes total)',
+  elaborate: 'open to elaborate recipes (60+ minutes)',
+}
+
+function buildRecipeSystemPrompt(context) {
+  let prompt = RECIPE_SYSTEM_PROMPT
+
+  if (context?.pantryItems?.length) {
+    const items = context.pantryItems
+    const expiring = items.filter(i => i.freshness === 'expiring')
+    const fresh = items.filter(i => i.freshness === 'fresh')
+    const low = items.filter(i => i.freshness === 'low')
+
+    const lines = ['\n\nThe user has these items in their kitchen:']
+    if (expiring.length) {
+      lines.push('EXPIRING SOON: ' + expiring.map(i => {
+        const days = i.daysLeft != null ? ` (${i.daysLeft} day${i.daysLeft !== 1 ? 's' : ''} left)` : ''
+        return i.name + days
+      }).join(', '))
+    }
+    if (fresh.length) {
+      lines.push('FRESH: ' + fresh.map(i => i.name).join(', '))
+    }
+    if (low.length) {
+      lines.push('LOW/RUNNING OUT: ' + low.map(i => i.name).join(', '))
+    }
+    lines.push('Prioritize using expiring items. Prefer pantry ingredients where practical, but you may include other common ingredients if needed.')
+
+    // Summarize by category if too many items
+    if (items.length > 30) {
+      const categories = {}
+      items.forEach(i => {
+        const cat = i.category || 'Other'
+        if (!categories[cat]) categories[cat] = []
+        categories[cat].push(i.name)
+      })
+      const summary = Object.entries(categories).map(([cat, names]) => `${cat}: ${names.join(', ')}`).join('; ')
+      lines.length = 1 // keep header
+      lines.push(summary)
+      lines.push('Prioritize using expiring items. Prefer pantry ingredients where practical.')
+    }
+
+    prompt += lines.join('\n')
+  }
+
+  if (context?.dietaryRestrictions?.length) {
+    prompt += '\n\nIMPORTANT DIETARY RESTRICTIONS (these are strict requirements):\n'
+    prompt += 'The recipe MUST be: ' + context.dietaryRestrictions.join(', ') + '.\n'
+    prompt += 'Do NOT include any ingredients that violate these restrictions.'
+  }
+
+  if (context?.preferences) {
+    const p = context.preferences
+    const parts = []
+    if (p.skill_level) parts.push('Cooking skill: ' + (SKILL_LABELS[p.skill_level] || p.skill_level))
+    if (p.time_preference) parts.push('Time: ' + (TIME_LABELS[p.time_preference] || p.time_preference))
+    if (p.cuisine_preferences?.length) parts.push('Cuisine preferences: ' + p.cuisine_preferences.join(', '))
+    if (p.serving_size) parts.push('Target servings: ' + p.serving_size)
+    if (p.notes) parts.push('Additional notes: ' + p.notes)
+    if (parts.length) {
+      prompt += '\n\nUser preferences:\n- ' + parts.join('\n- ')
+    }
+  }
+
+  return prompt
+}
+
 const RECIPE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -90,7 +165,7 @@ export async function callGemini(history) {
  * @param {string} prompt
  * @returns {Promise<{name: string, description?: string, ingredients: Array<{name: string, quantity: string}>, instructions: string, prep_time_minutes: number, cook_time_minutes: number, servings: number, tags?: string[]}>}
  */
-export async function generateRecipe(prompt) {
+export async function generateRecipe(prompt, context = null) {
   const apiKey = process.env.GOOGLE_AI_API_KEY
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
@@ -98,11 +173,15 @@ export async function generateRecipe(prompt) {
 
   const ai = new GoogleGenAI({ apiKey })
 
+  const systemInstruction = context
+    ? buildRecipeSystemPrompt(context)
+    : RECIPE_SYSTEM_PROMPT
+
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-lite',
     contents: prompt,
     config: {
-      systemInstruction: RECIPE_SYSTEM_PROMPT,
+      systemInstruction,
       responseMimeType: 'application/json',
       responseSchema: RECIPE_SCHEMA,
     },

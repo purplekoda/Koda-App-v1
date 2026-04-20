@@ -200,6 +200,47 @@ export function validateRecipe(body) {
 }
 
 /**
+ * Validate cooking preferences.
+ */
+export function validateCookingPreferences(body) {
+  const errors = []
+  const data = {}
+
+  if (body.skill_level !== undefined) {
+    const skill = sanitizeEnum(body.skill_level, ['beginner', 'intermediate', 'advanced'])
+    if (!skill) errors.push('Invalid skill level')
+    else data.skill_level = skill
+  }
+
+  if (body.time_preference !== undefined) {
+    const time = sanitizeEnum(body.time_preference, ['quick', 'medium', 'elaborate'])
+    if (!time) errors.push('Invalid time preference')
+    else data.time_preference = time
+  }
+
+  if (Array.isArray(body.cuisine_preferences)) {
+    data.cuisine_preferences = body.cuisine_preferences
+      .slice(0, 10)
+      .map(c => sanitizeString(c, 50))
+      .filter(Boolean)
+  }
+
+  if (body.serving_size !== undefined && body.serving_size !== null && body.serving_size !== '') {
+    const size = sanitizeInteger(body.serving_size, 1, 20)
+    if (size === null) errors.push('Serving size must be 1-20')
+    else data.serving_size = size
+  }
+
+  if (body.notes !== undefined) {
+    data.notes = sanitizeString(body.notes, 300)
+  }
+
+  return errors.length > 0
+    ? makeResult(false, null, errors)
+    : makeResult(true, data)
+}
+
+/**
  * Validate AI prompt input.
  */
 export function validateAIPrompt(body) {

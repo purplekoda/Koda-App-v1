@@ -5,7 +5,14 @@ import Link from 'next/link'
 import styled from 'styled-components'
 import RecipeForm from '@/components/recipes/RecipeForm'
 import Modal from '@/components/recipes/Modal'
-import { createRecipeAction, generateRecipeAction, scanRecipeAction, importRecipeFromUrlAction } from './actions'
+import {
+  createRecipeAction,
+  generateRecipeAction,
+  scanRecipeAction,
+  importRecipeFromUrlAction,
+  getRecipeGenerationContextAction,
+  saveCookingPreferencesAction,
+} from './actions'
 
 const SORT_OPTIONS = [
   { value: 'recent', label: 'Recently added' },
@@ -183,6 +190,211 @@ const PromptError = styled.p`
   font-size: 13px;
   margin-top: ${({ theme }) => theme.spacing.sm};
 `
+
+const ContextSection = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.md};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+`
+
+const PantryToggleRow = styled.label`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  padding: 10px 12px;
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.borderLight};
+  cursor: pointer;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const ToggleSwitch = styled.div`
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: ${({ theme, $on }) => $on ? theme.colors.teal : theme.colors.border};
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: ${({ $on }) => $on ? '18px' : '2px'};
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    transition: left 0.15s ease;
+  }
+`
+
+const PantryToggleText = styled.span`
+  flex: 1;
+`
+
+const PantryToggleMeta = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textMuted};
+`
+
+const PrefsAccordion = styled.div`
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  overflow: hidden;
+`
+
+const PrefsHeader = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  background: ${({ theme }) => theme.colors.borderLight};
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const PrefsHeaderLeft = styled.span`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const PrefsSavedBadge = styled.span`
+  font-size: 11px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.teal};
+`
+
+const PrefsChevron = styled.span`
+  font-size: 10px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  transform: ${({ $open }) => $open ? 'rotate(180deg)' : 'rotate(0deg)'};
+  transition: transform 0.15s ease;
+`
+
+const PrefsBody = styled.div`
+  padding: ${({ theme }) => theme.spacing.md};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+  border-top: 0.5px solid ${({ theme }) => theme.colors.border};
+`
+
+const PrefsLabel = styled.p`
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin: 0;
+`
+
+const PrefsChipRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`
+
+const PrefChip = styled.button`
+  padding: 5px 12px;
+  font-size: 12px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  border: 0.5px solid
+    ${({ theme, $active }) => ($active ? theme.colors.purpleDark : theme.colors.border)};
+  background: ${({ theme, $active }) =>
+    $active ? theme.colors.purpleLight : theme.colors.surface};
+  color: ${({ theme, $active }) => ($active ? theme.colors.purpleDark : theme.colors.textSecondary)};
+  cursor: pointer;
+  font-weight: 500;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.purple};
+  }
+`
+
+const PrefsServingInput = styled.input`
+  width: 60px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.purple};
+  }
+`
+
+const PrefsNotesTextarea = styled.textarea`
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-family: inherit;
+  resize: vertical;
+  min-height: 48px;
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.purple};
+  }
+`
+
+const SavePrefsButton = styled.button`
+  align-self: flex-start;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: ${({ theme }) => theme.radii.md};
+  border: 0.5px solid ${({ theme }) => theme.colors.purple};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.purple};
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.purpleLight};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const DietaryRow = styled.div`
+  padding: 8px 12px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ theme }) => theme.colors.coralLight};
+  border-radius: ${({ theme }) => theme.radii.md};
+`
+
+const ContextLoading = styled.div`
+  padding: ${({ theme }) => theme.spacing.md};
+  text-align: center;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textMuted};
+`
+
+const CUISINE_OPTIONS = [
+  'Italian', 'Mexican', 'Asian', 'Indian', 'American',
+  'Mediterranean', 'French', 'Japanese', 'Thai', 'Middle Eastern',
+]
 
 const FilterBar = styled.div`
   display: flex;
@@ -598,6 +810,15 @@ export default function RecipesPageClient({ initialRecipes }) {
   const [scanPreviews, setScanPreviews] = useState([])
   const [scanError, setScanError] = useState(null)
   const [isScanning, setIsScanning] = useState(false)
+  const [contextData, setContextData] = useState(null)
+  const [includePantry, setIncludePantry] = useState(true)
+  const [prefsExpanded, setPrefsExpanded] = useState(false)
+  const [prefSkill, setPrefSkill] = useState(null)
+  const [prefTime, setPrefTime] = useState(null)
+  const [prefCuisines, setPrefCuisines] = useState([])
+  const [prefServings, setPrefServings] = useState('')
+  const [prefNotes, setPrefNotes] = useState('')
+  const [savingPrefs, setSavingPrefs] = useState(false)
   const [urlOpen, setUrlOpen] = useState(false)
   const [urlText, setUrlText] = useState('')
   const [urlError, setUrlError] = useState(null)
@@ -632,6 +853,59 @@ export default function RecipesPageClient({ initialRecipes }) {
       document.removeEventListener('keydown', handleKey)
     }
   }, [openPopover])
+
+  useEffect(() => {
+    if (!promptOpen) return
+    let cancelled = false
+    getRecipeGenerationContextAction().then(result => {
+      if (cancelled) return
+      if (result.success && result.data) {
+        setContextData(result.data)
+        const { pantryItems, preferences } = result.data
+        setIncludePantry(pantryItems?.length > 0)
+        if (preferences) {
+          setPrefSkill(preferences.skill_level || null)
+          setPrefTime(preferences.time_preference || null)
+          setPrefCuisines(preferences.cuisine_preferences || [])
+          setPrefServings(preferences.serving_size != null ? String(preferences.serving_size) : '')
+          setPrefNotes(preferences.notes || '')
+          setPrefsExpanded(false)
+        } else {
+          setPrefSkill(null)
+          setPrefTime(null)
+          setPrefCuisines([])
+          setPrefServings('')
+          setPrefNotes('')
+          setPrefsExpanded(true)
+        }
+      } else {
+        setContextData({ pantryItems: [], preferences: null, dietaryRestrictions: [] })
+      }
+    }).catch(() => {
+      if (!cancelled) setContextData({ pantryItems: [], preferences: null, dietaryRestrictions: [] })
+    })
+    return () => { cancelled = true }
+  }, [promptOpen])
+
+  const contextLoading = promptOpen && contextData === null
+
+  function toggleCuisine(cuisine) {
+    setPrefCuisines(prev =>
+      prev.includes(cuisine) ? prev.filter(c => c !== cuisine) : [...prev, cuisine]
+    )
+  }
+
+  async function handleSavePrefs() {
+    setSavingPrefs(true)
+    const prefs = {}
+    if (prefSkill) prefs.skill_level = prefSkill
+    if (prefTime) prefs.time_preference = prefTime
+    if (prefCuisines.length) prefs.cuisine_preferences = prefCuisines
+    if (prefServings) prefs.serving_size = Number(prefServings)
+    if (prefNotes) prefs.notes = prefNotes
+    await saveCookingPreferencesAction(prefs)
+    setSavingPrefs(false)
+  }
 
   const allTags = useMemo(() => {
     const set = new Set()
@@ -858,7 +1132,7 @@ export default function RecipesPageClient({ initialRecipes }) {
     }
     setPromptError(null)
     setIsGenerating(true)
-    const result = await generateRecipeAction(trimmed)
+    const result = await generateRecipeAction(trimmed, { includePantry })
     setIsGenerating(false)
     if (result.success && result.data) {
       setFormInitial(result.data)
@@ -884,7 +1158,7 @@ export default function RecipesPageClient({ initialRecipes }) {
           <GenerateButton onClick={() => setScanOpen(true)} disabled={isScanning}>
             {'\uD83D\uDCF7 Scan recipe'}
           </GenerateButton>
-          <GenerateButton onClick={() => setPromptOpen(true)} disabled={isGenerating}>
+          <GenerateButton onClick={() => { setContextData(null); setPromptOpen(true) }} disabled={isGenerating}>
             {'\u2728 Generate with AI'}
           </GenerateButton>
           <AddButton onClick={openBlankForm}>+ New recipe</AddButton>
@@ -1123,12 +1397,134 @@ export default function RecipesPageClient({ initialRecipes }) {
             disabled={isGenerating}
             autoFocus
           />
+
+          {contextLoading ? (
+            <ContextLoading>Loading your kitchen context...</ContextLoading>
+          ) : contextData && (
+            <ContextSection>
+              {contextData.pantryItems?.length > 0 && (
+                <PantryToggleRow>
+                  <ToggleSwitch
+                    $on={includePantry}
+                    onClick={() => setIncludePantry(p => !p)}
+                    role="switch"
+                    aria-checked={includePantry}
+                  />
+                  <PantryToggleText>Use my pantry items</PantryToggleText>
+                  <PantryToggleMeta>
+                    {contextData.pantryItems.length} item{contextData.pantryItems.length !== 1 ? 's' : ''}
+                    {(() => {
+                      const exp = contextData.pantryItems.filter(i => i.freshness === 'expiring').length
+                      return exp > 0 ? `, ${exp} expiring soon` : ''
+                    })()}
+                  </PantryToggleMeta>
+                </PantryToggleRow>
+              )}
+
+              {contextData.dietaryRestrictions?.length > 0 && (
+                <DietaryRow>
+                  Dietary: {contextData.dietaryRestrictions.join(', ')}
+                </DietaryRow>
+              )}
+
+              <PrefsAccordion>
+                <PrefsHeader type="button" onClick={() => setPrefsExpanded(p => !p)}>
+                  <PrefsHeaderLeft>
+                    Cooking preferences
+                    {contextData.preferences && <PrefsSavedBadge>saved</PrefsSavedBadge>}
+                  </PrefsHeaderLeft>
+                  <PrefsChevron $open={prefsExpanded}>{'\u25BE'}</PrefsChevron>
+                </PrefsHeader>
+                {prefsExpanded && (
+                  <PrefsBody>
+                    <div>
+                      <PrefsLabel>Skill level</PrefsLabel>
+                      <PrefsChipRow>
+                        {['beginner', 'intermediate', 'advanced'].map(val => (
+                          <PrefChip
+                            key={val}
+                            type="button"
+                            $active={prefSkill === val}
+                            onClick={() => setPrefSkill(prefSkill === val ? null : val)}
+                          >
+                            {val.charAt(0).toUpperCase() + val.slice(1)}
+                          </PrefChip>
+                        ))}
+                      </PrefsChipRow>
+                    </div>
+                    <div>
+                      <PrefsLabel>Time preference</PrefsLabel>
+                      <PrefsChipRow>
+                        {[
+                          { value: 'quick', label: 'Quick (<30m)' },
+                          { value: 'medium', label: 'Medium (30-60m)' },
+                          { value: 'elaborate', label: 'Elaborate (60m+)' },
+                        ].map(opt => (
+                          <PrefChip
+                            key={opt.value}
+                            type="button"
+                            $active={prefTime === opt.value}
+                            onClick={() => setPrefTime(prefTime === opt.value ? null : opt.value)}
+                          >
+                            {opt.label}
+                          </PrefChip>
+                        ))}
+                      </PrefsChipRow>
+                    </div>
+                    <div>
+                      <PrefsLabel>Cuisines</PrefsLabel>
+                      <PrefsChipRow>
+                        {CUISINE_OPTIONS.map(cuisine => (
+                          <PrefChip
+                            key={cuisine}
+                            type="button"
+                            $active={prefCuisines.includes(cuisine.toLowerCase())}
+                            onClick={() => toggleCuisine(cuisine.toLowerCase())}
+                          >
+                            {cuisine}
+                          </PrefChip>
+                        ))}
+                      </PrefsChipRow>
+                    </div>
+                    <div>
+                      <PrefsLabel>Servings</PrefsLabel>
+                      <PrefsServingInput
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={prefServings}
+                        onChange={e => setPrefServings(e.target.value)}
+                        placeholder="4"
+                      />
+                    </div>
+                    <div>
+                      <PrefsLabel>Additional notes</PrefsLabel>
+                      <PrefsNotesTextarea
+                        value={prefNotes}
+                        onChange={e => setPrefNotes(e.target.value)}
+                        placeholder="e.g. No spicy food, kid-friendly, low sodium..."
+                        maxLength={300}
+                      />
+                    </div>
+                    <SavePrefsButton
+                      type="button"
+                      onClick={handleSavePrefs}
+                      disabled={savingPrefs}
+                    >
+                      {savingPrefs ? 'Saving...' : 'Save preferences'}
+                    </SavePrefsButton>
+                  </PrefsBody>
+                )}
+              </PrefsAccordion>
+            </ContextSection>
+          )}
+
           {promptError && <PromptError role="alert">{promptError}</PromptError>}
           <PromptActions>
             <PromptSecondary onClick={() => setPromptOpen(false)} disabled={isGenerating}>
               Cancel
             </PromptSecondary>
-            <PromptPrimary onClick={handleGenerate} disabled={isGenerating}>
+            <PromptPrimary onClick={handleGenerate} disabled={isGenerating || contextLoading}>
               {isGenerating ? 'Generating\u2026' : 'Generate'}
             </PromptPrimary>
           </PromptActions>

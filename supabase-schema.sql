@@ -11,6 +11,7 @@ CREATE TABLE profiles (
   location TEXT,
   preferred_store TEXT,
   onboarding_completed BOOLEAN DEFAULT FALSE,
+  cooking_preferences JSONB DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

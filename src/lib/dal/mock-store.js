@@ -176,6 +176,22 @@ export async function deleteMockRecipe(id) {
   return true
 }
 
+// ── Cooking Preferences ───────────────────────────────
+
+let mockCookingPreferences = null
+
+export function getMockCookingPreferences() {
+  return mockCookingPreferences
+}
+
+export function saveMockCookingPreferences(prefs) {
+  mockCookingPreferences = prefs
+}
+
+export function getMockDietaryRestrictions() {
+  return ['nut-free']
+}
+
 // ── Events / Todos ─────────────────────────────────────
 
 export async function getMockEvents() {
