@@ -372,6 +372,32 @@ export async function importRecipeFromUrlAction(url) {
   }
 }
 
+export async function generateRecipeIdeasAction(mode) {
+  try {
+    const user = await requireUser()
+    const rate = aiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many AI requests. Please wait a moment.')
+
+    const { getCookingPreferences, getDietaryRestrictions } = await import('@/lib/dal/cooking-preferences')
+    const { getPantryItems } = await import('@/lib/dal/pantry')
+
+    const [preferences, dietaryRestrictions, pantryItems] = await Promise.all([
+      getCookingPreferences(user.id).catch(() => null),
+      getDietaryRestrictions(user.id).catch(() => []),
+      getPantryItems(user.id).catch(() => []),
+    ])
+
+    const context = { preferences, dietaryRestrictions, pantryItems }
+
+    const { generateRecipeIdeas } = await import('@/lib/gemini')
+    const result = await generateRecipeIdeas(mode, context)
+
+    return ok(result.ideas || [])
+  } catch {
+    return fail('Could not generate recipe ideas. Please try again.')
+  }
+}
+
 export async function deleteRecipeAction(recipeId) {
   try {
     const user = await requireUser()

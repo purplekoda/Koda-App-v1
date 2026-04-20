@@ -224,6 +224,80 @@ export async function scanRecipeFromImages(images) {
   return JSON.parse(response.text)
 }
 
+const RECIPE_IDEAS_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    ideas: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          description: { type: Type.STRING },
+          key_ingredients: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['name', 'description', 'key_ingredients'],
+      },
+    },
+  },
+  required: ['ideas'],
+}
+
+export async function generateRecipeIdeas(mode, context) {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  let systemPrompt =
+    'You are a recipe idea generator for a home kitchen app. ' +
+    'Generate exactly 5 diverse recipe ideas. ' +
+    'Each idea needs a short name, a one-sentence description, and 3-5 key ingredients. ' +
+    'Make ideas varied in cooking style and complexity.'
+
+  if (context?.pantryItems?.length) {
+    if (mode === 'expiring') {
+      const expiring = context.pantryItems.filter(i => i.freshness === 'expiring')
+      if (expiring.length) {
+        systemPrompt += '\n\nPrioritize these expiring items: ' + expiring.map(i => i.name).join(', ')
+        const fresh = context.pantryItems.filter(i => i.freshness === 'fresh')
+        if (fresh.length) systemPrompt += '\nAlso available (fresh): ' + fresh.map(i => i.name).join(', ')
+      }
+    } else {
+      systemPrompt += '\n\nAvailable pantry items: ' + context.pantryItems.map(i => i.name).join(', ')
+    }
+  }
+
+  if (context?.dietaryRestrictions?.length) {
+    systemPrompt += '\n\nDietary restrictions (strict): ' + context.dietaryRestrictions.join(', ')
+  }
+
+  if (context?.preferences) {
+    const p = context.preferences
+    const parts = []
+    if (p.skill_level) parts.push('skill: ' + p.skill_level)
+    if (p.time_preference) parts.push('time: ' + p.time_preference)
+    if (p.cuisine_preferences?.length) parts.push('cuisines: ' + p.cuisine_preferences.join(', '))
+    if (parts.length) systemPrompt += '\n\nUser preferences: ' + parts.join(', ')
+  }
+
+  const userPrompt = mode === 'expiring'
+    ? 'Suggest 5 recipe ideas that use my expiring pantry ingredients.'
+    : 'Suggest 5 recipe ideas based on my pantry items and preferences.'
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-lite',
+    contents: userPrompt,
+    config: {
+      systemInstruction: systemPrompt,
+      responseMimeType: 'application/json',
+      responseSchema: RECIPE_IDEAS_SCHEMA,
+    },
+  })
+
+  return JSON.parse(response.text)
+}
+
 /**
  * Extract a structured recipe from a webpage's HTML content.
  *

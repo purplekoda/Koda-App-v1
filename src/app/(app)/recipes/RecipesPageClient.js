@@ -8,6 +8,7 @@ import Modal from '@/components/recipes/Modal'
 import {
   createRecipeAction,
   generateRecipeAction,
+  generateRecipeIdeasAction,
   scanRecipeAction,
   importRecipeFromUrlAction,
   getRecipeGenerationContextAction,
@@ -389,6 +390,166 @@ const ContextLoading = styled.div`
   text-align: center;
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textMuted};
+`
+
+const WizardModeGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: ${({ theme }) => theme.spacing.md};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const ModeCard = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.purple};
+    background: ${({ theme }) => theme.colors.purpleLight};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const ModeCardIcon = styled.div`
+  font-size: 24px;
+`
+
+const ModeCardTitle = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const ModeCardMeta = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.4;
+`
+
+const PantryReminder = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-top: 4px;
+
+  a {
+    color: ${({ theme }) => theme.colors.teal};
+    text-decoration: underline;
+  }
+`
+
+const WizardLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  cursor: pointer;
+  text-decoration: underline;
+  align-self: center;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`
+
+const IdeasGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const IdeaCard = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  border: 1.5px solid
+    ${({ theme, $selected }) => ($selected ? theme.colors.purpleDark : theme.colors.border)};
+  background: ${({ theme, $selected }) =>
+    $selected ? theme.colors.purpleLight : theme.colors.surface};
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.purple};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`
+
+const IdeaName = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const IdeaDescription = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.4;
+`
+
+const IdeaIngredients = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+`
+
+const IdeaIngTag = styled.span`
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.tealLight};
+  color: ${({ theme }) => theme.colors.tealDark};
+`
+
+const IdeasLoadingMsg = styled.div`
+  padding: ${({ theme }) => theme.spacing.xl};
+  text-align: center;
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textMuted};
+`
+
+const WizardBackLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
 `
 
 const CUISINE_OPTIONS = [
@@ -833,6 +994,12 @@ export default function RecipesPageClient({ initialRecipes }) {
   const [sourceFilter, setSourceFilter] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
   const [openPopover, setOpenPopover] = useState(null)
+  const [wizardStep, setWizardStep] = useState(null) // null | 'choose' | 'ideas'
+  const [wizardMode, setWizardMode] = useState(null) // 'expiring' | 'general'
+  const [recipeIdeas, setRecipeIdeas] = useState([])
+  const [selectedIdeaIdx, setSelectedIdeaIdx] = useState(null)
+  const [isLoadingIdeas, setIsLoadingIdeas] = useState(false)
+  const [ideasError, setIdeasError] = useState(null)
 
   const filtersRef = useRef(null)
   const sortRef = useRef(null)
@@ -855,7 +1022,7 @@ export default function RecipesPageClient({ initialRecipes }) {
   }, [openPopover])
 
   useEffect(() => {
-    if (!promptOpen) return
+    if (!promptOpen && wizardStep !== 'choose') return
     let cancelled = false
     getRecipeGenerationContextAction().then(result => {
       if (cancelled) return
@@ -885,9 +1052,9 @@ export default function RecipesPageClient({ initialRecipes }) {
       if (!cancelled) setContextData({ pantryItems: [], preferences: null, dietaryRestrictions: [] })
     })
     return () => { cancelled = true }
-  }, [promptOpen])
+  }, [promptOpen, wizardStep])
 
-  const contextLoading = promptOpen && contextData === null
+  const contextLoading = (promptOpen || wizardStep === 'choose') && contextData === null
 
   function toggleCuisine(cuisine) {
     setPrefCuisines(prev =>
@@ -905,6 +1072,37 @@ export default function RecipesPageClient({ initialRecipes }) {
     if (prefNotes) prefs.notes = prefNotes
     await saveCookingPreferencesAction(prefs)
     setSavingPrefs(false)
+  }
+
+  async function handleChooseMode(mode) {
+    setWizardMode(mode)
+    setWizardStep('ideas')
+    setIsLoadingIdeas(true)
+    setIdeasError(null)
+    setSelectedIdeaIdx(null)
+    const result = await generateRecipeIdeasAction(mode)
+    setIsLoadingIdeas(false)
+    if (result.success) {
+      setRecipeIdeas(result.data)
+    } else {
+      setIdeasError(result.error || 'Could not generate ideas.')
+    }
+  }
+
+  async function handleGenerateFromIdea() {
+    const idea = recipeIdeas[selectedIdeaIdx]
+    if (!idea) return
+    setIsGenerating(true)
+    const prompt = `${idea.name}: ${idea.description}`
+    const result = await generateRecipeAction(prompt, { includePantry: true })
+    setIsGenerating(false)
+    if (result.success && result.data) {
+      setFormInitial(result.data)
+      setWizardStep(null)
+      setModalOpen(true)
+    } else {
+      setIdeasError(result.error || 'Could not generate recipe.')
+    }
   }
 
   const allTags = useMemo(() => {
@@ -1158,7 +1356,7 @@ export default function RecipesPageClient({ initialRecipes }) {
           <GenerateButton onClick={() => setScanOpen(true)} disabled={isScanning}>
             {'\uD83D\uDCF7 Scan recipe'}
           </GenerateButton>
-          <GenerateButton onClick={() => { setContextData(null); setPromptOpen(true) }} disabled={isGenerating}>
+          <GenerateButton onClick={() => { setContextData(null); setWizardStep('choose'); setWizardMode(null); setRecipeIdeas([]); setSelectedIdeaIdx(null); setIdeasError(null) }} disabled={isGenerating}>
             {'\u2728 Generate with AI'}
           </GenerateButton>
           <AddButton onClick={openBlankForm}>+ New recipe</AddButton>
@@ -1381,6 +1579,223 @@ export default function RecipesPageClient({ initialRecipes }) {
             isPending={isPending}
             submitLabel="Create recipe"
           />
+        </Modal>
+      )}
+
+      {wizardStep && (
+        <Modal
+          title={wizardStep === 'choose' ? 'Generate a recipe with AI' : 'Pick an idea'}
+          onClose={() => setWizardStep(null)}
+        >
+          {wizardStep === 'choose' && (
+            <>
+              {contextLoading ? (
+                <ContextLoading>Loading your kitchen context…</ContextLoading>
+              ) : (
+                <>
+                  <WizardModeGrid>
+                    <ModeCard
+                      type="button"
+                      onClick={() => handleChooseMode('expiring')}
+                      disabled={isLoadingIdeas}
+                    >
+                      <ModeCardIcon>{'\uD83D\uDD50'}</ModeCardIcon>
+                      <ModeCardTitle>Use expiring ingredients</ModeCardTitle>
+                      <ModeCardMeta>
+                        {contextData?.pantryItems?.filter(i => i.freshness === 'expiring').length > 0
+                          ? `${contextData.pantryItems.filter(i => i.freshness === 'expiring').length} item${contextData.pantryItems.filter(i => i.freshness === 'expiring').length !== 1 ? 's' : ''} expiring soon`
+                          : 'No expiring items right now'}
+                      </ModeCardMeta>
+                      <PantryReminder>
+                        Keep pantry up to date —{' '}
+                        <Link href="/kitchen" onClick={() => setWizardStep(null)}>
+                          scan a new photo
+                        </Link>
+                      </PantryReminder>
+                    </ModeCard>
+
+                    <ModeCard
+                      type="button"
+                      onClick={() => handleChooseMode('general')}
+                      disabled={isLoadingIdeas}
+                    >
+                      <ModeCardIcon>{'\uD83E\uDD57'}</ModeCardIcon>
+                      <ModeCardTitle>Use all pantry items</ModeCardTitle>
+                      <ModeCardMeta>
+                        {contextData?.pantryItems?.length > 0
+                          ? `${contextData.pantryItems.length} item${contextData.pantryItems.length !== 1 ? 's' : ''} in your pantry`
+                          : 'Based on your preferences'}
+                      </ModeCardMeta>
+                    </ModeCard>
+                  </WizardModeGrid>
+
+                  {contextData && (
+                    <ContextSection>
+                      {contextData.dietaryRestrictions?.length > 0 && (
+                        <DietaryRow>
+                          Dietary: {contextData.dietaryRestrictions.join(', ')}
+                        </DietaryRow>
+                      )}
+                      <PrefsAccordion>
+                        <PrefsHeader type="button" onClick={() => setPrefsExpanded(p => !p)}>
+                          <PrefsHeaderLeft>
+                            Cooking preferences
+                            {contextData.preferences && <PrefsSavedBadge>saved</PrefsSavedBadge>}
+                          </PrefsHeaderLeft>
+                          <PrefsChevron $open={prefsExpanded}>{'\u25BE'}</PrefsChevron>
+                        </PrefsHeader>
+                        {prefsExpanded && (
+                          <PrefsBody>
+                            <div>
+                              <PrefsLabel>Skill level</PrefsLabel>
+                              <PrefsChipRow>
+                                {['beginner', 'intermediate', 'advanced'].map(val => (
+                                  <PrefChip
+                                    key={val}
+                                    type="button"
+                                    $active={prefSkill === val}
+                                    onClick={() => setPrefSkill(prefSkill === val ? null : val)}
+                                  >
+                                    {val.charAt(0).toUpperCase() + val.slice(1)}
+                                  </PrefChip>
+                                ))}
+                              </PrefsChipRow>
+                            </div>
+                            <div>
+                              <PrefsLabel>Time preference</PrefsLabel>
+                              <PrefsChipRow>
+                                {[
+                                  { value: 'quick', label: 'Quick (<30m)' },
+                                  { value: 'medium', label: 'Medium (30-60m)' },
+                                  { value: 'elaborate', label: 'Elaborate (60m+)' },
+                                ].map(opt => (
+                                  <PrefChip
+                                    key={opt.value}
+                                    type="button"
+                                    $active={prefTime === opt.value}
+                                    onClick={() => setPrefTime(prefTime === opt.value ? null : opt.value)}
+                                  >
+                                    {opt.label}
+                                  </PrefChip>
+                                ))}
+                              </PrefsChipRow>
+                            </div>
+                            <div>
+                              <PrefsLabel>Cuisines</PrefsLabel>
+                              <PrefsChipRow>
+                                {CUISINE_OPTIONS.map(cuisine => (
+                                  <PrefChip
+                                    key={cuisine}
+                                    type="button"
+                                    $active={prefCuisines.includes(cuisine.toLowerCase())}
+                                    onClick={() => toggleCuisine(cuisine.toLowerCase())}
+                                  >
+                                    {cuisine}
+                                  </PrefChip>
+                                ))}
+                              </PrefsChipRow>
+                            </div>
+                            <div>
+                              <PrefsLabel>Servings</PrefsLabel>
+                              <PrefsServingInput
+                                type="number"
+                                min="1"
+                                max="20"
+                                value={prefServings}
+                                onChange={e => setPrefServings(e.target.value)}
+                                placeholder="4"
+                              />
+                            </div>
+                            <div>
+                              <PrefsLabel>Additional notes</PrefsLabel>
+                              <PrefsNotesTextarea
+                                value={prefNotes}
+                                onChange={e => setPrefNotes(e.target.value)}
+                                placeholder="e.g. No spicy food, kid-friendly, low sodium..."
+                                maxLength={300}
+                              />
+                            </div>
+                            <SavePrefsButton
+                              type="button"
+                              onClick={handleSavePrefs}
+                              disabled={savingPrefs}
+                            >
+                              {savingPrefs ? 'Saving...' : 'Save preferences'}
+                            </SavePrefsButton>
+                          </PrefsBody>
+                        )}
+                      </PrefsAccordion>
+                    </ContextSection>
+                  )}
+
+                  <WizardLink
+                    type="button"
+                    onClick={() => { setWizardStep(null); setContextData(null); setPromptOpen(true) }}
+                  >
+                    or describe your own idea →
+                  </WizardLink>
+                </>
+              )}
+            </>
+          )}
+
+          {wizardStep === 'ideas' && (
+            <>
+              <WizardBackLink
+                type="button"
+                onClick={() => { setWizardStep('choose'); setRecipeIdeas([]); setSelectedIdeaIdx(null); setIdeasError(null) }}
+              >
+                {'← Back'}
+              </WizardBackLink>
+
+              {isLoadingIdeas ? (
+                <IdeasLoadingMsg>Thinking up ideas…</IdeasLoadingMsg>
+              ) : ideasError ? (
+                <PromptError role="alert">{ideasError}</PromptError>
+              ) : (
+                <IdeasGrid>
+                  {recipeIdeas.map((idea, idx) => (
+                    <IdeaCard
+                      key={idx}
+                      type="button"
+                      $selected={selectedIdeaIdx === idx}
+                      onClick={() => setSelectedIdeaIdx(idx)}
+                      disabled={isGenerating}
+                    >
+                      <IdeaName>{idea.name}</IdeaName>
+                      <IdeaDescription>{idea.description}</IdeaDescription>
+                      {idea.key_ingredients?.length > 0 && (
+                        <IdeaIngredients>
+                          {idea.key_ingredients.slice(0, 4).map(ing => (
+                            <IdeaIngTag key={ing}>{ing}</IdeaIngTag>
+                          ))}
+                        </IdeaIngredients>
+                      )}
+                    </IdeaCard>
+                  ))}
+                </IdeasGrid>
+              )}
+
+              {selectedIdeaIdx !== null && !isLoadingIdeas && (
+                <PromptActions>
+                  <PromptSecondary
+                    type="button"
+                    onClick={() => setSelectedIdeaIdx(null)}
+                    disabled={isGenerating}
+                  >
+                    Clear
+                  </PromptSecondary>
+                  <PromptPrimary
+                    type="button"
+                    onClick={handleGenerateFromIdea}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? 'Generating\u2026' : 'Generate this recipe'}
+                  </PromptPrimary>
+                </PromptActions>
+              )}
+            </>
+          )}
         </Modal>
       )}
 
