@@ -11,6 +11,7 @@ import {
   updateRecipe,
   deleteRecipe,
 } from '@/lib/dal/recipes'
+import { validateCookingPreferences } from '@/lib/validators'
 
 export async function createRecipeAction(formData) {
   try {
@@ -51,7 +52,46 @@ export async function updateRecipeAction(recipeId, formData) {
   }
 }
 
-export async function generateRecipeAction(prompt) {
+export async function getRecipeGenerationContextAction() {
+  try {
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    const { getPantryItems } = await import('@/lib/dal/pantry')
+    const { getCookingPreferences, getDietaryRestrictions } = await import('@/lib/dal/cooking-preferences')
+
+    const [pantryItems, preferences, dietaryRestrictions] = await Promise.all([
+      getPantryItems(user.id).catch(() => []),
+      getCookingPreferences(user.id).catch(() => null),
+      getDietaryRestrictions(user.id).catch(() => []),
+    ])
+
+    return ok({ pantryItems, preferences, dietaryRestrictions })
+  } catch {
+    return fail('Could not load generation context.')
+  }
+}
+
+export async function saveCookingPreferencesAction(prefs) {
+  try {
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    const validation = validateCookingPreferences(prefs || {})
+    if (!validation.valid) return fail(validation.errors.join(', '))
+
+    const { saveCookingPreferences } = await import('@/lib/dal/cooking-preferences')
+    await saveCookingPreferences(user.id, validation.data)
+
+    return ok(validation.data)
+  } catch {
+    return fail('Could not save preferences.')
+  }
+}
+
+export async function generateRecipeAction(prompt, options = {}) {
   try {
     const user = await requireUser()
     const rate = aiLimiter.check(user.id)
@@ -60,8 +100,27 @@ export async function generateRecipeAction(prompt) {
     const cleanPrompt = sanitizeString(prompt, 500)
     if (!cleanPrompt) return fail('Describe the recipe you want to generate.')
 
+    const { getCookingPreferences, getDietaryRestrictions } = await import('@/lib/dal/cooking-preferences')
+
+    const contextPromises = [
+      getCookingPreferences(user.id).catch(() => null),
+      getDietaryRestrictions(user.id).catch(() => []),
+    ]
+
+    if (options.includePantry) {
+      const { getPantryItems } = await import('@/lib/dal/pantry')
+      contextPromises.push(getPantryItems(user.id).catch(() => []))
+    }
+
+    const results = await Promise.all(contextPromises)
+    const context = {
+      preferences: results[0],
+      dietaryRestrictions: results[1],
+      pantryItems: options.includePantry ? results[2] : null,
+    }
+
     const { generateRecipe } = await import('@/lib/gemini')
-    const raw = await generateRecipe(cleanPrompt)
+    const raw = await generateRecipe(cleanPrompt, context)
 
     const validation = validateRecipe(raw)
     if (!validation.valid) return fail('Generated recipe was invalid. Try a different prompt.')
@@ -119,28 +178,33 @@ export async function scanRecipeAction(formData) {
   }
 }
 
+const RECIPE_IMAGE_BUCKET = 'recipe-images'
+const MAX_RECIPE_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB
+
 /**
- * Extract a recipe image URL from the page HTML.
+ * Extract a recipe image from the page HTML, download it server-side,
+ * and upload it to Supabase Storage.
+ *
+ * Downloading on the server avoids browser hotlink protection (the browser's
+ * Referer header exposes your domain; the server fetch does not).
+ * Storing in Supabase means the image is hosted on your own infrastructure
+ * and always loads regardless of where the app is deployed.
  *
  * Priority:
- *  1. Recipe JSON-LD structured data image — this is the dish photo shown
- *     in recipe cards (ingredients/instructions area), not the hero banner.
- *  2. og:image / twitter:image meta tags as a fallback.
- *
- * Returns the https:// URL directly — no download, no base64, no size issues.
- * If the URL turns out to be broken the onError handler in the card hides it.
+ *  1. Recipe JSON-LD structured data image (recipe-specific dish photo)
+ *  2. og:image / twitter:image as fallback
  */
-async function extractRecipeImage(html, pageUrl) {
+async function extractRecipeImage(html, pageUrl, userId) {
   try {
-    // ── 1. Recipe JSON-LD structured data (most accurate) ──────────────────
-    // Recipe sites embed machine-readable data including a recipe-specific
-    // image (not the page hero). This is what Google uses for recipe cards.
+    let imageUrl = null
+
+    // ── 1. Recipe JSON-LD (most accurate: dish photo, not hero banner) ──────
     const jsonLdPattern = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
-    let match
+    let ldMatch
     // eslint-disable-next-line no-cond-assign
-    while ((match = jsonLdPattern.exec(html)) !== null) {
+    while ((ldMatch = jsonLdPattern.exec(html)) !== null) {
       try {
-        const raw = JSON.parse(match[1])
+        const raw = JSON.parse(ldMatch[1])
         const schemas = Array.isArray(raw) ? raw : [raw]
         for (const schema of schemas) {
           const type = schema?.['@type'] ?? ''
@@ -151,7 +215,6 @@ async function extractRecipeImage(html, pageUrl) {
           const img = schema.image
           if (!img) continue
 
-          // image can be: string | ImageObject | Array<string | ImageObject>
           const candidates = Array.isArray(img) ? img : [img]
           for (const candidate of candidates) {
             const url = typeof candidate === 'string'
@@ -160,35 +223,89 @@ async function extractRecipeImage(html, pageUrl) {
             if (typeof url === 'string') {
               const resolved = new URL(url, pageUrl).href
               if (resolved.startsWith('https://') || resolved.startsWith('http://')) {
-                return resolved
+                imageUrl = resolved
+                break
               }
             }
           }
+          if (imageUrl) break
         }
       } catch {
-        // malformed JSON-LD — skip and try next block
+        // malformed JSON-LD — skip
       }
+      if (imageUrl) break
     }
 
-    // ── 2. og:image / twitter:image fallback ───────────────────────────────
-    let imgSrc = null
+    // ── 2. og:image / twitter:image fallback ─────────────────────────────────
+    if (!imageUrl) {
+      const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+      if (ogMatch) imageUrl = ogMatch[1]
+    }
 
-    const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
-    if (ogMatch) imgSrc = ogMatch[1]
-
-    if (!imgSrc) {
+    if (!imageUrl) {
       const twitterMatch = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
         || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i)
-      if (twitterMatch) imgSrc = twitterMatch[1]
+      if (twitterMatch) imageUrl = twitterMatch[1]
     }
 
-    if (!imgSrc) return null
+    if (!imageUrl) return null
 
-    const resolved = new URL(imgSrc, pageUrl).href
+    const resolved = new URL(imageUrl, pageUrl).href
     if (!resolved.startsWith('https://') && !resolved.startsWith('http://')) return null
 
-    return resolved
+    // ── 3. Download the image server-side ────────────────────────────────────
+    // Server fetches don't send a browser Referer header, so hotlink
+    // protection on recipe sites doesn't trigger.
+    let imgBuf, contentType
+    try {
+      const imgRes = await fetch(resolved, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Koda/1.0)',
+          // Send the recipe page as referrer so CDNs see a valid page context
+          'Referer': pageUrl,
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (!imgRes.ok) return null
+
+      contentType = (imgRes.headers.get('content-type') || '').split(';')[0].trim()
+      if (!contentType.startsWith('image/')) return null
+
+      imgBuf = Buffer.from(await imgRes.arrayBuffer())
+      if (imgBuf.length > MAX_RECIPE_IMAGE_BYTES) return null
+    } catch {
+      return null
+    }
+
+    // ── 4. Upload to Supabase Storage ─────────────────────────────────────────
+    try {
+      const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+      const supabase = await getSupabaseServerClient()
+
+      const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
+      const ext = extMap[contentType] ?? 'jpg'
+      const storagePath = `${userId}/${Date.now()}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from(RECIPE_IMAGE_BUCKET)
+        .upload(storagePath, imgBuf, { contentType, upsert: false })
+
+      if (uploadError) {
+        console.error('[extractRecipeImage] Storage upload failed:', uploadError.message)
+        return null
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(RECIPE_IMAGE_BUCKET)
+        .getPublicUrl(storagePath)
+
+      return publicUrl
+    } catch (storageErr) {
+      console.error('[extractRecipeImage] Storage error:', storageErr?.message)
+      return null
+    }
   } catch (err) {
     console.error('[extractRecipeImage] error:', err?.message || err)
     return null
@@ -245,7 +362,8 @@ export async function importRecipeFromUrlAction(url) {
       return fail('Could not extract a valid recipe from this page.')
     }
 
-    const imageUrl = await extractRecipeImage(html, cleanUrl)
+    // Pass userId so extractRecipeImage can upload to the user's Storage folder
+    const imageUrl = await extractRecipeImage(html, cleanUrl, user.id)
 
     return ok({ ...validation.data, source: cleanUrl, ...(imageUrl ? { image_url: imageUrl } : {}) })
   } catch (err) {
