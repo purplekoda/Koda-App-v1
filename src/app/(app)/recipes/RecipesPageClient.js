@@ -1597,15 +1597,15 @@ export default function RecipesPageClient({ initialRecipes }) {
                   <WizardModeGrid>
                     <ModeCard
                       type="button"
-                      onClick={() => handleChooseMode('expiring')}
+                      onClick={() => handleChooseMode('general')}
                       disabled={isLoadingIdeas}
                     >
-                      <ModeCardIcon>{'\uD83D\uDD50'}</ModeCardIcon>
-                      <ModeCardTitle>Use expiring ingredients</ModeCardTitle>
+                      <ModeCardIcon>{'\uD83E\uDD57'}</ModeCardIcon>
+                      <ModeCardTitle>Use pantry scan</ModeCardTitle>
                       <ModeCardMeta>
-                        {contextData?.pantryItems?.filter(i => i.freshness === 'expiring').length > 0
-                          ? `${contextData.pantryItems.filter(i => i.freshness === 'expiring').length} item${contextData.pantryItems.filter(i => i.freshness === 'expiring').length !== 1 ? 's' : ''} expiring soon`
-                          : 'No expiring items right now'}
+                        {contextData?.pantryItems?.length > 0
+                          ? `${contextData.pantryItems.length} item${contextData.pantryItems.length !== 1 ? 's' : ''} in your pantry`
+                          : 'No items scanned yet'}
                       </ModeCardMeta>
                       <PantryReminder>
                         Keep pantry up to date —{' '}
@@ -1617,25 +1617,16 @@ export default function RecipesPageClient({ initialRecipes }) {
 
                     <ModeCard
                       type="button"
-                      onClick={() => handleChooseMode('general')}
+                      onClick={() => setWizardStep('custom')}
                       disabled={isLoadingIdeas}
                     >
-                      <ModeCardIcon>{'\uD83E\uDD57'}</ModeCardIcon>
-                      <ModeCardTitle>Use all pantry items</ModeCardTitle>
+                      <ModeCardIcon>{'\u270F\uFE0F'}</ModeCardIcon>
+                      <ModeCardTitle>Describe your own idea</ModeCardTitle>
                       <ModeCardMeta>
-                        {contextData?.pantryItems?.length > 0
-                          ? `${contextData.pantryItems.length} item${contextData.pantryItems.length !== 1 ? 's' : ''} in your pantry`
-                          : 'Based on your preferences'}
+                        Tell AI what you want to cook
                       </ModeCardMeta>
                     </ModeCard>
                   </WizardModeGrid>
-
-                  <WizardLink
-                    type="button"
-                    onClick={() => setWizardStep('custom')}
-                  >
-                    or describe your own idea {'\u2192'}
-                  </WizardLink>
                 </>
               )}
             </>
