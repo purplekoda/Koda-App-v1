@@ -994,7 +994,7 @@ export default function RecipesPageClient({ initialRecipes }) {
   const [sourceFilter, setSourceFilter] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
   const [openPopover, setOpenPopover] = useState(null)
-  const [wizardStep, setWizardStep] = useState(null) // null | 'choose' | 'ideas'
+  const [wizardStep, setWizardStep] = useState(null) // null | 'choose' | 'ideas' | 'custom'
   const [wizardMode, setWizardMode] = useState(null) // 'expiring' | 'general'
   const [recipeIdeas, setRecipeIdeas] = useState([])
   const [selectedIdeaIdx, setSelectedIdeaIdx] = useState(null)
@@ -1022,7 +1022,7 @@ export default function RecipesPageClient({ initialRecipes }) {
   }, [openPopover])
 
   useEffect(() => {
-    if (!promptOpen && wizardStep !== 'choose') return
+    if (!promptOpen && wizardStep !== 'choose' && wizardStep !== 'custom') return
     let cancelled = false
     getRecipeGenerationContextAction().then(result => {
       if (cancelled) return
@@ -1054,7 +1054,7 @@ export default function RecipesPageClient({ initialRecipes }) {
     return () => { cancelled = true }
   }, [promptOpen, wizardStep])
 
-  const contextLoading = (promptOpen || wizardStep === 'choose') && contextData === null
+  const contextLoading = (promptOpen || wizardStep === 'choose' || wizardStep === 'custom') && contextData === null
 
   function toggleCuisine(cuisine) {
     setPrefCuisines(prev =>
@@ -1334,6 +1334,7 @@ export default function RecipesPageClient({ initialRecipes }) {
     setIsGenerating(false)
     if (result.success && result.data) {
       setFormInitial(result.data)
+      setWizardStep(null)
       setPromptOpen(false)
       setPromptText('')
       setModalOpen(true)
@@ -1584,7 +1585,7 @@ export default function RecipesPageClient({ initialRecipes }) {
 
       {wizardStep && (
         <Modal
-          title={wizardStep === 'choose' ? 'Generate a recipe with AI' : 'Pick an idea'}
+          title={wizardStep === 'choose' ? 'Generate a recipe with AI' : wizardStep === 'custom' ? 'Describe your recipe' : 'Pick an idea'}
           onClose={() => setWizardStep(null)}
         >
           {wizardStep === 'choose' && (
@@ -1629,113 +1630,168 @@ export default function RecipesPageClient({ initialRecipes }) {
                     </ModeCard>
                   </WizardModeGrid>
 
-                  {contextData && (
-                    <ContextSection>
-                      {contextData.dietaryRestrictions?.length > 0 && (
-                        <DietaryRow>
-                          Dietary: {contextData.dietaryRestrictions.join(', ')}
-                        </DietaryRow>
-                      )}
-                      <PrefsAccordion>
-                        <PrefsHeader type="button" onClick={() => setPrefsExpanded(p => !p)}>
-                          <PrefsHeaderLeft>
-                            Cooking preferences
-                            {contextData.preferences && <PrefsSavedBadge>saved</PrefsSavedBadge>}
-                          </PrefsHeaderLeft>
-                          <PrefsChevron $open={prefsExpanded}>{'\u25BE'}</PrefsChevron>
-                        </PrefsHeader>
-                        {prefsExpanded && (
-                          <PrefsBody>
-                            <div>
-                              <PrefsLabel>Skill level</PrefsLabel>
-                              <PrefsChipRow>
-                                {['beginner', 'intermediate', 'advanced'].map(val => (
-                                  <PrefChip
-                                    key={val}
-                                    type="button"
-                                    $active={prefSkill === val}
-                                    onClick={() => setPrefSkill(prefSkill === val ? null : val)}
-                                  >
-                                    {val.charAt(0).toUpperCase() + val.slice(1)}
-                                  </PrefChip>
-                                ))}
-                              </PrefsChipRow>
-                            </div>
-                            <div>
-                              <PrefsLabel>Time preference</PrefsLabel>
-                              <PrefsChipRow>
-                                {[
-                                  { value: 'quick', label: 'Quick (<30m)' },
-                                  { value: 'medium', label: 'Medium (30-60m)' },
-                                  { value: 'elaborate', label: 'Elaborate (60m+)' },
-                                ].map(opt => (
-                                  <PrefChip
-                                    key={opt.value}
-                                    type="button"
-                                    $active={prefTime === opt.value}
-                                    onClick={() => setPrefTime(prefTime === opt.value ? null : opt.value)}
-                                  >
-                                    {opt.label}
-                                  </PrefChip>
-                                ))}
-                              </PrefsChipRow>
-                            </div>
-                            <div>
-                              <PrefsLabel>Cuisines</PrefsLabel>
-                              <PrefsChipRow>
-                                {CUISINE_OPTIONS.map(cuisine => (
-                                  <PrefChip
-                                    key={cuisine}
-                                    type="button"
-                                    $active={prefCuisines.includes(cuisine.toLowerCase())}
-                                    onClick={() => toggleCuisine(cuisine.toLowerCase())}
-                                  >
-                                    {cuisine}
-                                  </PrefChip>
-                                ))}
-                              </PrefsChipRow>
-                            </div>
-                            <div>
-                              <PrefsLabel>Servings</PrefsLabel>
-                              <PrefsServingInput
-                                type="number"
-                                min="1"
-                                max="20"
-                                value={prefServings}
-                                onChange={e => setPrefServings(e.target.value)}
-                                placeholder="4"
-                              />
-                            </div>
-                            <div>
-                              <PrefsLabel>Additional notes</PrefsLabel>
-                              <PrefsNotesTextarea
-                                value={prefNotes}
-                                onChange={e => setPrefNotes(e.target.value)}
-                                placeholder="e.g. No spicy food, kid-friendly, low sodium..."
-                                maxLength={300}
-                              />
-                            </div>
-                            <SavePrefsButton
-                              type="button"
-                              onClick={handleSavePrefs}
-                              disabled={savingPrefs}
-                            >
-                              {savingPrefs ? 'Saving...' : 'Save preferences'}
-                            </SavePrefsButton>
-                          </PrefsBody>
-                        )}
-                      </PrefsAccordion>
-                    </ContextSection>
-                  )}
-
                   <WizardLink
                     type="button"
-                    onClick={() => { setWizardStep(null); setContextData(null); setPromptOpen(true) }}
+                    onClick={() => setWizardStep('custom')}
                   >
-                    or describe your own idea →
+                    or describe your own idea {'\u2192'}
                   </WizardLink>
                 </>
               )}
+            </>
+          )}
+
+          {wizardStep === 'custom' && (
+            <>
+              <WizardBackLink
+                type="button"
+                onClick={() => { setWizardStep('choose'); setPromptError(null) }}
+              >
+                {'\u2190 Back'}
+              </WizardBackLink>
+
+              <PromptHint>
+                Describe what you want — ingredients, cuisine, dietary needs, servings, etc.
+              </PromptHint>
+              <PromptTextarea
+                value={promptText}
+                onChange={e => setPromptText(e.target.value)}
+                placeholder="e.g. A quick weeknight dinner using chicken, rice, and broccoli for 4 people"
+                maxLength={500}
+                disabled={isGenerating}
+                autoFocus
+              />
+
+              {contextLoading ? (
+                <ContextLoading>Loading your kitchen context...</ContextLoading>
+              ) : contextData && (
+                <ContextSection>
+                  {contextData.pantryItems?.length > 0 && (
+                    <PantryToggleRow>
+                      <ToggleSwitch
+                        $on={includePantry}
+                        onClick={() => setIncludePantry(p => !p)}
+                        role="switch"
+                        aria-checked={includePantry}
+                      />
+                      <PantryToggleText>Use my pantry items</PantryToggleText>
+                      <PantryToggleMeta>
+                        {contextData.pantryItems.length} item{contextData.pantryItems.length !== 1 ? 's' : ''}
+                        {(() => {
+                          const exp = contextData.pantryItems.filter(i => i.freshness === 'expiring').length
+                          return exp > 0 ? `, ${exp} expiring soon` : ''
+                        })()}
+                      </PantryToggleMeta>
+                    </PantryToggleRow>
+                  )}
+
+                  {contextData.dietaryRestrictions?.length > 0 && (
+                    <DietaryRow>
+                      Dietary: {contextData.dietaryRestrictions.join(', ')}
+                    </DietaryRow>
+                  )}
+
+                  <PrefsAccordion>
+                    <PrefsHeader type="button" onClick={() => setPrefsExpanded(p => !p)}>
+                      <PrefsHeaderLeft>
+                        Cooking preferences
+                        {contextData.preferences && <PrefsSavedBadge>saved</PrefsSavedBadge>}
+                      </PrefsHeaderLeft>
+                      <PrefsChevron $open={prefsExpanded}>{'\u25BE'}</PrefsChevron>
+                    </PrefsHeader>
+                    {prefsExpanded && (
+                      <PrefsBody>
+                        <div>
+                          <PrefsLabel>Skill level</PrefsLabel>
+                          <PrefsChipRow>
+                            {['beginner', 'intermediate', 'advanced'].map(val => (
+                              <PrefChip
+                                key={val}
+                                type="button"
+                                $active={prefSkill === val}
+                                onClick={() => setPrefSkill(prefSkill === val ? null : val)}
+                              >
+                                {val.charAt(0).toUpperCase() + val.slice(1)}
+                              </PrefChip>
+                            ))}
+                          </PrefsChipRow>
+                        </div>
+                        <div>
+                          <PrefsLabel>Time preference</PrefsLabel>
+                          <PrefsChipRow>
+                            {[
+                              { value: 'quick', label: 'Quick (<30m)' },
+                              { value: 'medium', label: 'Medium (30-60m)' },
+                              { value: 'elaborate', label: 'Elaborate (60m+)' },
+                            ].map(opt => (
+                              <PrefChip
+                                key={opt.value}
+                                type="button"
+                                $active={prefTime === opt.value}
+                                onClick={() => setPrefTime(prefTime === opt.value ? null : opt.value)}
+                              >
+                                {opt.label}
+                              </PrefChip>
+                            ))}
+                          </PrefsChipRow>
+                        </div>
+                        <div>
+                          <PrefsLabel>Cuisines</PrefsLabel>
+                          <PrefsChipRow>
+                            {CUISINE_OPTIONS.map(cuisine => (
+                              <PrefChip
+                                key={cuisine}
+                                type="button"
+                                $active={prefCuisines.includes(cuisine.toLowerCase())}
+                                onClick={() => toggleCuisine(cuisine.toLowerCase())}
+                              >
+                                {cuisine}
+                              </PrefChip>
+                            ))}
+                          </PrefsChipRow>
+                        </div>
+                        <div>
+                          <PrefsLabel>Servings</PrefsLabel>
+                          <PrefsServingInput
+                            type="number"
+                            min="1"
+                            max="20"
+                            value={prefServings}
+                            onChange={e => setPrefServings(e.target.value)}
+                            placeholder="4"
+                          />
+                        </div>
+                        <div>
+                          <PrefsLabel>Additional notes</PrefsLabel>
+                          <PrefsNotesTextarea
+                            value={prefNotes}
+                            onChange={e => setPrefNotes(e.target.value)}
+                            placeholder="e.g. No spicy food, kid-friendly, low sodium..."
+                            maxLength={300}
+                          />
+                        </div>
+                        <SavePrefsButton
+                          type="button"
+                          onClick={handleSavePrefs}
+                          disabled={savingPrefs}
+                        >
+                          {savingPrefs ? 'Saving...' : 'Save preferences'}
+                        </SavePrefsButton>
+                      </PrefsBody>
+                    )}
+                  </PrefsAccordion>
+                </ContextSection>
+              )}
+
+              {promptError && <PromptError role="alert">{promptError}</PromptError>}
+              <PromptActions>
+                <PromptSecondary onClick={() => setWizardStep('choose')} disabled={isGenerating}>
+                  Cancel
+                </PromptSecondary>
+                <PromptPrimary onClick={handleGenerate} disabled={isGenerating || contextLoading}>
+                  {isGenerating ? 'Generating\u2026' : 'Generate'}
+                </PromptPrimary>
+              </PromptActions>
             </>
           )}
 
@@ -1796,153 +1852,6 @@ export default function RecipesPageClient({ initialRecipes }) {
               )}
             </>
           )}
-        </Modal>
-      )}
-
-      {promptOpen && (
-        <Modal title="Generate a recipe with AI" onClose={() => setPromptOpen(false)}>
-          <PromptHint>
-            Describe what you want — ingredients, cuisine, dietary needs, servings, etc.
-          </PromptHint>
-          <PromptTextarea
-            value={promptText}
-            onChange={e => setPromptText(e.target.value)}
-            placeholder="e.g. A quick weeknight dinner using chicken, rice, and broccoli for 4 people"
-            maxLength={500}
-            disabled={isGenerating}
-            autoFocus
-          />
-
-          {contextLoading ? (
-            <ContextLoading>Loading your kitchen context...</ContextLoading>
-          ) : contextData && (
-            <ContextSection>
-              {contextData.pantryItems?.length > 0 && (
-                <PantryToggleRow>
-                  <ToggleSwitch
-                    $on={includePantry}
-                    onClick={() => setIncludePantry(p => !p)}
-                    role="switch"
-                    aria-checked={includePantry}
-                  />
-                  <PantryToggleText>Use my pantry items</PantryToggleText>
-                  <PantryToggleMeta>
-                    {contextData.pantryItems.length} item{contextData.pantryItems.length !== 1 ? 's' : ''}
-                    {(() => {
-                      const exp = contextData.pantryItems.filter(i => i.freshness === 'expiring').length
-                      return exp > 0 ? `, ${exp} expiring soon` : ''
-                    })()}
-                  </PantryToggleMeta>
-                </PantryToggleRow>
-              )}
-
-              {contextData.dietaryRestrictions?.length > 0 && (
-                <DietaryRow>
-                  Dietary: {contextData.dietaryRestrictions.join(', ')}
-                </DietaryRow>
-              )}
-
-              <PrefsAccordion>
-                <PrefsHeader type="button" onClick={() => setPrefsExpanded(p => !p)}>
-                  <PrefsHeaderLeft>
-                    Cooking preferences
-                    {contextData.preferences && <PrefsSavedBadge>saved</PrefsSavedBadge>}
-                  </PrefsHeaderLeft>
-                  <PrefsChevron $open={prefsExpanded}>{'\u25BE'}</PrefsChevron>
-                </PrefsHeader>
-                {prefsExpanded && (
-                  <PrefsBody>
-                    <div>
-                      <PrefsLabel>Skill level</PrefsLabel>
-                      <PrefsChipRow>
-                        {['beginner', 'intermediate', 'advanced'].map(val => (
-                          <PrefChip
-                            key={val}
-                            type="button"
-                            $active={prefSkill === val}
-                            onClick={() => setPrefSkill(prefSkill === val ? null : val)}
-                          >
-                            {val.charAt(0).toUpperCase() + val.slice(1)}
-                          </PrefChip>
-                        ))}
-                      </PrefsChipRow>
-                    </div>
-                    <div>
-                      <PrefsLabel>Time preference</PrefsLabel>
-                      <PrefsChipRow>
-                        {[
-                          { value: 'quick', label: 'Quick (<30m)' },
-                          { value: 'medium', label: 'Medium (30-60m)' },
-                          { value: 'elaborate', label: 'Elaborate (60m+)' },
-                        ].map(opt => (
-                          <PrefChip
-                            key={opt.value}
-                            type="button"
-                            $active={prefTime === opt.value}
-                            onClick={() => setPrefTime(prefTime === opt.value ? null : opt.value)}
-                          >
-                            {opt.label}
-                          </PrefChip>
-                        ))}
-                      </PrefsChipRow>
-                    </div>
-                    <div>
-                      <PrefsLabel>Cuisines</PrefsLabel>
-                      <PrefsChipRow>
-                        {CUISINE_OPTIONS.map(cuisine => (
-                          <PrefChip
-                            key={cuisine}
-                            type="button"
-                            $active={prefCuisines.includes(cuisine.toLowerCase())}
-                            onClick={() => toggleCuisine(cuisine.toLowerCase())}
-                          >
-                            {cuisine}
-                          </PrefChip>
-                        ))}
-                      </PrefsChipRow>
-                    </div>
-                    <div>
-                      <PrefsLabel>Servings</PrefsLabel>
-                      <PrefsServingInput
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={prefServings}
-                        onChange={e => setPrefServings(e.target.value)}
-                        placeholder="4"
-                      />
-                    </div>
-                    <div>
-                      <PrefsLabel>Additional notes</PrefsLabel>
-                      <PrefsNotesTextarea
-                        value={prefNotes}
-                        onChange={e => setPrefNotes(e.target.value)}
-                        placeholder="e.g. No spicy food, kid-friendly, low sodium..."
-                        maxLength={300}
-                      />
-                    </div>
-                    <SavePrefsButton
-                      type="button"
-                      onClick={handleSavePrefs}
-                      disabled={savingPrefs}
-                    >
-                      {savingPrefs ? 'Saving...' : 'Save preferences'}
-                    </SavePrefsButton>
-                  </PrefsBody>
-                )}
-              </PrefsAccordion>
-            </ContextSection>
-          )}
-
-          {promptError && <PromptError role="alert">{promptError}</PromptError>}
-          <PromptActions>
-            <PromptSecondary onClick={() => setPromptOpen(false)} disabled={isGenerating}>
-              Cancel
-            </PromptSecondary>
-            <PromptPrimary onClick={handleGenerate} disabled={isGenerating || contextLoading}>
-              {isGenerating ? 'Generating\u2026' : 'Generate'}
-            </PromptPrimary>
-          </PromptActions>
         </Modal>
       )}
 
