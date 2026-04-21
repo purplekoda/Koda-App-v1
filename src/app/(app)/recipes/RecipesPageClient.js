@@ -95,30 +95,6 @@ const AddButton = styled.button`
   }
 `
 
-const GenerateButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ theme }) => theme.colors.purpleLight};
-  color: ${({ theme }) => theme.colors.purpleDark};
-  border: 0.5px solid ${({ theme }) => theme.colors.purpleMid};
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  min-height: ${({ theme }) => theme.touchTarget};
-
-  &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.purpleMid};
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`
-
 const PromptTextarea = styled.textarea`
   padding: 10px 12px;
   font-size: 14px;
@@ -550,6 +526,53 @@ const WizardBackLink = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
+`
+
+const CreateMenuWrap = styled.div`
+  position: relative;
+`
+
+const CreateMenuDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadows.elevated};
+  padding: ${({ theme }) => theme.spacing.xs} 0;
+  z-index: 30;
+`
+
+const CreateMenuItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  width: 100%;
+  padding: 10px ${({ theme }) => theme.spacing.md};
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.borderLight};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const CreateMenuIcon = styled.span`
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
 `
 
 const CUISINE_OPTIONS = [
@@ -994,6 +1017,7 @@ export default function RecipesPageClient({ initialRecipes }) {
   const [sourceFilter, setSourceFilter] = useState('all')
   const [sortBy, setSortBy] = useState('recent')
   const [openPopover, setOpenPopover] = useState(null)
+  const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [wizardStep, setWizardStep] = useState(null) // null | 'choose' | 'ideas' | 'custom'
   const [wizardMode, setWizardMode] = useState(null) // 'expiring' | 'general'
   const [recipeIdeas, setRecipeIdeas] = useState([])
@@ -1003,6 +1027,7 @@ export default function RecipesPageClient({ initialRecipes }) {
 
   const filtersRef = useRef(null)
   const sortRef = useRef(null)
+  const createMenuRef = useRef(null)
 
   useEffect(() => {
     if (!openPopover) return
@@ -1020,6 +1045,22 @@ export default function RecipesPageClient({ initialRecipes }) {
       document.removeEventListener('keydown', handleKey)
     }
   }, [openPopover])
+
+  useEffect(() => {
+    if (!createMenuOpen) return
+    function handleClick(e) {
+      if (createMenuRef.current && !createMenuRef.current.contains(e.target)) setCreateMenuOpen(false)
+    }
+    function handleKey(e) {
+      if (e.key === 'Escape') setCreateMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [createMenuOpen])
 
   useEffect(() => {
     if (!promptOpen && wizardStep !== 'choose' && wizardStep !== 'custom') return
@@ -1351,16 +1392,31 @@ export default function RecipesPageClient({ initialRecipes }) {
           <Subtitle>Save and organize your favorite dishes.</Subtitle>
         </TitleBlock>
         <HeaderActions>
-          <GenerateButton onClick={() => setUrlOpen(true)} disabled={isImporting}>
-            {'\uD83D\uDD17 Import URL'}
-          </GenerateButton>
-          <GenerateButton onClick={() => setScanOpen(true)} disabled={isScanning}>
-            {'\uD83D\uDCF7 Scan recipe'}
-          </GenerateButton>
-          <GenerateButton onClick={() => { setContextData(null); setWizardStep('choose'); setWizardMode(null); setRecipeIdeas([]); setSelectedIdeaIdx(null); setIdeasError(null) }} disabled={isGenerating}>
-            {'\u2728 Generate with AI'}
-          </GenerateButton>
-          <AddButton onClick={openBlankForm}>+ New recipe</AddButton>
+          <CreateMenuWrap ref={createMenuRef}>
+            <AddButton onClick={() => setCreateMenuOpen(p => !p)}>
+              + Create recipe
+            </AddButton>
+            {createMenuOpen && (
+              <CreateMenuDropdown>
+                <CreateMenuItem type="button" onClick={() => { setCreateMenuOpen(false); openBlankForm() }}>
+                  <CreateMenuIcon>{'\u270F\uFE0F'}</CreateMenuIcon>
+                  Create manually
+                </CreateMenuItem>
+                <CreateMenuItem type="button" onClick={() => { setCreateMenuOpen(false); setContextData(null); setWizardStep('choose'); setWizardMode(null); setRecipeIdeas([]); setSelectedIdeaIdx(null); setIdeasError(null) }} disabled={isGenerating}>
+                  <CreateMenuIcon>{'\u2728'}</CreateMenuIcon>
+                  Generate with AI
+                </CreateMenuItem>
+                <CreateMenuItem type="button" onClick={() => { setCreateMenuOpen(false); setUrlOpen(true) }} disabled={isImporting}>
+                  <CreateMenuIcon>{'\uD83D\uDD17'}</CreateMenuIcon>
+                  Import from URL
+                </CreateMenuItem>
+                <CreateMenuItem type="button" onClick={() => { setCreateMenuOpen(false); setScanOpen(true) }} disabled={isScanning}>
+                  <CreateMenuIcon>{'\uD83D\uDCF7'}</CreateMenuIcon>
+                  Scan a recipe
+                </CreateMenuItem>
+              </CreateMenuDropdown>
+            )}
+          </CreateMenuWrap>
         </HeaderActions>
       </PageHeader>
 
