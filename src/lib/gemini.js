@@ -225,6 +225,133 @@ export async function scanRecipeFromImages(images) {
   return JSON.parse(response.text)
 }
 
+const PANTRY_SCAN_SYSTEM_PROMPT =
+  'You are a kitchen inventory assistant. The user will provide one or more photos of the inside of their fridge, pantry, or kitchen counter. ' +
+  'Identify every distinct food item you can see. For each item, estimate: ' +
+  '(1) a short name, (2) a category (Produce, Dairy, Meat, Bakery, Beverage, Condiment, Grain, Frozen, Snack, Other), ' +
+  '(3) freshness — "fresh" if it looks fine, "expiring" if it looks like it should be used in 1-2 days, "low" if nearly empty or past prime, ' +
+  '(4) estimated days left before it should be used (null if non-perishable or unclear). ' +
+  'Be practical — only list items you can actually see. If you cannot identify something, skip it.'
+
+const PANTRY_SCAN_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    items: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING, description: 'Short item name, e.g. "Eggs (12ct)"' },
+          category: { type: Type.STRING, description: 'Produce, Dairy, Meat, Bakery, Beverage, Condiment, Grain, Frozen, Snack, or Other' },
+          freshness: { type: Type.STRING, description: 'fresh, expiring, or low' },
+          daysLeft: { type: Type.INTEGER, nullable: true, description: 'Estimated days before item should be used, or null' },
+        },
+        required: ['name', 'category', 'freshness'],
+      },
+    },
+  },
+  required: ['items'],
+}
+
+const DINNER_IDEAS_SYSTEM_PROMPT =
+  'You are a meal suggestion assistant. Given a list of pantry/fridge items with their freshness status, ' +
+  'suggest exactly 4 practical dinner ideas ranked by priority. ' +
+  'Priority 1 should use the most expiring items. Each idea should include: ' +
+  'a name, why it uses items well, estimated prep time, how many of the listed items it uses vs total ingredients needed, ' +
+  'and relevant tags (uses-expiring, pantry-ready, quick, healthy, family-favorite, no-cook).'
+
+const DINNER_IDEAS_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    ideas: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          reason: { type: Type.STRING, description: 'Why this meal is a good idea given the pantry' },
+          prepTime: { type: Type.STRING, description: 'e.g. "15 min"' },
+          pantryMatch: { type: Type.INTEGER, description: 'Number of pantry items used' },
+          pantryTotal: { type: Type.INTEGER, description: 'Total ingredients needed' },
+          tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+          priority: { type: Type.INTEGER, description: 'Rank 1-4, 1 = most urgent to make' },
+        },
+        required: ['name', 'reason', 'prepTime', 'pantryMatch', 'pantryTotal', 'tags', 'priority'],
+      },
+    },
+  },
+  required: ['ideas'],
+}
+
+/**
+ * Scan a fridge/pantry photo and return detected items.
+ *
+ * @param {Array<{ mimeType: string, base64: string }>} images
+ * @returns {Promise<Array<{ name: string, category: string, freshness: string, daysLeft: number|null }>>}
+ */
+export async function scanPantryFromImage(images) {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  const parts = [
+    ...images.map(img => ({
+      inlineData: { mimeType: img.mimeType, data: img.base64 },
+    })),
+    { text: 'Identify all food items visible in these photos.' },
+  ]
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: [{ role: 'user', parts }],
+    config: {
+      systemInstruction: PANTRY_SCAN_SYSTEM_PROMPT,
+      responseMimeType: 'application/json',
+      responseSchema: PANTRY_SCAN_SCHEMA,
+      abortSignal: AbortSignal.timeout(30_000),
+    },
+  })
+
+  const parsed = JSON.parse(response.text)
+  return parsed.items || []
+}
+
+/**
+ * Generate dinner ideas based on detected pantry items.
+ *
+ * @param {Array<{ name: string, category: string, freshness: string, daysLeft: number|null }>} pantryItems
+ * @returns {Promise<Array<object>>}
+ */
+export async function generateDinnerIdeas(pantryItems) {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  const itemSummary = pantryItems.map(i => {
+    const freshLabel = i.freshness === 'expiring' ? ' (EXPIRING)' : i.freshness === 'low' ? ' (LOW)' : ''
+    const days = i.daysLeft != null ? ` — ${i.daysLeft}d left` : ''
+    return `${i.name} [${i.category}]${freshLabel}${days}`
+  }).join('\n')
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-lite',
+    contents: `Here are the items in my fridge/pantry:\n\n${itemSummary}\n\nSuggest 4 dinner ideas.`,
+    config: {
+      systemInstruction: DINNER_IDEAS_SYSTEM_PROMPT,
+      responseMimeType: 'application/json',
+      responseSchema: DINNER_IDEAS_SCHEMA,
+    },
+  })
+
+  const parsed = JSON.parse(response.text)
+  return (parsed.ideas || []).map((idea, i) => ({
+    id: i + 1,
+    ...idea,
+  }))
+}
+
 const RECIPE_IDEAS_SCHEMA = {
   type: Type.OBJECT,
   properties: {

@@ -67,8 +67,14 @@ const RescanButton = styled.button`
 
 const screenSubtitles = {
   entry: 'Scan your fridge to see what you have',
-  scanning: 'Koda is analyzing your photo...',
+  scanning: 'Koda is analyzing your photos...',
   results: 'Here\u2019s what Koda found in your fridge',
+}
+
+function initialScreen(pantryItems, lastScan) {
+  // If we have saved pantry items, show results directly
+  if (pantryItems?.length > 0 && lastScan) return 'results'
+  return 'entry'
 }
 
 export default function KitchenPageClient({
@@ -76,7 +82,9 @@ export default function KitchenPageClient({
   initialDinnerIdeas,
   initialLastScan,
 }) {
-  const [screen, setScreen] = useState('entry')
+  const [screen, setScreen] = useState(() =>
+    initialScreen(initialPantryItems, initialLastScan)
+  )
   const [toast, setToast] = useState(null)
   const [pantryItems, setPantryItems] = useState(initialPantryItems)
   const [dinnerIdeas, setDinnerIdeas] = useState(initialDinnerIdeas)
@@ -96,16 +104,16 @@ export default function KitchenPageClient({
     setScreen('scanning')
   }
 
-  function handleScanComplete() {
+  function handleScanComplete(imageData) {
     startTransition(async () => {
-      const result = await startScan()
+      const result = await startScan(imageData)
       if (result.success && result.data) {
         setPantryItems(result.data.pantryItems)
         setDinnerIdeas(result.data.dinnerIdeas)
         if (result.data.lastScan) setLastScan(result.data.lastScan)
         setScreen('results')
       } else {
-        showToast('Scan failed. Please try again.')
+        showToast(result?.error || 'Scan failed. Please try again.')
         setScreen('entry')
       }
     })
@@ -149,11 +157,15 @@ export default function KitchenPageClient({
 
           <RescanRow>
             <RescanButton onClick={handleRescan}>
-              {'\uD83D\uDCF7'} Scan again
+              Scan again
             </RescanButton>
           </RescanRow>
 
-          <DinnerIdeas ideas={dinnerIdeas} onAddToMealPlan={handleAddToMealPlan} />
+          {dinnerIdeas.length > 0 && (
+            <DinnerIdeas ideas={dinnerIdeas} onAddToMealPlan={handleAddToMealPlan} />
+          )}
+
+          <ScanEntry lastScan={lastScan} onStartScan={handleStartScan} />
         </>
       )}
 

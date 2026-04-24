@@ -214,10 +214,10 @@ CREATE TABLE pantry_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  quantity TEXT,
-  freshness TEXT DEFAULT 'green' CHECK (freshness IN ('green', 'amber', 'coral')),
+  category TEXT DEFAULT 'Other',
+  freshness TEXT DEFAULT 'fresh' CHECK (freshness IN ('fresh', 'expiring', 'low')),
+  days_left INTEGER,
   scanned_at TIMESTAMPTZ DEFAULT NOW(),
-  expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -227,6 +227,19 @@ CREATE POLICY "Users insert own pantry items" ON pantry_items FOR INSERT WITH CH
 CREATE POLICY "Users update own pantry items" ON pantry_items FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users delete own pantry items" ON pantry_items FOR DELETE USING (auth.uid() = user_id);
 
+-- 11b. Pantry Scans (tracks scan history for weekly re-scan prompts)
+CREATE TABLE pantry_scans (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  items_detected INTEGER NOT NULL DEFAULT 0,
+  scanned_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE pantry_scans ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users select own pantry scans" ON pantry_scans FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own pantry scans" ON pantry_scans FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_pantry_scans_user ON pantry_scans(user_id);
 
 -- 12. Pantry Scans (storage bucket)
 -- Run this separately in Supabase Storage settings:

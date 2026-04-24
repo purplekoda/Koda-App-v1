@@ -4,7 +4,8 @@ import styled from 'styled-components'
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+  border: 0.5px solid ${({ $isStale, theme }) =>
+    $isStale ? theme.colors.expiringAmberBg : theme.colors.borderLight};
   border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.xxxl} ${({ theme }) => theme.spacing.xl};
   text-align: center;
@@ -58,16 +59,43 @@ const LastScanInfo = styled.div`
   color: ${({ theme }) => theme.colors.textMuted};
 `
 
+const StaleBadge = styled.div`
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.expiringAmberBg};
+  color: ${({ theme }) => theme.colors.amber};
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+`
+
+function getDaysAgo(scannedAt) {
+  if (!scannedAt) return null
+  const diff = Date.now() - new Date(scannedAt).getTime()
+  return Math.floor(diff / (1000 * 60 * 60 * 24))
+}
+
 export default function ScanEntry({ lastScan, onStartScan }) {
+  const daysAgo = getDaysAgo(lastScan?.scannedAt)
+  const isStale = daysAgo !== null && daysAgo >= 7
+
   return (
-    <Card>
-      <Icon>{'\uD83D\uDCF7'}</Icon>
-      <Title>Scan your fridge</Title>
+    <Card $isStale={isStale}>
+      {isStale && (
+        <StaleBadge>
+          {daysAgo} days since your last scan
+        </StaleBadge>
+      )}
+      <Icon>{isStale ? '\u23F0' : '\uD83D\uDCF7'}</Icon>
+      <Title>{isStale ? 'Time for a fresh scan' : 'Scan your fridge'}</Title>
       <Desc>
-        Take a photo of your fridge and Koda will detect items, check freshness, and suggest meals you can make tonight.
+        {isStale
+          ? 'Your pantry data is over a week old. Re-scan to update freshness, find expiring items, and get new dinner ideas.'
+          : 'Take a photo of your fridge and Koda will detect items, check freshness, and suggest meals you can make tonight.'}
       </Desc>
       <ScanButton onClick={onStartScan}>
-        {'\uD83D\uDCF7'} Scan fridge
+        {isStale ? 'Re-scan now' : 'Scan fridge'}
       </ScanButton>
       {lastScan && (
         <LastScanInfo>
