@@ -92,6 +92,20 @@ export function proxy(request) {
       })
     }
 
+    // Handle CORS preflight requests
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': allowedOrigin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Max-Age': '86400',
+        },
+      })
+    }
+
     // Set CORS response headers for allowed origins
     response.headers.set('Access-Control-Allow-Origin', allowedOrigin)
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')

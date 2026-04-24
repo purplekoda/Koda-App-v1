@@ -237,21 +237,56 @@ CREATE POLICY "Users delete own pantry items" ON pantry_items FOR DELETE USING (
 --   UPDATE: bucket_id = 'pantry-scans' AND auth.uid()::text = (storage.foldername(name))[1]
 --   DELETE: bucket_id = 'pantry-scans' AND auth.uid()::text = (storage.foldername(name))[1]
 
+-- 12b. Recipe Images (storage bucket)
+-- Create the bucket (idempotent)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('recipe-images', 'recipe-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Public read (food photos are non-sensitive)
+CREATE POLICY "Public read recipe images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'recipe-images');
+
+-- Only the owning user can upload to their folder
+CREATE POLICY "Users upload own recipe images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'recipe-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Only the owning user can update their images
+CREATE POLICY "Users update own recipe images"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'recipe-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Only the owning user can delete their images
+CREATE POLICY "Users delete own recipe images"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'recipe-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
 
 -- ============================================
 -- Indexes for performance
 -- ============================================
-CREATE INDEX idx_family_members_user ON family_members(user_id);
-CREATE INDEX idx_dietary_restrictions_user ON dietary_restrictions(user_id);
-CREATE INDEX idx_meal_plans_user_week ON meal_plans(user_id, week_start);
-CREATE INDEX idx_meal_slots_plan ON meal_slots(meal_plan_id);
-CREATE INDEX idx_meal_slots_user ON meal_slots(user_id);
-CREATE INDEX idx_recipes_user ON recipes(user_id);
-CREATE INDEX idx_grocery_lists_user ON grocery_lists(user_id);
-CREATE INDEX idx_grocery_items_list ON grocery_items(grocery_list_id);
-CREATE INDEX idx_events_user_date ON events(user_id, event_date);
-CREATE INDEX idx_pantry_items_user ON pantry_items(user_id);
-CREATE INDEX idx_store_connections_user ON store_connections(user_id);
+CREATE INDEX IF NOT EXISTS idx_family_members_user ON family_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_dietary_restrictions_user ON dietary_restrictions(user_id);
+CREATE INDEX IF NOT EXISTS idx_meal_plans_user_week ON meal_plans(user_id, week_start);
+CREATE INDEX IF NOT EXISTS idx_meal_slots_plan ON meal_slots(meal_plan_id);
+CREATE INDEX IF NOT EXISTS idx_meal_slots_user ON meal_slots(user_id);
+CREATE INDEX IF NOT EXISTS idx_recipes_user ON recipes(user_id);
+CREATE INDEX IF NOT EXISTS idx_grocery_lists_user ON grocery_lists(user_id);
+CREATE INDEX IF NOT EXISTS idx_grocery_items_list ON grocery_items(grocery_list_id);
+CREATE INDEX IF NOT EXISTS idx_events_user_date ON events(user_id, event_date);
+CREATE INDEX IF NOT EXISTS idx_pantry_items_user ON pantry_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_store_connections_user ON store_connections(user_id);
 
 
 -- 13. AI Conversations (rolling chat history, last 5 messages per context)
