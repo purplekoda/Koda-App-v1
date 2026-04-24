@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/dal/require-user'
 import { apiLimiter, aiLimiter } from '@/lib/rate-limit'
 import { ok, fail } from '@/lib/action-result'
 import { validateRecipe } from '@/lib/validators'
-import { sanitizeString } from '@/lib/sanitize'
+import { sanitizeString, sanitizeEnum } from '@/lib/sanitize'
 import {
   createRecipe,
   updateRecipe,
@@ -131,6 +131,24 @@ export async function generateRecipeAction(prompt, options = {}) {
   }
 }
 
+function isPrivateHostname(hostname) {
+  if (hostname === 'localhost' || hostname === '[::1]') return true
+  // Strip IPv6 brackets
+  const bare = hostname.replace(/^\[|\]$/g, '')
+  const parts = bare.split('.').map(Number)
+  if (parts.length === 4 && parts.every((n) => n >= 0 && n <= 255)) {
+    return (
+      parts[0] === 127 ||                          // 127.0.0.0/8
+      parts[0] === 10 ||                            // 10.0.0.0/8
+      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || // 172.16.0.0/12
+      (parts[0] === 192 && parts[1] === 168) ||     // 192.168.0.0/16
+      (parts[0] === 169 && parts[1] === 254) ||     // 169.254.0.0/16 (link-local / cloud metadata)
+      parts[0] === 0                                // 0.0.0.0/8
+    )
+  }
+  return false
+}
+
 const ALLOWED_IMAGE_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -151,7 +169,6 @@ export async function scanRecipeAction(formData) {
     if (!files || files.length === 0) return fail('At least one photo is required.')
     if (files.length > MAX_IMAGES) return fail(`Maximum ${MAX_IMAGES} photos allowed.`)
 
-    const images = []
     for (const file of files) {
       if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
         return fail(`Unsupported image type: ${file.type}`)
@@ -159,12 +176,14 @@ export async function scanRecipeAction(formData) {
       if (file.size > MAX_IMAGE_BYTES) {
         return fail('Each image must be under 10 MB.')
       }
-      const buffer = Buffer.from(await file.arrayBuffer())
-      images.push({
-        mimeType: file.type,
-        base64: buffer.toString('base64'),
-      })
     }
+
+    const images = await Promise.all(
+      files.map(async (file) => {
+        const buffer = Buffer.from(await file.arrayBuffer())
+        return { mimeType: file.type, base64: buffer.toString('base64') }
+      }),
+    )
 
     const { scanRecipeFromImages } = await import('@/lib/gemini')
     const raw = await scanRecipeFromImages(images)
@@ -254,6 +273,9 @@ async function extractRecipeImage(html, pageUrl, userId) {
     const resolved = new URL(imageUrl, pageUrl).href
     if (!resolved.startsWith('https://') && !resolved.startsWith('http://')) return null
 
+    const imgParsed = new URL(resolved)
+    if (isPrivateHostname(imgParsed.hostname)) return null
+
     // ── 3. Download the image server-side ────────────────────────────────────
     // Server fetches don't send a browser Referer header, so hotlink
     // protection on recipe sites doesn't trigger.
@@ -330,6 +352,9 @@ export async function importRecipeFromUrlAction(url) {
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
       return fail('Only HTTP/HTTPS URLs are supported.')
     }
+    if (isPrivateHostname(parsed.hostname)) {
+      return fail('URLs pointing to internal networks are not allowed.')
+    }
 
     const res = await fetch(cleanUrl, {
       headers: {
@@ -378,6 +403,8 @@ export async function generateRecipeIdeasAction(mode) {
     const rate = aiLimiter.check(user.id)
     if (!rate.success) return fail('Too many AI requests. Please wait a moment.')
 
+    const cleanMode = sanitizeEnum(mode, ['general', 'expiring']) || 'general'
+
     const { getCookingPreferences, getDietaryRestrictions } = await import('@/lib/dal/cooking-preferences')
     const { getPantryItems } = await import('@/lib/dal/pantry')
 
@@ -390,11 +417,54 @@ export async function generateRecipeIdeasAction(mode) {
     const context = { preferences, dietaryRestrictions, pantryItems }
 
     const { generateRecipeIdeas } = await import('@/lib/gemini')
-    const result = await generateRecipeIdeas(mode, context)
+    const result = await generateRecipeIdeas(cleanMode, context)
 
     return ok(result.ideas || [])
   } catch {
     return fail('Could not generate recipe ideas. Please try again.')
+  }
+}
+
+export async function generateRecipeImageAction(recipeName, description) {
+  try {
+    const user = await requireUser()
+    const rate = aiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many AI requests. Please wait a moment.')
+
+    const cleanName = sanitizeString(recipeName, 200)
+    if (!cleanName) return fail('Recipe name is required to generate a photo.')
+
+    const cleanDesc = description ? sanitizeString(description, 500) : ''
+
+    const { generateRecipeImage } = await import('@/lib/gemini')
+    const { imageBytes, mimeType } = await generateRecipeImage(cleanName, cleanDesc)
+
+    // Upload to Supabase Storage
+    const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+    const supabase = await getSupabaseServerClient()
+
+    const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+    const ext = extMap[mimeType] ?? 'png'
+    const storagePath = `${user.id}/${Date.now()}-ai.${ext}`
+
+    const imgBuf = Buffer.from(imageBytes, 'base64')
+    const { error: uploadError } = await supabase.storage
+      .from(RECIPE_IMAGE_BUCKET)
+      .upload(storagePath, imgBuf, { contentType: mimeType, upsert: false })
+
+    if (uploadError) {
+      console.error('[generateRecipeImage] Upload failed:', uploadError.message)
+      return fail('Generated photo but could not save it. Check that the recipe-images storage bucket exists.')
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(RECIPE_IMAGE_BUCKET)
+      .getPublicUrl(storagePath)
+
+    return ok({ image_url: publicUrl })
+  } catch (err) {
+    console.error('[generateRecipeImage] error:', err?.message || err)
+    return fail('Could not generate photo. Please try again.')
   }
 }
 

@@ -9,6 +9,7 @@ import {
   createRecipeAction,
   generateRecipeAction,
   generateRecipeIdeasAction,
+  generateRecipeImageAction,
   scanRecipeAction,
   importRecipeFromUrlAction,
   getRecipeGenerationContextAction,
@@ -28,6 +29,37 @@ const SOURCE_OPTIONS = [
   { value: 'manual', label: 'Added manually' },
   { value: 'gemini', label: 'Added by Gemini' },
 ]
+
+/**
+ * Resize an image to a max dimension of 1600px and re-encode as JPEG.
+ * This dramatically reduces upload size for raw camera photos (typically 25-50x).
+ * Falls back to the original file if the browser lacks OffscreenCanvas support.
+ */
+async function resizeImage(file, maxDim = 1600, quality = 0.8) {
+  try {
+    if (typeof OffscreenCanvas === 'undefined') return file
+    const bitmap = await createImageBitmap(file)
+    const { width, height } = bitmap
+    if (width <= maxDim && height <= maxDim && file.type === 'image/jpeg') {
+      bitmap.close()
+      return file
+    }
+    const scale = Math.min(maxDim / width, maxDim / height, 1)
+    const canvas = new OffscreenCanvas(
+      Math.round(width * scale),
+      Math.round(height * scale),
+    )
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close()
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality })
+    return new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
+      type: 'image/jpeg',
+    })
+  } catch {
+    return file
+  }
+}
 
 const TIME_OPTIONS = [
   { value: 'all', label: 'Any time' },
@@ -994,6 +1026,7 @@ export default function RecipesPageClient({ initialRecipes }) {
   const [scanPreviews, setScanPreviews] = useState([])
   const [scanError, setScanError] = useState(null)
   const [isScanning, setIsScanning] = useState(false)
+  const [scanPhase, setScanPhase] = useState(null)
   const [contextData, setContextData] = useState(null)
   const [includePantry, setIncludePantry] = useState(true)
   const [prefsExpanded, setPrefsExpanded] = useState(false)
@@ -1330,16 +1363,26 @@ export default function RecipesPageClient({ initialRecipes }) {
     }
     setScanError(null)
     setIsScanning(true)
-    const fd = new FormData()
-    scanFiles.forEach(f => fd.append('images', f))
-    const result = await scanRecipeAction(fd)
-    setIsScanning(false)
-    if (result.success && result.data) {
-      setFormInitial(result.data)
-      closeScan()
-      setModalOpen(true)
-    } else {
-      setScanError(result.error || 'Could not extract recipe.')
+    setScanPhase('Preparing photos\u2026')
+    try {
+      const fd = new FormData()
+      const resized = await Promise.all(scanFiles.map(resizeImage))
+      resized.forEach(f => fd.append('images', f))
+      setScanPhase('Scanning\u2026')
+      const result = await scanRecipeAction(fd)
+      setIsScanning(false)
+      setScanPhase(null)
+      if (result.success && result.data) {
+        setFormInitial(result.data)
+        closeScan()
+        setModalOpen(true)
+      } else {
+        setScanError(result.error || 'Could not extract recipe.')
+      }
+    } catch {
+      setIsScanning(false)
+      setScanPhase(null)
+      setScanError('Could not scan recipe. Please try again.')
     }
   }
 
@@ -1635,6 +1678,7 @@ export default function RecipesPageClient({ initialRecipes }) {
             onCancel={closeForm}
             isPending={isPending}
             submitLabel="Create recipe"
+            onGenerateImage={generateRecipeImageAction}
           />
         </Modal>
       )}
@@ -1912,7 +1956,6 @@ export default function RecipesPageClient({ initialRecipes }) {
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 onChange={handleScanFiles}
                 style={{ display: 'none' }}
@@ -1957,7 +2000,7 @@ export default function RecipesPageClient({ initialRecipes }) {
               Cancel
             </PromptSecondary>
             <PromptPrimary onClick={handleScan} disabled={isScanning || scanFiles.length === 0}>
-              {isScanning ? 'Scanning\u2026' : `Scan ${scanFiles.length > 0 ? `(${scanFiles.length} photo${scanFiles.length !== 1 ? 's' : ''})` : ''}`}
+              {isScanning ? (scanPhase || 'Scanning\u2026') : `Scan ${scanFiles.length > 0 ? `(${scanFiles.length} photo${scanFiles.length !== 1 ? 's' : ''})` : ''}`}
             </PromptPrimary>
           </PromptActions>
         </Modal>

@@ -211,9 +211,48 @@ const ImageRemoveBtn = styled.button`
   }
 `
 
+const PhotoActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+  align-items: stretch;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    flex-direction: column;
+  }
+`
+
+const AiPhotoButton = styled.button`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  border: 2px dashed ${({ theme }) => theme.colors.tealMid};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  padding: ${({ theme }) => theme.spacing.xl};
+  cursor: pointer;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.tealDark};
+  font-size: 13px;
+  font-weight: 500;
+  background: ${({ theme }) => theme.colors.tealLight};
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.teal};
+    background: ${({ theme }) => theme.colors.tealMid};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`
+
 const emptyIngredient = () => ({ name: '', quantity: '' })
 
-export default function RecipeForm({ initial, onSubmit, onCancel, isPending, submitLabel = 'Save' }) {
+export default function RecipeForm({ initial, onSubmit, onCancel, isPending, submitLabel = 'Save', onGenerateImage }) {
   const [name, setName] = useState(initial?.name || '')
   const [description, setDescription] = useState(initial?.description || '')
   const [instructions, setInstructions] = useState(initial?.instructions || '')
@@ -226,6 +265,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
   )
   const [imageUrl, setImageUrl] = useState(initial?.image_url || null)
   const [error, setError] = useState(null)
+  const [generatingImage, setGeneratingImage] = useState(false)
 
   function handleImageChange(e) {
     const file = e.target.files?.[0]
@@ -264,6 +304,24 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
       URL.revokeObjectURL(img.src)
     }
     img.src = URL.createObjectURL(file)
+  }
+
+  async function handleGenerateImage() {
+    if (!onGenerateImage || !name.trim()) return
+    setGeneratingImage(true)
+    setError(null)
+    try {
+      const result = await onGenerateImage(name.trim(), description.trim())
+      if (result.success && result.data?.image_url) {
+        setImageUrl(result.data.image_url)
+      } else {
+        setError(result.error || 'Could not generate photo.')
+      }
+    } catch {
+      setError('Could not generate photo. Please try again.')
+    } finally {
+      setGeneratingImage(false)
+    }
   }
 
   function updateIngredient(index, field, value) {
@@ -335,16 +393,26 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
             </ImageRemoveBtn>
           </ImagePreviewWrap>
         ) : (
-          <ImagePickerLabel>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleImageChange}
-              style={{ display: 'none' }}
-            />
-            {'\uD83D\uDCF7 Add a photo'}
-          </ImagePickerLabel>
+          <PhotoActions>
+            <ImagePickerLabel style={{ flex: 1 }}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ display: 'none' }}
+              />
+              {'\uD83D\uDCF7 Upload a photo'}
+            </ImagePickerLabel>
+            {onGenerateImage && (
+              <AiPhotoButton
+                type="button"
+                onClick={handleGenerateImage}
+                disabled={generatingImage || !name.trim()}
+              >
+                {generatingImage ? 'Generating\u2026' : '\u2728 Generate with AI'}
+              </AiPhotoButton>
+            )}
+          </PhotoActions>
         )}
       </Field>
 

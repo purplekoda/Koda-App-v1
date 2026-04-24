@@ -212,12 +212,13 @@ export async function scanRecipeFromImages(images) {
   ]
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.5-flash-lite',
     contents: [{ role: 'user', parts }],
     config: {
       systemInstruction: SCAN_SYSTEM_PROMPT,
       responseMimeType: 'application/json',
       responseSchema: RECIPE_SCHEMA,
+      abortSignal: AbortSignal.timeout(30_000),
     },
   })
 
@@ -296,6 +297,46 @@ export async function generateRecipeIdeas(mode, context) {
   })
 
   return JSON.parse(response.text)
+}
+
+/**
+ * Generate a food photo for a recipe using Imagen.
+ *
+ * @param {string} recipeName  The recipe name.
+ * @param {string} description Optional one-line description.
+ * @returns {Promise<{ imageBytes: string, mimeType: string }>} Base64 image data.
+ */
+export async function generateRecipeImage(recipeName, description) {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (!apiKey) {
+    throw new Error('GOOGLE_AI_API_KEY is not configured')
+  }
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  const prompt =
+    `A beautiful, appetizing overhead food photograph of "${recipeName}"` +
+    (description ? `. ${description}` : '') +
+    '. Professional food photography, natural lighting, on a clean table setting. No text or labels.'
+
+  const response = await ai.models.generateImages({
+    model: 'imagen-4.0-fast-generate-001',
+    prompt,
+    config: {
+      numberOfImages: 1,
+      aspectRatio: '1:1',
+    },
+  })
+
+  const generated = response?.generatedImages?.[0]
+  if (!generated?.image?.imageBytes) {
+    throw new Error('No image was generated')
+  }
+
+  return {
+    imageBytes: generated.image.imageBytes,
+    mimeType: generated.image.mimeType || 'image/png',
+  }
 }
 
 /**

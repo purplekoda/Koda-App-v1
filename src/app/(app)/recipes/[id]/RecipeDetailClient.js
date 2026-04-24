@@ -6,7 +6,7 @@ import Link from 'next/link'
 import styled from 'styled-components'
 import RecipeForm from '@/components/recipes/RecipeForm'
 import Modal from '@/components/recipes/Modal'
-import { updateRecipeAction, deleteRecipeAction } from '../actions'
+import { updateRecipeAction, deleteRecipeAction, generateRecipeImageAction } from '../actions'
 
 const BackLink = styled(Link)`
   display: inline-flex;
@@ -333,6 +333,7 @@ export default function RecipeDetailClient({ initialRecipe }) {
             onCancel={() => setEditOpen(false)}
             isPending={isPending}
             submitLabel="Save changes"
+            onGenerateImage={generateRecipeImageAction}
           />
         </Modal>
       )}
