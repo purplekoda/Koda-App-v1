@@ -42,7 +42,7 @@ export function proxy(request) {
     ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`
     : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`
 
-  const csp = [
+  const cspDirectives = [
     "default-src 'self'",
     scriptSrc,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
@@ -53,7 +53,15 @@ export function proxy(request) {
     "base-uri 'self'",
     "form-action 'self'",
     "upgrade-insecure-requests",
-  ].join('; ')
+  ]
+
+  const cspReportUri = process.env.CSP_REPORT_URI
+  if (cspReportUri) {
+    cspDirectives.push(`report-uri ${cspReportUri}`)
+    cspDirectives.push("report-to csp-endpoint")
+  }
+
+  const csp = cspDirectives.join('; ')
 
   // Forward the nonce to Server Components via a custom request header so
   // the root layout can read it with next/headers and pass it to <Script>.
@@ -69,6 +77,15 @@ export function proxy(request) {
 
   // Set CSP on the response as well so the browser enforces it.
   response.headers.set('Content-Security-Policy', csp)
+
+  // Set Report-To header for CSP violation reporting when configured.
+  if (cspReportUri) {
+    response.headers.set('Report-To', JSON.stringify({
+      group: 'csp-endpoint',
+      max_age: 86400,
+      endpoints: [{ url: cspReportUri }],
+    }))
+  }
 
   // ── CORS check for API routes ──
   if (pathname.startsWith('/api/')) {

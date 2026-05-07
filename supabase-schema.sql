@@ -12,6 +12,13 @@ CREATE TABLE profiles (
   preferred_store TEXT,
   onboarding_completed BOOLEAN DEFAULT FALSE,
   cooking_preferences JSONB DEFAULT NULL,
+  grocery_preferences JSONB DEFAULT NULL,
+  shopping_style TEXT CHECK (shopping_style IN ('deal_hunter', 'convenience', 'pickup_only', 'delivery_preferred', 'flexible')),
+  preferred_delivery_service TEXT CHECK (preferred_delivery_service IN ('instacart', 'doordash', 'walmart_plus', 'amazon_fresh', 'other')),
+  preferred_stores TEXT[] DEFAULT '{}',
+  store_category_assignments JSONB DEFAULT '{}',
+  location_state TEXT,
+  dashboard_sections JSONB DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -22,6 +29,11 @@ CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.
 CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Auto-create profile on signup
+-- SECURITY DEFINER is required here because this trigger runs on auth.users
+-- (owned by supabase_auth_admin), and needs to INSERT into public.profiles
+-- which is protected by RLS. The function only inserts the new user's own
+-- row using NEW.id, so it cannot be abused to write arbitrary rows.
+-- Reviewed: 2026-05-07.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -82,6 +94,9 @@ CREATE TABLE recipes (
   tags TEXT[] DEFAULT '{}',
   source TEXT,
   image_url TEXT,
+  ingredient_store_assignments JSONB DEFAULT NULL,
+  nutrition JSONB DEFAULT NULL,
+  nutrition_is_estimated BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -115,8 +130,12 @@ CREATE TABLE meal_slots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   meal_plan_id UUID NOT NULL REFERENCES meal_plans(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 1 AND 5),
-  meal_type TEXT NOT NULL CHECK (meal_type IN ('breakfast', 'lunch', 'dinner')),
+  day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+  meal_type TEXT NOT NULL CHECK (meal_type IN (
+    'breakfast', 'lunch', 'dinner',
+    'sides', 'sides2', 'sides3', 'sides4',
+    'breakfast_side', 'lunch_side', 'dinner_dessert'
+  )),
   recipe_id UUID REFERENCES recipes(id) ON DELETE SET NULL,
   custom_meal_name TEXT,
   notes TEXT,
@@ -238,6 +257,8 @@ CREATE TABLE pantry_scans (
 ALTER TABLE pantry_scans ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users select own pantry scans" ON pantry_scans FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users insert own pantry scans" ON pantry_scans FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own pantry scans" ON pantry_scans FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own pantry scans" ON pantry_scans FOR DELETE USING (auth.uid() = user_id);
 
 CREATE INDEX IF NOT EXISTS idx_pantry_scans_user ON pantry_scans(user_id);
 
@@ -286,6 +307,30 @@ CREATE POLICY "Users delete own recipe images"
   );
 
 
+-- 14. Pantry (managed pantry items with quantities and expiry dates)
+CREATE TABLE pantry (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  ingredient_name TEXT NOT NULL,
+  quantity DECIMAL(10,2),
+  unit TEXT,
+  purchase_date DATE,
+  expiry_date DATE,
+  category TEXT DEFAULT 'Other' CHECK (category IN ('Produce', 'Meat', 'Dairy', 'Pantry', 'Frozen', 'Bakery', 'Beverage', 'Condiment', 'Snack', 'Other')),
+  is_depleted BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE pantry ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'scan'));
+
+ALTER TABLE pantry ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users select own pantry" ON pantry FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own pantry" ON pantry FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own pantry" ON pantry FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own pantry" ON pantry FOR DELETE USING (auth.uid() = user_id);
+
+
 -- ============================================
 -- Indexes for performance
 -- ============================================
@@ -299,6 +344,8 @@ CREATE INDEX IF NOT EXISTS idx_grocery_lists_user ON grocery_lists(user_id);
 CREATE INDEX IF NOT EXISTS idx_grocery_items_list ON grocery_items(grocery_list_id);
 CREATE INDEX IF NOT EXISTS idx_events_user_date ON events(user_id, event_date);
 CREATE INDEX IF NOT EXISTS idx_pantry_items_user ON pantry_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_pantry_user ON pantry(user_id);
+CREATE INDEX IF NOT EXISTS idx_pantry_user_expiry ON pantry(user_id, expiry_date);
 CREATE INDEX IF NOT EXISTS idx_store_connections_user ON store_connections(user_id);
 
 
@@ -320,3 +367,221 @@ CREATE POLICY "Users update own AI conversations" ON ai_conversations FOR UPDATE
 CREATE POLICY "Users delete own AI conversations" ON ai_conversations FOR DELETE USING (auth.uid() = user_id);
 
 CREATE INDEX idx_ai_conversations_user_context ON ai_conversations(user_id, context);
+
+-- ── User taste profile (AI-learned preferences) ──────────────────────────────
+
+CREATE TABLE IF NOT EXISTS user_taste_profiles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  cuisine_types TEXT[] NOT NULL DEFAULT '{}',
+  cooking_styles TEXT[] NOT NULL DEFAULT '{}',
+  protein_preferences TEXT[] NOT NULL DEFAULT '{}',
+  flavor_profiles TEXT[] NOT NULL DEFAULT '{}',
+  avoided_ingredients TEXT[] NOT NULL DEFAULT '{}',
+  favorite_recipes UUID[] NOT NULL DEFAULT '{}',
+  source_websites TEXT[] NOT NULL DEFAULT '{}',
+  recipe_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+ALTER TABLE user_taste_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users select own taste profile" ON user_taste_profiles FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own taste profile" ON user_taste_profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own taste profile" ON user_taste_profiles FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own taste profile" ON user_taste_profiles FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================
+-- Onboarding: new profile columns
+-- ============================================
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_skipped BOOLEAN DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_mode TEXT CHECK (onboarding_mode IN ('manual', 'voice'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS household_size INTEGER DEFAULT 1;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS household_type TEXT CHECK (household_type IN ('includes_kids', 'adults_only', 'varies'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cook_time_preference TEXT CHECK (cook_time_preference IN ('under_20', '20_to_40', 'up_to_60', 'depends'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS meal_plan_days JSONB DEFAULT '[]';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS meal_prep_days JSONB DEFAULT '[]';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS adventurousness TEXT CHECK (adventurousness IN ('familiar', 'mix_it_up', 'surprise_me'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS meal_prep_style TEXT CHECK (meal_prep_style IN ('meal_prep', 'cook_fresh', 'mix'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cooking_frustrations JSONB DEFAULT '[]';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS health_goals JSONB DEFAULT '[]';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS track_macros BOOLEAN DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS budget_priorities JSONB DEFAULT '[]';
+
+-- Shopping style & store preferences (add-on)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS shopping_style TEXT CHECK (shopping_style IN ('deal_hunter', 'convenience', 'pickup_only', 'delivery_preferred', 'flexible'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS preferred_delivery_service TEXT CHECK (preferred_delivery_service IN ('instacart', 'doordash', 'walmart_plus', 'amazon_fresh', 'other'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS preferred_stores TEXT[] DEFAULT '{}';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS store_category_assignments JSONB DEFAULT '{}';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS location_state TEXT;
+
+
+-- ============================================
+-- Onboarding: household_members table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS household_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  age INTEGER,
+  is_picky_eater BOOLEAN DEFAULT FALSE,
+  picky_issues TEXT[] DEFAULT '{}',
+  allergies TEXT[] DEFAULT '{}',
+  dietary_restrictions TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE household_members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users select own household members" ON household_members FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own household members" ON household_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own household members" ON household_members FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own household members" ON household_members FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_household_members_user ON household_members(user_id);
+
+
+-- ============================================
+-- Onboarding: invites table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS invites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inviter_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  invite_code TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'expired')),
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE invites ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users select own invites" ON invites FOR SELECT USING (auth.uid() = inviter_id);
+CREATE POLICY "Users insert own invites" ON invites FOR INSERT WITH CHECK (auth.uid() = inviter_id);
+CREATE POLICY "Users update own invites" ON invites FOR UPDATE USING (auth.uid() = inviter_id);
+CREATE POLICY "Users delete own invites" ON invites FOR DELETE USING (auth.uid() = inviter_id);
+
+CREATE INDEX IF NOT EXISTS idx_invites_code ON invites(invite_code);
+CREATE INDEX IF NOT EXISTS idx_invites_inviter ON invites(inviter_id);
+
+
+-- ============================================
+-- Onboarding: household_permissions table
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS household_permissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  can_view_meal_plan BOOLEAN DEFAULT TRUE,
+  can_edit_meal_plan BOOLEAN DEFAULT TRUE,
+  can_add_recipes BOOLEAN DEFAULT TRUE,
+  can_edit_recipes BOOLEAN DEFAULT FALSE,
+  can_delete_recipes BOOLEAN DEFAULT FALSE,
+  can_add_to_grocery_list BOOLEAN DEFAULT TRUE,
+  can_send_grocery_list BOOLEAN DEFAULT FALSE,
+  can_view_pantry BOOLEAN DEFAULT TRUE,
+  can_edit_pantry BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE household_permissions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users select own household permissions" ON household_permissions FOR SELECT USING (auth.uid() = household_owner_id);
+CREATE POLICY "Users insert own household permissions" ON household_permissions FOR INSERT WITH CHECK (auth.uid() = household_owner_id);
+CREATE POLICY "Users update own household permissions" ON household_permissions FOR UPDATE USING (auth.uid() = household_owner_id);
+CREATE POLICY "Users delete own household permissions" ON household_permissions FOR DELETE USING (auth.uid() = household_owner_id);
+
+CREATE INDEX IF NOT EXISTS idx_household_permissions_owner ON household_permissions(household_owner_id);
+
+
+-- Migration: add imported_from and imported_at to recipes
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS imported_from TEXT;
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS imported_at TIMESTAMPTZ;
+
+-- Migration: add dinner_dessert to meal_slots.meal_type constraint
+ALTER TABLE meal_slots DROP CONSTRAINT IF EXISTS meal_slots_meal_type_check;
+ALTER TABLE meal_slots ADD CONSTRAINT meal_slots_meal_type_check
+  CHECK (meal_type IN (
+    'breakfast', 'lunch', 'dinner',
+    'sides', 'sides2', 'sides3', 'sides4',
+    'breakfast_side', 'lunch_side', 'dinner_dessert'
+  ));
+
+-- ============================================
+-- Migration: Faith-based dietary practices
+-- ============================================
+
+-- Recipe card display settings (stored on profiles)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS recipe_card_settings JSONB DEFAULT NULL;
+-- Shape: { show_photo, show_description, show_cook_time, show_servings,
+--   show_categories, show_macros, show_rating, show_review_count,
+--   show_difficulty, show_source, show_calories, show_protein, show_carbs,
+--   show_fat, card_layout: 'grid'|'list', photo_position: 'right'|'top' }
+
+-- Household-level faith practices (stored on profiles)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS faith_practices JSONB DEFAULT NULL;
+-- Shape: { follows_faith_based_diet, household_faith_practices[], kosher_level,
+--   halal_level, hindu_level, jain_level, buddhist_level, adventist_level,
+--   orthodox_fasting, orthodox_fasting_calendar, catholic_lenten, ital_level,
+--   is_lds, lds_no_coffee, lds_no_alcohol, lds_no_black_tea, custom_practice }
+
+-- Individual member faith practices (stored on household_members)
+ALTER TABLE household_members ADD COLUMN IF NOT EXISTS individual_faith_practices JSONB DEFAULT NULL;
+-- Shape: { follows_individual_faith_diet, individual_faith_practices[], ...same level fields }
+
+-- ============================================
+-- Migration: Voice settings
+-- ============================================
+
+-- Voice preferences (stored on profiles)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS voice_settings JSONB DEFAULT '{"voice_responses_enabled": false}';
+-- Shape: { voice_responses_enabled: boolean }
+
+
+-- ============================================
+-- Migration: Photo macro logging
+-- ============================================
+
+-- Per-member toggle for photo macro logging
+ALTER TABLE household_members ADD COLUMN IF NOT EXISTS allow_photo_macro_logging BOOLEAN DEFAULT TRUE;
+
+-- Macro tracking columns (if not already present)
+ALTER TABLE household_members ADD COLUMN IF NOT EXISTS track_macros BOOLEAN DEFAULT FALSE;
+ALTER TABLE household_members ADD COLUMN IF NOT EXISTS macro_calories INTEGER;
+ALTER TABLE household_members ADD COLUMN IF NOT EXISTS macro_protein_g NUMERIC;
+ALTER TABLE household_members ADD COLUMN IF NOT EXISTS macro_carbs_g NUMERIC;
+ALTER TABLE household_members ADD COLUMN IF NOT EXISTS macro_fat_g NUMERIC;
+
+-- Extra food items logged via photo/manual entry (standalone from meal plan)
+CREATE TABLE IF NOT EXISTS macro_extras (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  member_id UUID NOT NULL REFERENCES household_members(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  logged_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  meal_time TEXT NOT NULL CHECK (meal_time IN (
+    'breakfast_addition', 'morning_snack', 'lunch_addition', 'afternoon_snack', 'evening_snack'
+  )),
+  food_name TEXT NOT NULL,
+  calories INTEGER NOT NULL DEFAULT 0,
+  protein NUMERIC NOT NULL DEFAULT 0,
+  carbs NUMERIC NOT NULL DEFAULT 0,
+  fat NUMERIC NOT NULL DEFAULT 0,
+  photo_url TEXT,
+  label_found BOOLEAN DEFAULT FALSE,
+  confidence TEXT CHECK (confidence IN ('low', 'medium', 'high')),
+  gemini_notes TEXT,
+  edited_by_user BOOLEAN DEFAULT FALSE,
+  is_locked BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE macro_extras ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users select own macro extras" ON macro_extras FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own macro extras" ON macro_extras FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users update own macro extras" ON macro_extras FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users delete own macro extras" ON macro_extras FOR DELETE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_macro_extras_member_date ON macro_extras(member_id, logged_date);
+CREATE INDEX IF NOT EXISTS idx_macro_extras_user ON macro_extras(user_id);
