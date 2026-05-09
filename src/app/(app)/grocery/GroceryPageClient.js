@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from 'react'
 import styled from 'styled-components'
 import AIBar from '@/components/ai/AIBar'
 import GroceryStepBar from '@/components/grocery/GroceryStepBar'
+import GroceryDeliveryHeader from '@/components/grocery/GroceryDeliveryHeader'
 import StepReviewMeals from '@/components/grocery/StepReviewMeals'
 import StepPantryCheck from '@/components/grocery/StepPantryCheck'
 import StepChooseStore from '@/components/grocery/StepChooseStore'
@@ -90,9 +91,19 @@ export default function GroceryPageClient({
   stores,
   weekSummary,
   weeklyMeals,
+  groceryPreferences,
+  shoppingStyle,
 }) {
   const [step, setStep] = useState(0)
-  const [selectedStore, setSelectedStore] = useState('target')
+  // Pre-select from settings: first saved store, fallback to 'target'
+  const defaultStore = groceryPreferences?.stores?.[0] || 'target'
+  // Default fulfillment based on shopping_style preference
+  const styleFulfillment = shoppingStyle === 'pickup_only' ? 'pickup'
+    : shoppingStyle === 'delivery_preferred' ? 'delivery'
+    : ''
+  const defaultFulfillment = groceryPreferences?.fulfillment || styleFulfillment
+  const [selectedStore, setSelectedStore] = useState(defaultStore)
+  const [selectedFulfillment, setSelectedFulfillment] = useState(defaultFulfillment)
   const [groceryItems, setGroceryItems] = useState(initialGroceryItems)
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState(null)
@@ -130,7 +141,8 @@ export default function GroceryPageClient({
 
   function handleStartOver() {
     setStep(0)
-    setSelectedStore('target')
+    setSelectedStore(defaultStore)
+    setSelectedFulfillment(defaultFulfillment)
   }
 
   return (
@@ -139,6 +151,14 @@ export default function GroceryPageClient({
         <Title>Grocery list</Title>
         <Subtitle>{stepSubtitles[step]}</Subtitle>
       </PageHeader>
+
+      <GroceryDeliveryHeader
+        groceryPreferences={groceryPreferences}
+        selectedStore={selectedStore}
+        onSelectStore={setSelectedStore}
+        selectedFulfillment={selectedFulfillment}
+        onSelectFulfillment={setSelectedFulfillment}
+      />
 
       <AIBar placeholder={'Add items or ask about substitutions\u2026'} context="grocery" />
 
@@ -149,7 +169,11 @@ export default function GroceryPageClient({
       )}
 
       {step === 1 && (
-        <StepPantryCheck items={groceryItems} />
+        <StepPantryCheck
+          items={groceryItems}
+          stores={stores}
+          onUpdateItems={setGroceryItems}
+        />
       )}
 
       {step === 2 && (

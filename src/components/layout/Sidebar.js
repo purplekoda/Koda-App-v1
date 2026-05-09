@@ -156,7 +156,7 @@ const LogoutButton = styled.button`
   }
 `
 
-export default function Sidebar({ user }) {
+export default function Sidebar({ user, trackMacros }) {
   const pathname = usePathname()
   const { isOpen, setIsOpen } = useChat()
 
@@ -175,7 +175,9 @@ export default function Sidebar({ user }) {
         {sidebarSections.map((section) => (
           <div key={section.label}>
             <SectionLabel>{section.label}</SectionLabel>
-            {section.items.map((item) => (
+            {section.items
+              .filter((item) => item.id !== 'macros' || trackMacros)
+              .map((item) => (
               <NavLink
                 key={item.id}
                 href={item.href}
@@ -201,10 +203,12 @@ export default function Sidebar({ user }) {
       </NavContent>
       {user && (
         <UserSection>
-          <Avatar>{user.initials}</Avatar>
-          <UserInfo>
-            <UserName>{user.displayName}</UserName>
-          </UserInfo>
+          <Link href="/settings" style={{ display: 'contents' }}>
+            <Avatar>{user.initials}</Avatar>
+            <UserInfo>
+              <UserName>{user.displayName}</UserName>
+            </UserInfo>
+          </Link>
           <LogoutButton onClick={handleLogout} aria-label="Sign out">
             Sign out
           </LogoutButton>

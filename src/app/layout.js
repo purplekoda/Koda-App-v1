@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata = {
   title: 'Koda',
-  description: 'AI-powered meal planning, family scheduling & event planning',
+  description: 'Koda-powered meal planning, family scheduling & event planning',
 }
 
 export default async function RootLayout({ children }) {

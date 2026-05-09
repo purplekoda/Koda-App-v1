@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import styled from 'styled-components'
 
 const Card = styled.div`
@@ -134,9 +135,11 @@ const storeDescriptions = {
   instacart: 'Delivery from local stores',
   walmart: 'Pickup & delivery',
   kroger: 'Pickup & delivery',
+  amazon: 'Online grocery & pantry delivery',
 }
 
 export default function StepChooseStore({ stores, needCount, selectedStore, onSelectStore, preferredStore }) {
+  const router = useRouter()
   return (
     <Card>
       <Title>Where should we send your list?</Title>
@@ -161,7 +164,7 @@ export default function StepChooseStore({ stores, needCount, selectedStore, onSe
             <RadioDot $selected={selectedStore === store.id} $color={store.color} />
           </StoreCard>
         ))}
-        <AddStoreButton>
+        <AddStoreButton onClick={() => router.push('/settings/grocery-stores?from=grocery')}>
           + Add another store
         </AddStoreButton>
       </StoreGrid>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useCallback } from 'react'
 import styled from 'styled-components'
 import MobileTopBar from '@/components/dashboard/MobileTopBar'
 import DashboardGreeting from '@/components/dashboard/DashboardGreeting'
@@ -9,24 +9,17 @@ import WeeklyGrid from '@/components/meals/WeeklyGrid'
 import DailyMealsCard from '@/components/dashboard/DailyMealsCard'
 import TodayScheduleWidget from '@/components/dashboard/TodayScheduleWidget'
 import TodoListWidget from '@/components/dashboard/TodoListWidget'
-import { toggleTodo } from './actions'
+import WeeklySnapshotWidget from '@/components/dashboard/WeeklySnapshotWidget'
+import PantryAlertsWidget from '@/components/dashboard/PantryAlertsWidget'
+import GroceryStatusWidget from '@/components/dashboard/GroceryStatusWidget'
+import RecipeSuggestionsWidget from '@/components/dashboard/RecipeSuggestionsWidget'
+import BudgetTrackerWidget from '@/components/dashboard/BudgetTrackerWidget'
+import MacroSummaryWidget from '@/components/dashboard/MacroSummaryWidget'
+import CustomizeDashboardSheet from '@/components/dashboard/CustomizeDashboardSheet'
+import { toggleTodo, updateDashboardSections } from './actions'
 
-const TwoColumn = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: ${({ theme }) => theme.spacing.xl};
-
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    grid-template-columns: 1fr;
-    gap: ${({ theme }) => theme.spacing.md};
-  }
-`
-
-const TwoColumnCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 0.5px solid ${({ theme }) => theme.colors.borderLight};
-  border-radius: ${({ theme }) => theme.radii.lg};
-  padding: ${({ theme }) => theme.spacing.lg};
+const SectionWrapper = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
 `
 
 /* Desktop-only: toggle + greeting row */
@@ -37,7 +30,7 @@ const DesktopToggle = styled.div`
 `
 
 function getDayName() {
-  return new Date().toLocaleDateString('en-US', { weekday: 'long' })
+  return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 }
 
 function getMobileSubtitle() {
@@ -58,10 +51,18 @@ export default function DashboardPageClient({
   todaySchedule,
   todos: initialTodos,
   user,
+  dashboardSections: initialSections,
+  pantryItems,
+  groceryItems,
+  macroMembers,
+  dinnerIdeas,
+  cookingPreferences,
 }) {
   const [view, setView] = useState('daily')
   const [todos, setTodos] = useState(initialTodos)
   const [isPending, startTransition] = useTransition()
+  const [sections, setSections] = useState(initialSections)
+  const [showCustomize, setShowCustomize] = useState(false)
 
   function handleToggleTodo(todoId) {
     // Optimistic update
@@ -82,6 +83,54 @@ export default function DashboardPageClient({
     })
   }
 
+  const handleSectionsUpdate = useCallback((newSections) => {
+    setSections(newSections)
+    startTransition(async () => {
+      await updateDashboardSections(newSections)
+    })
+  }, [startTransition])
+
+  // Sort visible sections by sort_order
+  const visibleSections = [...sections]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .filter(s => s.is_visible)
+
+  function renderSection(sectionId) {
+    switch (sectionId) {
+      case 'todays_meals':
+        return (
+          <>
+            <DesktopToggle>
+              <DailyWeeklyToggle view={view} onToggle={setView} />
+            </DesktopToggle>
+            {view === 'weekly' ? (
+              <WeeklyGrid meals={weeklyMeals} />
+            ) : (
+              <DailyMealsCard meals={todayMeals} />
+            )}
+          </>
+        )
+      case 'weekly_snapshot':
+        return <WeeklySnapshotWidget weeklyMeals={weeklyMeals} />
+      case 'pantry_alerts':
+        return <PantryAlertsWidget pantryItems={pantryItems} />
+      case 'grocery_status':
+        return <GroceryStatusWidget groceryItems={groceryItems} />
+      case 'recipe_suggestions':
+        return <RecipeSuggestionsWidget dinnerIdeas={dinnerIdeas} />
+      case 'budget_tracker':
+        return <BudgetTrackerWidget cookingPreferences={cookingPreferences} />
+      case 'macro_summary':
+        return <MacroSummaryWidget macroMembers={macroMembers} />
+      case 'todo':
+        return <TodoListWidget todos={todos} onToggleTodo={handleToggleTodo} />
+      case 'today_schedule':
+        return <TodayScheduleWidget schedule={todaySchedule} />
+      default:
+        return null
+    }
+  }
+
   return (
     <>
       {/* Mobile: top bar with logo + toggle + avatar */}
@@ -93,29 +142,24 @@ export default function DashboardPageClient({
         initials={user.initials}
         subtitle={getMobileSubtitle()}
         desktopSubtitle={getDesktopSubtitle(todayMeals)}
+        onCustomize={() => setShowCustomize(true)}
       />
 
-      {/* Desktop only: toggle below greeting */}
-      <DesktopToggle>
-        <DailyWeeklyToggle view={view} onToggle={setView} />
-      </DesktopToggle>
+      {/* Dynamic sections */}
+      {visibleSections.map(section => (
+        <SectionWrapper key={section.section_id}>
+          {renderSection(section.section_id)}
+        </SectionWrapper>
+      ))}
 
-      {/* Meal section */}
-      {view === 'weekly' ? (
-        <WeeklyGrid meals={weeklyMeals} />
-      ) : (
-        <DailyMealsCard meals={todayMeals} />
+      {/* Customization bottom sheet */}
+      {showCustomize && (
+        <CustomizeDashboardSheet
+          sections={sections}
+          onClose={() => setShowCustomize(false)}
+          onUpdate={handleSectionsUpdate}
+        />
       )}
-
-      {/* Bottom section: schedule + to-do */}
-      <TwoColumn>
-        <TwoColumnCard>
-          <TodayScheduleWidget schedule={todaySchedule} />
-        </TwoColumnCard>
-        <TwoColumnCard>
-          <TodoListWidget todos={todos} onToggleTodo={handleToggleTodo} />
-        </TwoColumnCard>
-      </TwoColumn>
     </>
   )
 }

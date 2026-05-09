@@ -96,6 +96,55 @@ const ItemMeal = styled.span`
   }
 `
 
+const StorePill = styled.button`
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ $color }) => $color ? $color + '20' : 'transparent'};
+  color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
+  border: 1px solid ${({ $color, theme }) => $color || theme.colors.border};
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`
+
+const StoreDropdown = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  padding-left: 38px;
+  animation: fadeIn 0.15s ease;
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`
+
+const StoreOption = styled.button`
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ $selected, $color }) =>
+    $selected ? ($color || '#ccc') + '25' : 'transparent'};
+  color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
+  border: 1.5px solid ${({ $selected, $color, theme }) =>
+    $selected ? $color || theme.colors.teal : theme.colors.border};
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: ${({ $color, theme }) => $color || theme.colors.teal};
+  }
+`
+
 const RescanButton = styled.button`
   display: flex;
   align-items: center;
@@ -116,8 +165,9 @@ const RescanButton = styled.button`
   }
 `
 
-export default function StepPantryCheck({ items, onUpdateItems }) {
+export default function StepPantryCheck({ items, onUpdateItems, stores = [] }) {
   const [localItems, setLocalItems] = useState(items)
+  const [expandedItem, setExpandedItem] = useState(null)
 
   const needItems = localItems.filter(i => i.status === 'need')
   const lowItems = localItems.filter(i => i.status === 'low')
@@ -133,6 +183,23 @@ export default function StepPantryCheck({ items, onUpdateItems }) {
     }))
   }
 
+  function assignStore(itemId, storeId) {
+    setLocalItems(prev => prev.map(item =>
+      item.id === itemId ? { ...item, assignedStore: storeId } : item
+    ))
+    setExpandedItem(null)
+    if (onUpdateItems) {
+      onUpdateItems(localItems.map(item =>
+        item.id === itemId ? { ...item, assignedStore: storeId } : item
+      ))
+    }
+  }
+
+  function getStoreForItem(item) {
+    if (!item.assignedStore || stores.length === 0) return null
+    return stores.find(s => s.id === item.assignedStore) || null
+  }
+
   function renderSection(title, sectionItems, color, textColor, checkColor) {
     if (sectionItems.length === 0) return null
     return (
@@ -142,19 +209,55 @@ export default function StepPantryCheck({ items, onUpdateItems }) {
           <CountBadge $color={color} $textColor={textColor}>{sectionItems.length}</CountBadge>
         </SectionTitle>
         <ItemList>
-          {sectionItems.map(item => (
-            <ItemRow key={item.id} onClick={() => toggleItem(item.id)}>
-              <Checkbox
-                $checked={item.status === 'have'}
-                $color={checkColor}
-              >
-                {item.status === 'have' && '\u2713'}
-              </Checkbox>
-              <ItemName $checked={item.status === 'have'}>{item.name}</ItemName>
-              <ItemCategory>{item.category}</ItemCategory>
-              <ItemMeal>{item.meal}</ItemMeal>
-            </ItemRow>
-          ))}
+          {sectionItems.map(item => {
+            const assignedStore = getStoreForItem(item)
+            return (
+              <div key={item.id}>
+                <ItemRow>
+                  <Checkbox
+                    $checked={item.status === 'have'}
+                    $color={checkColor}
+                    onClick={() => toggleItem(item.id)}
+                  >
+                    {item.status === 'have' && '\u2713'}
+                  </Checkbox>
+                  <ItemName
+                    $checked={item.status === 'have'}
+                    onClick={() => toggleItem(item.id)}
+                  >
+                    {item.name}
+                  </ItemName>
+                  <ItemCategory>{item.category}</ItemCategory>
+                  {stores.length > 0 && item.status !== 'have' && (
+                    <StorePill
+                      $color={assignedStore?.color}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setExpandedItem(expandedItem === item.id ? null : item.id)
+                      }}
+                    >
+                      {assignedStore?.name || 'Assign store'}
+                    </StorePill>
+                  )}
+                  <ItemMeal>{item.meal}</ItemMeal>
+                </ItemRow>
+                {expandedItem === item.id && stores.length > 0 && (
+                  <StoreDropdown>
+                    {stores.map(store => (
+                      <StoreOption
+                        key={store.id}
+                        $selected={item.assignedStore === store.id}
+                        $color={store.color}
+                        onClick={() => assignStore(item.id, store.id)}
+                      >
+                        {store.icon} {store.name}
+                      </StoreOption>
+                    ))}
+                  </StoreDropdown>
+                )}
+              </div>
+            )
+          })}
         </ItemList>
       </>
     )

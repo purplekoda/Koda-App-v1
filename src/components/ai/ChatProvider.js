@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState, useTransition } from 'react'
-import { askAI, getAIHistoryAction } from '@/lib/actions/ai'
+import { askAI, getAIHistoryAction, confirmMealEditAction } from '@/lib/actions/ai'
 
 const ChatContext = createContext(null)
 
@@ -17,10 +17,16 @@ function flattenHistory(entries) {
     .filter(m => m.text)
 }
 
-export function ChatProvider({ children }) {
+export function ChatProvider({ children, voiceSettings: initialVoiceSettings }) {
   const [messages, setMessages] = useState([])
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [voiceResponsesEnabled, setVoiceResponsesEnabled] = useState(
+    initialVoiceSettings?.voice_responses_enabled ?? false
+  )
+  const [handsFreeChatEnabled, setHandsFreeChatEnabled] = useState(
+    initialVoiceSettings?.hands_free_chat_enabled ?? false
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -46,6 +52,7 @@ export function ChatProvider({ children }) {
             role: 'model',
             text: result.data.text,
             chips: result.data.chips,
+            card: result.data.card || null,
           },
         ])
       } else {
@@ -61,9 +68,43 @@ export function ChatProvider({ children }) {
     })
   }, [])
 
+  const confirmSuggestion = useCallback((card) => {
+    startTransition(async () => {
+      const result = await confirmMealEditAction(card)
+      if (result.success && result.data) {
+        const { added, day, groceryAdded } = result.data
+        let msg = `Done! ${added} has been added to ${day}'s meal plan.`
+        if (groceryAdded?.length > 0) {
+          msg += ` I also added ${groceryAdded.join(', ')} to your grocery list since you'll need those.`
+        }
+        setMessages(prev => [
+          ...prev,
+          { role: 'model', text: msg, chips: ['Plan meals', 'Add another side', 'Check grocery list'] },
+        ])
+      } else {
+        setMessages(prev => [
+          ...prev,
+          { role: 'model', text: result.error || 'Could not add to meal plan.', isError: true },
+        ])
+      }
+    })
+  }, [])
+
+  const rejectSuggestion = useCallback((card) => {
+    const day = card?.day || ''
+    const mealType = card?.mealType || 'dinner'
+    const itemType = card?.suggestion?.item_type || 'side dish'
+    sendMessage(`Suggest something else — a different ${itemType} for ${day}'s ${mealType}`)
+  }, [sendMessage])
+
   return (
     <ChatContext.Provider
-      value={{ messages, isOpen, setIsOpen, sendMessage, isPending }}
+      value={{
+        messages, isOpen, setIsOpen, sendMessage, isPending,
+        confirmSuggestion, rejectSuggestion,
+        voiceResponsesEnabled, setVoiceResponsesEnabled,
+        handsFreeChatEnabled, setHandsFreeChatEnabled,
+      }}
     >
       {children}
     </ChatContext.Provider>

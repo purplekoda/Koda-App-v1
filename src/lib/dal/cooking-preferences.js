@@ -20,7 +20,7 @@ export async function getCookingPreferences(userId) {
     .eq('id', userId)
     .single()
 
-  if (error) throw new Error('Failed to load cooking preferences')
+  if (error) return null
   return data?.cooking_preferences || null
 }
 
@@ -54,6 +54,6 @@ export async function getDietaryRestrictions(userId) {
     .eq('user_id', userId)
     .is('family_member_id', null)
 
-  if (error) throw new Error('Failed to load dietary restrictions')
+  if (error) return []
   return (data || []).map(r => r.restriction)
 }

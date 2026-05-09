@@ -45,7 +45,7 @@ export default function FillWeekButton({ onFill, isPending }) {
   return (
     <ButtonWrapper $loading={isPending} onClick={() => !isPending && onFill?.()} disabled={isPending}>
       <PurpleDot $loading={isPending} />
-      {isPending ? 'Koda is planning...' : 'Fill week with AI'}
+      {isPending ? 'Koda is planning...' : 'Fill week with Koda'}
     </ButtonWrapper>
   )
 }

@@ -155,6 +155,16 @@ const ErrorText = styled.p`
   margin: 0;
 `
 
+const DuplicateWarning = styled.p`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.amberDark};
+  background: ${({ theme }) => theme.colors.amberLight};
+  border: 1px solid ${({ theme }) => theme.colors.amberMid || theme.colors.amber};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  padding: 7px 10px;
+  margin: 0;
+`
+
 const ImagePickerLabel = styled.label`
   display: flex;
   flex-direction: column;
@@ -252,7 +262,7 @@ const AiPhotoButton = styled.button`
 
 const emptyIngredient = () => ({ name: '', quantity: '' })
 
-export default function RecipeForm({ initial, onSubmit, onCancel, isPending, submitLabel = 'Save', onGenerateImage }) {
+export default function RecipeForm({ initial, onSubmit, onCancel, isPending, submitLabel = 'Save', onGenerateImage, existingNames = [] }) {
   const [name, setName] = useState(initial?.name || '')
   const [description, setDescription] = useState(initial?.description || '')
   const [instructions, setInstructions] = useState(initial?.instructions || '')
@@ -266,6 +276,13 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
   const [imageUrl, setImageUrl] = useState(initial?.image_url || null)
   const [error, setError] = useState(null)
   const [generatingImage, setGeneratingImage] = useState(false)
+  const [nameDuplicate, setNameDuplicate] = useState(
+    () => initial?.name ? existingNames.includes(initial.name.toLowerCase()) : false
+  )
+
+  function handleNameBlur() {
+    setNameDuplicate(name.trim() ? existingNames.includes(name.trim().toLowerCase()) : false)
+  }
 
   function handleImageChange(e) {
     const file = e.target.files?.[0]
@@ -372,11 +389,15 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
           id="recipe-name"
           type="text"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={e => { setName(e.target.value); setNameDuplicate(false) }}
+          onBlur={handleNameBlur}
           placeholder="e.g. Grandma's Lasagna"
           maxLength={200}
           required
         />
+        {nameDuplicate && (
+          <DuplicateWarning>A recipe with this name already exists in your library.</DuplicateWarning>
+        )}
       </Field>
 
       <Field>
@@ -409,7 +430,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
                 onClick={handleGenerateImage}
                 disabled={generatingImage || !name.trim()}
               >
-                {generatingImage ? 'Generating\u2026' : '\u2728 Generate with AI'}
+                {generatingImage ? 'Generating\u2026' : '\u2728 Generate with Koda'}
               </AiPhotoButton>
             )}
           </PhotoActions>

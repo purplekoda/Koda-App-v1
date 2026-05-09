@@ -48,7 +48,7 @@ export async function startScan(images) {
       ...item,
     }))
 
-    // Step 2: Save scan results to database (non-mock mode)
+    // Step 2: Save scan results to pantry_items for the scan history view
     if (!isMockMode()) {
       const { saveScanResults } = await import('@/lib/dal/pantry')
       await saveScanResults(user.id, pantryItems)

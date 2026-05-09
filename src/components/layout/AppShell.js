@@ -24,11 +24,11 @@ const MainContent = styled.main`
   }
 `
 
-export default function AppShell({ children, user }) {
+export default function AppShell({ children, user, trackMacros, voiceSettings }) {
   return (
-    <ChatProvider>
+    <ChatProvider voiceSettings={voiceSettings}>
       <Shell>
-        <Sidebar user={user} />
+        <Sidebar user={user} trackMacros={trackMacros} />
         <MainContent>{children}</MainContent>
         <BottomTabBar />
         <FloatingChat />

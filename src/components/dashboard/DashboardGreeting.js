@@ -40,9 +40,22 @@ const Right = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
+`
 
-  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
-    display: none;
+const CustomizeLink = styled.button`
+  background: none;
+  border: none;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-weight: 500;
+  cursor: pointer;
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.radii.md};
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.teal};
+    background: ${({ theme }) => theme.colors.tealLight};
   }
 `
 
@@ -52,6 +65,10 @@ const NotificationDot = styled.div`
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.coral};
   cursor: pointer;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    display: none;
+  }
 `
 
 const Avatar = styled.div`
@@ -76,7 +93,7 @@ function getGreeting() {
   return 'Good evening'
 }
 
-export default function DashboardGreeting({ displayName, initials, subtitle, desktopSubtitle }) {
+export default function DashboardGreeting({ displayName, initials, subtitle, desktopSubtitle, onCustomize }) {
   return (
     <Wrapper>
       <Left>
@@ -85,6 +102,9 @@ export default function DashboardGreeting({ displayName, initials, subtitle, des
         <DesktopSubtitle>{desktopSubtitle || subtitle}</DesktopSubtitle>
       </Left>
       <Right>
+        <CustomizeLink onClick={onCustomize} aria-label="Customize dashboard">
+          Customize
+        </CustomizeLink>
         <NotificationDot />
         <Avatar>{initials || '?'}</Avatar>
       </Right>

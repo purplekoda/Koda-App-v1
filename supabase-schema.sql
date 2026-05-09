@@ -585,3 +585,42 @@ CREATE POLICY "Users delete own macro extras" ON macro_extras FOR DELETE USING (
 
 CREATE INDEX IF NOT EXISTS idx_macro_extras_member_date ON macro_extras(member_id, logged_date);
 CREATE INDEX IF NOT EXISTS idx_macro_extras_user ON macro_extras(user_id);
+
+-- ── Collections ──────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS collections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  emoji TEXT DEFAULT '',
+  sort_order SMALLINT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE collections ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own collections" ON collections FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Users can insert their own collections" ON collections FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can update their own collections" ON collections FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY "Users can delete their own collections" ON collections FOR DELETE USING (user_id = auth.uid());
+
+CREATE INDEX IF NOT EXISTS idx_collections_user ON collections(user_id);
+
+-- ── Recipe-Collection junction ───────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS recipe_collections (
+  recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  collection_id UUID NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (recipe_id, collection_id)
+);
+
+ALTER TABLE recipe_collections ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own recipe_collections" ON recipe_collections FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Users can insert their own recipe_collections" ON recipe_collections FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete their own recipe_collections" ON recipe_collections FOR DELETE USING (user_id = auth.uid());
+
+CREATE INDEX IF NOT EXISTS idx_recipe_collections_collection ON recipe_collections(collection_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_collections_user ON recipe_collections(user_id);

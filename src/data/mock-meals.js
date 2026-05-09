@@ -17,6 +17,10 @@ export const mockWeeklyMeals = [
         { name: 'Bell pepper', have: true }, { name: 'Cherry tomatoes', have: false },
         { name: 'Parmesan', have: true }, { name: 'Olive oil', have: true },
       ]},
+      { type: 'sides', name: 'Garlic bread', time: '6:30pm', ingredients: [
+        { name: 'Baguette', have: true }, { name: 'Butter', have: true }, { name: 'Garlic', have: true },
+      ]},
+      { type: 'dinner_dessert', name: null, time: null, ingredients: [] },
     ],
   },
   {
@@ -37,6 +41,8 @@ export const mockWeeklyMeals = [
         { name: 'Shredded cheese', have: true }, { name: 'Salsa', have: false },
         { name: 'Sour cream', have: true }, { name: 'Lettuce', have: true },
       ]},
+      { type: 'sides', name: null, time: null, ingredients: [] },
+      { type: 'dinner_dessert', name: null, time: null, ingredients: [] },
     ],
   },
   {
@@ -56,6 +62,10 @@ export const mockWeeklyMeals = [
         { name: 'Lemon', have: false }, { name: 'Garlic', have: true },
         { name: 'Olive oil', have: true }, { name: 'Dill', have: false },
       ]},
+      { type: 'sides', name: 'Roasted potatoes', time: '6:30pm', ingredients: [
+        { name: 'Potatoes', have: true }, { name: 'Olive oil', have: true }, { name: 'Rosemary', have: false },
+      ]},
+      { type: 'dinner_dessert', name: null, time: null, ingredients: [] },
     ],
   },
   {
@@ -71,6 +81,8 @@ export const mockWeeklyMeals = [
         { name: 'Soy sauce', have: true }, { name: 'Sesame oil', have: true },
         { name: 'Rice', have: true }, { name: 'Ginger', have: true },
       ]},
+      { type: 'sides', name: null, time: null, ingredients: [] },
+      { type: 'dinner_dessert', name: null, time: null, ingredients: [] },
     ],
   },
   {
@@ -90,6 +102,30 @@ export const mockWeeklyMeals = [
         { name: 'Marinara sauce', have: true }, { name: 'Pepperoni', have: false },
         { name: 'Bell pepper', have: true },
       ]},
+      { type: 'sides', name: 'Side salad', time: '6:30pm', ingredients: [
+        { name: 'Mixed greens', have: true }, { name: 'Cherry tomatoes', have: false }, { name: 'Dressing', have: true },
+      ]},
+      { type: 'dinner_dessert', name: null, time: null, ingredients: [] },
+    ],
+  },
+  {
+    day: 'Sat', dayOfWeek: 6, isToday: false,
+    meals: [
+      { type: 'breakfast', name: null, time: null, ingredients: [] },
+      { type: 'lunch', name: null, time: null, ingredients: [] },
+      { type: 'dinner', name: null, time: null, ingredients: [] },
+      { type: 'sides', name: null, time: null, ingredients: [] },
+      { type: 'dinner_dessert', name: null, time: null, ingredients: [] },
+    ],
+  },
+  {
+    day: 'Sun', dayOfWeek: 7, isToday: false,
+    meals: [
+      { type: 'breakfast', name: null, time: null, ingredients: [] },
+      { type: 'lunch', name: null, time: null, ingredients: [] },
+      { type: 'dinner', name: null, time: null, ingredients: [] },
+      { type: 'sides', name: null, time: null, ingredients: [] },
+      { type: 'dinner_dessert', name: null, time: null, ingredients: [] },
     ],
   },
 ]

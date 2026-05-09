@@ -62,7 +62,7 @@ export default function DailyMealsCard({ meals }) {
     <Card>
       <SectionHeader title="Today's meals" linkText="Full planner" linkHref="/meals" />
       {meals.map((meal) => (
-        <MealRow key={meal.type} $type={meal.type}>
+        <MealRow key={meal.id || meal.type} $type={meal.type}>
           <MealType $type={meal.type}>
             {meal.type.charAt(0).toUpperCase() + meal.type.slice(1)}
           </MealType>
