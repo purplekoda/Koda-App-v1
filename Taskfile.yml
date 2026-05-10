@@ -34,6 +34,16 @@ tasks:
     cmds:
       - npx eslint . --fix
 
+  format:
+    desc: Apply Biome formatting in place
+    cmds:
+      - npx biome format --write .
+
+  format:check:
+    desc: Check Biome formatting without writing
+    cmds:
+      - npx biome format .
+
   test:
     desc: Run vitest in watch mode
     cmds:
@@ -61,8 +71,9 @@ tasks:
       - npm install
 
   check:
-    desc: Run lint, tests with coverage, and build
+    desc: Run format:check, lint, tests with coverage, and build
     cmds:
+      - task: format:check
       - task: lint
       - task: test:coverage
       - task: build

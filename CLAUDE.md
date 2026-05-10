@@ -22,9 +22,11 @@ Koda is a household meal-planning and kitchen management app. Key areas: dashboa
 - `task build` — production build
 - `task lint` — run ESLint
 - `task lint:fix` — ESLint with auto-fix
+- `task format` — Biome formatter, write in place
+- `task format:check` — Biome formatter, verify only
 - `task test` — run vitest in watch mode
 - `task test:coverage` — run vitest with coverage + ratchet enforcement
-- `task check` — lint + tests + build
+- `task check` — format:check + lint + tests + build
 - `task clean` — remove `.next`
 
 Or via npm: `npm run dev`, `npm run build`, `npm run lint`, `npm run test`, `npm run test:coverage`
@@ -102,7 +104,22 @@ Handles CSP (nonce-based script-src via `x-nonce` request header), CORS enforcem
 - When coverage improves, `scripts/coverage-ratchet.js` updates the baseline and exits 1, asking you to commit `.coverage-baseline.json` and push again.
 - Manual baseline edits downward should be rare and reviewed.
 
+## Biome (formatter only)
+
+- `npm run format` — write changes in place
+- `npm run format:check` — verify only (used in pre-push and CI)
+- Biome's linter is disabled. ESLint + `eslint-config-next` remains the sole linter.
+
+## Pre-push hook
+
+- `.husky/pre-push` runs `format:check` + `lint`. Tests are NOT in the hook — they run in CI.
+- Bypass with `git push --no-verify` only for emergencies.
+
 ## CI
 
-- `.github/workflows/ci.yml` runs on every push and PR: lint, test:coverage.
+- `.github/workflows/ci.yml` runs on every push and PR: format:check, lint, test:coverage.
 - Coverage HTML report is uploaded as a workflow artifact.
+
+## Lint debt
+
+- See `TODO.md` for the list of lint rules currently downgraded to warnings (pre-existing React 19 / hooks issues from `eslint-config-next` 16). Re-promote each rule to `error` once cleaned up.
