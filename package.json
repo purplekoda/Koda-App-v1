@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage && node scripts/coverage-ratchet.js"
+    "test:coverage": "vitest run --coverage && node scripts/coverage-ratchet.js",
+    "format": "biome format --write .",
+    "format:check": "biome format ."
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
@@ -23,6 +25,7 @@
     "styled-components": "^6.3.12"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
     "@netlify/plugin-nextjs": "^5",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
