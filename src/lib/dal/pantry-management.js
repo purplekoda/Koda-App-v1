@@ -1,7 +1,7 @@
-import 'server-only'
+import 'server-only';
 
-import { isMockMode } from './require-user'
-export { PANTRY_CATEGORIES, PANTRY_UNITS } from './pantry-constants'
+import { isMockMode } from './require-user';
+export { PANTRY_CATEGORIES, PANTRY_UNITS } from './pantry-constants';
 
 /**
  * Get all non-depleted pantry items for a user, sorted by expiry date (soonest first).
@@ -9,29 +9,31 @@ export { PANTRY_CATEGORIES, PANTRY_UNITS } from './pantry-constants'
  */
 export async function getManagedPantryItems(userId, { includeDepleted = false } = {}) {
   if (isMockMode()) {
-    const { getMockManagedPantry } = await import('./mock-store')
-    const items = await getMockManagedPantry()
-    return includeDepleted ? items : items.filter(i => !i.is_depleted)
+    const { getMockManagedPantry } = await import('./mock-store');
+    const items = await getMockManagedPantry();
+    return includeDepleted ? items : items.filter((i) => !i.is_depleted);
   }
 
-  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-  const supabase = await getSupabaseServerClient()
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server');
+  const supabase = await getSupabaseServerClient();
 
   let query = supabase
     .from('pantry')
-    .select('id, ingredient_name, quantity, unit, purchase_date, expiry_date, category, is_depleted, source, created_at')
+    .select(
+      'id, ingredient_name, quantity, unit, purchase_date, expiry_date, category, is_depleted, source, created_at',
+    )
     .eq('user_id', userId)
     .order('is_depleted', { ascending: true })
     .order('expiry_date', { ascending: true, nullsFirst: false })
-    .order('ingredient_name', { ascending: true })
+    .order('ingredient_name', { ascending: true });
 
   if (!includeDepleted) {
-    query = query.eq('is_depleted', false)
+    query = query.eq('is_depleted', false);
   }
 
-  const { data, error } = await query
-  if (error) throw new Error('Failed to load pantry items')
-  return data || []
+  const { data, error } = await query;
+  if (error) throw new Error('Failed to load pantry items');
+  return data || [];
 }
 
 /**
@@ -39,12 +41,12 @@ export async function getManagedPantryItems(userId, { includeDepleted = false } 
  */
 export async function addPantryItem(userId, item) {
   if (isMockMode()) {
-    const { addMockPantryItem } = await import('./mock-store')
-    return addMockPantryItem(item)
+    const { addMockPantryItem } = await import('./mock-store');
+    return addMockPantryItem(item);
   }
 
-  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-  const supabase = await getSupabaseServerClient()
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server');
+  const supabase = await getSupabaseServerClient();
 
   const { data, error } = await supabase
     .from('pantry')
@@ -59,10 +61,10 @@ export async function addPantryItem(userId, item) {
       is_depleted: false,
     })
     .select()
-    .single()
+    .single();
 
-  if (error) throw new Error('Failed to add pantry item')
-  return data
+  if (error) throw new Error('Failed to add pantry item');
+  return data;
 }
 
 /**
@@ -70,12 +72,12 @@ export async function addPantryItem(userId, item) {
  */
 export async function updatePantryItem(userId, itemId, updates) {
   if (isMockMode()) {
-    const { updateMockPantryItem } = await import('./mock-store')
-    return updateMockPantryItem(itemId, updates)
+    const { updateMockPantryItem } = await import('./mock-store');
+    return updateMockPantryItem(itemId, updates);
   }
 
-  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-  const supabase = await getSupabaseServerClient()
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server');
+  const supabase = await getSupabaseServerClient();
 
   const { data, error } = await supabase
     .from('pantry')
@@ -83,10 +85,10 @@ export async function updatePantryItem(userId, itemId, updates) {
     .eq('id', itemId)
     .eq('user_id', userId)
     .select()
-    .single()
+    .single();
 
-  if (error) throw new Error('Failed to update pantry item')
-  return data
+  if (error) throw new Error('Failed to update pantry item');
+  return data;
 }
 
 /**
@@ -94,27 +96,23 @@ export async function updatePantryItem(userId, itemId, updates) {
  */
 export async function deletePantryItem(userId, itemId) {
   if (isMockMode()) {
-    const { deleteMockPantryItem } = await import('./mock-store')
-    return deleteMockPantryItem(itemId)
+    const { deleteMockPantryItem } = await import('./mock-store');
+    return deleteMockPantryItem(itemId);
   }
 
-  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-  const supabase = await getSupabaseServerClient()
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server');
+  const supabase = await getSupabaseServerClient();
 
-  const { error } = await supabase
-    .from('pantry')
-    .delete()
-    .eq('id', itemId)
-    .eq('user_id', userId)
+  const { error } = await supabase.from('pantry').delete().eq('id', itemId).eq('user_id', userId);
 
-  if (error) throw new Error('Failed to delete pantry item')
+  if (error) throw new Error('Failed to delete pantry item');
 }
 
 /**
  * Mark a pantry item as depleted (or restore it).
  */
 export async function setPantryItemDepleted(userId, itemId, isDepleted) {
-  return updatePantryItem(userId, itemId, { is_depleted: isDepleted })
+  return updatePantryItem(userId, itemId, { is_depleted: isDepleted });
 }
 
 /**
@@ -130,11 +128,11 @@ export async function setPantryItemDepleted(userId, itemId, isDepleted) {
 export async function depleteIngredientsForMealPlan(userId, mealPlanId) {
   if (isMockMode()) {
     // Mock mode: no-op depletion (no persistent recipe ingredients to cross-ref)
-    return { depletedCount: 0 }
+    return { depletedCount: 0 };
   }
 
-  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-  const supabase = await getSupabaseServerClient()
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server');
+  const supabase = await getSupabaseServerClient();
 
   // 1. Get all meal slots for this plan that have a recipe
   const { data: slots } = await supabase
@@ -142,61 +140,64 @@ export async function depleteIngredientsForMealPlan(userId, mealPlanId) {
     .select('recipe_id')
     .eq('meal_plan_id', mealPlanId)
     .eq('user_id', userId)
-    .not('recipe_id', 'is', null)
+    .not('recipe_id', 'is', null);
 
-  if (!slots?.length) return { depletedCount: 0 }
+  if (!slots?.length) return { depletedCount: 0 };
 
-  const recipeIds = [...new Set(slots.map(s => s.recipe_id))]
+  const recipeIds = [...new Set(slots.map((s) => s.recipe_id))];
 
   // 2. Get all ingredient names from those recipes
   const { data: recipes } = await supabase
     .from('recipes')
     .select('ingredients')
     .in('id', recipeIds)
-    .eq('user_id', userId)
+    .eq('user_id', userId);
 
-  const plannedIngredientNames = new Set()
-  ;(recipes || []).forEach(recipe => {
-    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
-    ings.forEach(ing => {
-      const name = typeof ing === 'string' ? ing : ing?.name
-      if (name) plannedIngredientNames.add(name.trim().toLowerCase())
-    })
-  })
+  const plannedIngredientNames = new Set();
+  (recipes || []).forEach((recipe) => {
+    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    ings.forEach((ing) => {
+      const name = typeof ing === 'string' ? ing : ing?.name;
+      if (name) plannedIngredientNames.add(name.trim().toLowerCase());
+    });
+  });
 
-  if (plannedIngredientNames.size === 0) return { depletedCount: 0 }
+  if (plannedIngredientNames.size === 0) return { depletedCount: 0 };
 
   // 3. Get non-depleted pantry items
   const { data: pantryItems } = await supabase
     .from('pantry')
     .select('id, ingredient_name')
     .eq('user_id', userId)
-    .eq('is_depleted', false)
+    .eq('is_depleted', false);
 
-  if (!pantryItems?.length) return { depletedCount: 0 }
+  if (!pantryItems?.length) return { depletedCount: 0 };
 
   // 4. Match pantry items to planned ingredients (case-insensitive substring)
-  const toDeplete = pantryItems.filter(item => {
-    const itemName = item.ingredient_name.trim().toLowerCase()
+  const toDeplete = pantryItems.filter((item) => {
+    const itemName = item.ingredient_name.trim().toLowerCase();
     // Match if the pantry item name appears in any planned ingredient, or vice versa
     for (const plannedName of plannedIngredientNames) {
       if (plannedName.includes(itemName) || itemName.includes(plannedName)) {
-        return true
+        return true;
       }
     }
-    return false
-  })
+    return false;
+  });
 
-  if (!toDeplete.length) return { depletedCount: 0 }
+  if (!toDeplete.length) return { depletedCount: 0 };
 
   const { error } = await supabase
     .from('pantry')
     .update({ is_depleted: true, updated_at: new Date().toISOString() })
-    .in('id', toDeplete.map(i => i.id))
-    .eq('user_id', userId)
+    .in(
+      'id',
+      toDeplete.map((i) => i.id),
+    )
+    .eq('user_id', userId);
 
-  if (error) throw new Error('Failed to deplete pantry items')
-  return { depletedCount: toDeplete.length }
+  if (error) throw new Error('Failed to deplete pantry items');
+  return { depletedCount: toDeplete.length };
 }
 
 /**
@@ -212,30 +213,30 @@ export async function depleteIngredientsForMealPlan(userId, mealPlanId) {
  */
 export async function saveCommittedScanItems(userId, scanItems, manualItems, deleteExistingManual) {
   if (isMockMode()) {
-    const { saveCommittedScanItemsToMock } = await import('./mock-store')
-    return saveCommittedScanItemsToMock(scanItems, manualItems, deleteExistingManual)
+    const { saveCommittedScanItemsToMock } = await import('./mock-store');
+    return saveCommittedScanItemsToMock(scanItems, manualItems, deleteExistingManual);
   }
 
-  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-  const supabase = await getSupabaseServerClient()
-  const now = new Date().toISOString()
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server');
+  const supabase = await getSupabaseServerClient();
+  const now = new Date().toISOString();
 
   // 1. Remove old scan-sourced rows
-  await supabase.from('pantry').delete().eq('user_id', userId).eq('source', 'scan')
+  await supabase.from('pantry').delete().eq('user_id', userId).eq('source', 'scan');
 
   // 2. Optionally remove old manually-added rows
   if (deleteExistingManual) {
-    await supabase.from('pantry').delete().eq('user_id', userId).eq('source', 'manual')
+    await supabase.from('pantry').delete().eq('user_id', userId).eq('source', 'manual');
   }
 
   // 3. Insert curated AI-detected items
   if (scanItems.length > 0) {
-    const scanRows = scanItems.map(item => {
-      let expiryDate = null
+    const scanRows = scanItems.map((item) => {
+      let expiryDate = null;
       if (item.daysLeft != null && item.daysLeft >= 0) {
-        const d = new Date()
-        d.setDate(d.getDate() + item.daysLeft)
-        expiryDate = d.toISOString().slice(0, 10)
+        const d = new Date();
+        d.setDate(d.getDate() + item.daysLeft);
+        expiryDate = d.toISOString().slice(0, 10);
       }
       return {
         user_id: userId,
@@ -246,18 +247,18 @@ export async function saveCommittedScanItems(userId, scanItems, manualItems, del
         is_depleted: false,
         created_at: now,
         updated_at: now,
-      }
-    })
-    const { error } = await supabase.from('pantry').insert(scanRows)
+      };
+    });
+    const { error } = await supabase.from('pantry').insert(scanRows);
     if (error) {
-      console.error('[saveCommittedScanItems] scan insert error:', error)
-      throw new Error(error.message || 'Failed to save scan items')
+      console.error('[saveCommittedScanItems] scan insert error:', error);
+      throw new Error(error.message || 'Failed to save scan items');
     }
   }
 
   // 4. Insert new manually-added items from the review step
   if (manualItems.length > 0) {
-    const manualRows = manualItems.map(item => ({
+    const manualRows = manualItems.map((item) => ({
       user_id: userId,
       ingredient_name: item.name,
       category: item.category || 'Other',
@@ -265,11 +266,11 @@ export async function saveCommittedScanItems(userId, scanItems, manualItems, del
       is_depleted: false,
       created_at: now,
       updated_at: now,
-    }))
-    const { error } = await supabase.from('pantry').insert(manualRows)
+    }));
+    const { error } = await supabase.from('pantry').insert(manualRows);
     if (error) {
-      console.error('[saveCommittedScanItems] manual insert error:', error)
-      throw new Error(error.message || 'Failed to save manual items')
+      console.error('[saveCommittedScanItems] manual insert error:', error);
+      throw new Error(error.message || 'Failed to save manual items');
     }
   }
 }
@@ -285,30 +286,26 @@ export async function saveCommittedScanItems(userId, scanItems, manualItems, del
  */
 export async function saveScannedItemsToManagedPantry(userId, items, scannedAt) {
   if (isMockMode()) {
-    const { saveScannedItemsToMockManagedPantry } = await import('./mock-store')
-    return saveScannedItemsToMockManagedPantry(items, scannedAt)
+    const { saveScannedItemsToMockManagedPantry } = await import('./mock-store');
+    return saveScannedItemsToMockManagedPantry(items, scannedAt);
   }
 
-  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-  const supabase = await getSupabaseServerClient()
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server');
+  const supabase = await getSupabaseServerClient();
 
   // Remove all previously scanned items for this user
-  await supabase
-    .from('pantry')
-    .delete()
-    .eq('user_id', userId)
-    .eq('source', 'scan')
+  await supabase.from('pantry').delete().eq('user_id', userId).eq('source', 'scan');
 
-  if (!items.length) return
+  if (!items.length) return;
 
-  const scanDate = scannedAt ? new Date(scannedAt) : new Date()
-  const rows = items.map(item => {
+  const scanDate = scannedAt ? new Date(scannedAt) : new Date();
+  const rows = items.map((item) => {
     // Derive expiry_date from daysLeft
-    let expiryDate = null
+    let expiryDate = null;
     if (item.daysLeft != null && item.daysLeft >= 0) {
-      const d = new Date(scanDate)
-      d.setDate(d.getDate() + item.daysLeft)
-      expiryDate = d.toISOString().slice(0, 10)
+      const d = new Date(scanDate);
+      d.setDate(d.getDate() + item.daysLeft);
+      expiryDate = d.toISOString().slice(0, 10);
     }
 
     return {
@@ -320,9 +317,9 @@ export async function saveScannedItemsToManagedPantry(userId, items, scannedAt) 
       is_depleted: false,
       created_at: scanDate.toISOString(),
       updated_at: scanDate.toISOString(),
-    }
-  })
+    };
+  });
 
-  const { error } = await supabase.from('pantry').insert(rows)
-  if (error) throw new Error('Failed to save scanned items to pantry')
+  const { error } = await supabase.from('pantry').insert(rows);
+  if (error) throw new Error('Failed to save scanned items to pantry');
 }

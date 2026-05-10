@@ -1,19 +1,19 @@
-'use client'
+'use client';
 
-import styled, { keyframes } from 'styled-components'
+import styled, { keyframes } from 'styled-components';
 
 const pulseRing = keyframes`
   0% { transform: scale(1); opacity: 0.6; }
   50% { transform: scale(1.15); opacity: 0.3; }
   100% { transform: scale(1); opacity: 0.6; }
-`
+`;
 
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const MicCircle = styled.div`
   position: relative;
@@ -26,7 +26,7 @@ const MicCircle = styled.div`
   align-items: center;
   justify-content: center;
   font-size: 22px;
-`
+`;
 
 const PulseRing = styled.span`
   position: absolute;
@@ -35,13 +35,13 @@ const PulseRing = styled.span`
   border: 2.5px solid ${({ theme }) => theme.colors.teal};
   animation: ${pulseRing} 1.5s ease-in-out infinite;
   pointer-events: none;
-`
+`;
 
 const Label = styled.span`
   font-size: 12px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.teal};
-`
+`;
 
 /**
  * Pulsing green mic ring shown when the continuous mic is listening.
@@ -57,5 +57,5 @@ export default function ListeningIndicator({ label = 'Listening', showMic = true
       )}
       {label && <Label>{label}</Label>}
     </Wrapper>
-  )
+  );
 }

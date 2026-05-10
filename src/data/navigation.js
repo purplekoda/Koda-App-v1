@@ -17,11 +17,9 @@ export const sidebarSections = [
   },
   {
     label: 'ACCOUNT',
-    items: [
-      { id: 'settings', name: 'Settings', href: '/settings', color: '#5F5E5A' },
-    ],
+    items: [{ id: 'settings', name: 'Settings', href: '/settings', color: '#5F5E5A' }],
   },
-]
+];
 
 export const bottomTabs = [
   { id: 'home', name: 'Home', href: '/dashboard', color: '#1D9E75' },
@@ -29,4 +27,4 @@ export const bottomTabs = [
   { id: 'pantry', name: 'Pantry', href: '/pantry', color: '#1D9E75' },
   { id: 'recipes', name: 'Recipe Box', href: '/recipes', color: '#7F77DD' },
   { id: 'settings', name: 'Settings', href: '/settings', color: '#5F5E5A' },
-]
+];

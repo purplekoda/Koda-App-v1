@@ -1,21 +1,21 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useRef } from 'react'
-import styled from 'styled-components'
-import QRCode from 'qrcode'
-import StepShell from '../shared/StepShell'
-import { PERMISSION_GROUPS } from '@/data/onboarding-options'
+import { useState, useEffect, useRef } from 'react';
+import styled from 'styled-components';
+import QRCode from 'qrcode';
+import StepShell from '../shared/StepShell';
+import { PERMISSION_GROUPS } from '@/data/onboarding-options';
 
 const Section = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xxl};
-`
+`;
 
 const SectionLabel = styled.div`
   font-size: 14px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 // Household members list
 const MemberRow = styled.div`
@@ -27,7 +27,7 @@ const MemberRow = styled.div`
   & + & {
     border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const Avatar = styled.div`
   width: 32px;
@@ -41,22 +41,22 @@ const Avatar = styled.div`
   font-weight: 700;
   font-size: 13px;
   flex-shrink: 0;
-`
+`;
 
 const MemberName = styled.div`
   flex: 1;
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const RoleBadge = styled.span`
   font-size: 12px;
   padding: 2px 8px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ $owner, theme }) => $owner ? theme.colors.tealLight + '30' : '#FEF3C7'};
-  color: ${({ $owner }) => $owner ? '#15803D' : '#92400E'};
+  background: ${({ $owner, theme }) => ($owner ? theme.colors.tealLight + '30' : '#FEF3C7')};
+  color: ${({ $owner }) => ($owner ? '#15803D' : '#92400E')};
   font-weight: 500;
-`
+`;
 
 // Invite link section
 const InviteBox = styled.div`
@@ -64,7 +64,7 @@ const InviteBox = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.surface};
-`
+`;
 
 const InviteUrl = styled.div`
   display: flex;
@@ -75,7 +75,7 @@ const InviteUrl = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.md};
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const UrlText = styled.span`
   flex: 1;
@@ -85,26 +85,26 @@ const UrlText = styled.span`
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: monospace;
-`
+`;
 
 const CopyBtn = styled.button`
   padding: 4px 12px;
   border-radius: ${({ theme }) => theme.radii.md};
-  border: 1px solid ${({ $copied, theme }) => $copied ? '#22C55E' : theme.colors.teal};
-  background: ${({ $copied }) => $copied ? '#22C55E' : 'transparent'};
-  color: ${({ $copied, theme }) => $copied ? 'white' : theme.colors.teal};
+  border: 1px solid ${({ $copied, theme }) => ($copied ? '#22C55E' : theme.colors.teal)};
+  background: ${({ $copied }) => ($copied ? '#22C55E' : 'transparent')};
+  color: ${({ $copied, theme }) => ($copied ? 'white' : theme.colors.teal)};
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
-`
+`;
 
 const ShareRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   flex-wrap: wrap;
-`
+`;
 
 const ShareBtn = styled.button`
   flex: 1;
@@ -118,13 +118,13 @@ const ShareBtn = styled.button`
   transition: background 0.15s;
 
   &:hover { background: ${({ theme }) => theme.colors.background}; }
-`
+`;
 
 const Tip = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textTertiary};
   margin-top: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const QRWrapper = styled.div`
   display: flex;
@@ -133,19 +133,19 @@ const QRWrapper = styled.div`
   padding: ${({ theme }) => theme.spacing.lg} 0;
   margin-top: ${({ theme }) => theme.spacing.md};
   border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
-`
+`;
 
 const QRLabel = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textTertiary};
   margin-top: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const ExpiryText = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textTertiary};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const GenerateBtn = styled.button`
   width: 100%;
@@ -159,12 +159,12 @@ const GenerateBtn = styled.button`
   cursor: pointer;
 
   &:disabled { opacity: 0.5; cursor: not-allowed; }
-`
+`;
 
 // Permissions section
 const PermGroup = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const PermGroupLabel = styled.div`
   font-size: 12px;
@@ -173,7 +173,7 @@ const PermGroupLabel = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const PermRow = styled.div`
   display: flex;
@@ -181,28 +181,28 @@ const PermRow = styled.div`
   justify-content: space-between;
   padding: ${({ theme }) => theme.spacing.sm} 0;
   & + & { border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight}; }
-`
+`;
 
 const PermInfo = styled.div`
   flex: 1;
-`
+`;
 
 const PermLabel = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const PermDesc = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textTertiary};
-`
+`;
 
 const Toggle = styled.button`
   width: 40px;
   height: 22px;
   border-radius: 11px;
   border: none;
-  background: ${({ $active, theme }) => $active ? theme.colors.teal : theme.colors.border};
+  background: ${({ $active, theme }) => ($active ? theme.colors.teal : theme.colors.border)};
   position: relative;
   cursor: pointer;
   transition: background 0.2s;
@@ -212,25 +212,30 @@ const Toggle = styled.button`
     content: '';
     position: absolute;
     top: 2px;
-    left: ${({ $active }) => $active ? '20px' : '2px'};
+    left: ${({ $active }) => ($active ? '20px' : '2px')};
     width: 18px;
     height: 18px;
     border-radius: 50%;
     background: white;
     transition: left 0.2s;
   }
-`
+`;
 
 export default function InviteFamilyStep({
-  members, invite, permissions, onCreateInvite, onChangePermissions,
-  onNext, onBack, onSkip, isPending,
+  members,
+  invite,
+  permissions,
+  onCreateInvite,
+  onChangePermissions,
+  onNext,
+  onBack,
+  onSkip,
+  isPending,
 }) {
-  const [copied, setCopied] = useState(false)
-  const qrCanvasRef = useRef(null)
+  const [copied, setCopied] = useState(false);
+  const qrCanvasRef = useRef(null);
 
-  const inviteUrl = invite?.invite_code
-    ? `koda.app/join/${invite.invite_code}`
-    : null
+  const inviteUrl = invite?.invite_code ? `koda.app/join/${invite.invite_code}` : null;
 
   useEffect(() => {
     if (inviteUrl && qrCanvasRef.current) {
@@ -238,44 +243,48 @@ export default function InviteFamilyStep({
         width: 160,
         margin: 2,
         color: { dark: '#1A1A2E', light: '#FFFFFF' },
-      }).catch(() => {})
+      }).catch(() => {});
     }
-  }, [inviteUrl])
+  }, [inviteUrl]);
 
   const handleCopy = async () => {
-    if (!inviteUrl) return
+    if (!inviteUrl) return;
     try {
-      await navigator.clipboard.writeText(`https://${inviteUrl}`)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(`https://${inviteUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
     }
-  }
+  };
 
   const handleShare = async (method) => {
-    const url = `https://${inviteUrl}`
-    const text = `Join my Koda household for shared meal planning!`
+    const url = `https://${inviteUrl}`;
+    const text = `Join my Koda household for shared meal planning!`;
 
     if (method === 'native' && navigator.share) {
       try {
-        await navigator.share({ title: 'Join my Koda household', text, url })
-      } catch { /* user cancelled */ }
-      return
+        await navigator.share({ title: 'Join my Koda household', text, url });
+      } catch {
+        /* user cancelled */
+      }
+      return;
     }
 
     if (method === 'email') {
-      window.open(`mailto:?subject=${encodeURIComponent('Join my Koda household')}&body=${encodeURIComponent(`${text}\n\n${url}`)}`)
+      window.open(
+        `mailto:?subject=${encodeURIComponent('Join my Koda household')}&body=${encodeURIComponent(`${text}\n\n${url}`)}`,
+      );
     } else if (method === 'whatsapp') {
-      window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`)
+      window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`);
     } else if (method === 'message') {
-      window.open(`sms:?body=${encodeURIComponent(`${text} ${url}`)}`)
+      window.open(`sms:?body=${encodeURIComponent(`${text} ${url}`)}`);
     }
-  }
+  };
 
   const togglePermission = (key) => {
-    onChangePermissions({ ...permissions, [key]: !permissions[key] })
-  }
+    onChangePermissions({ ...permissions, [key]: !permissions[key] });
+  };
 
   return (
     <StepShell
@@ -321,11 +330,19 @@ export default function InviteFamilyStep({
             </InviteUrl>
             <ExpiryText>Link expires in 7 days</ExpiryText>
             <ShareRow>
-              <ShareBtn type="button" onClick={() => handleShare('message')}>Message</ShareBtn>
-              <ShareBtn type="button" onClick={() => handleShare('email')}>Email</ShareBtn>
-              <ShareBtn type="button" onClick={() => handleShare('whatsapp')}>WhatsApp</ShareBtn>
+              <ShareBtn type="button" onClick={() => handleShare('message')}>
+                Message
+              </ShareBtn>
+              <ShareBtn type="button" onClick={() => handleShare('email')}>
+                Email
+              </ShareBtn>
+              <ShareBtn type="button" onClick={() => handleShare('whatsapp')}>
+                WhatsApp
+              </ShareBtn>
               {typeof navigator !== 'undefined' && navigator.share && (
-                <ShareBtn type="button" onClick={() => handleShare('native')}>Share</ShareBtn>
+                <ShareBtn type="button" onClick={() => handleShare('native')}>
+                  Share
+                </ShareBtn>
               )}
             </ShareRow>
             <Tip>Anyone with this link can request to join your Koda household.</Tip>
@@ -344,10 +361,10 @@ export default function InviteFamilyStep({
       {/* Permissions */}
       <Section>
         <SectionLabel>Default permissions for new members</SectionLabel>
-        {PERMISSION_GROUPS.map(group => (
+        {PERMISSION_GROUPS.map((group) => (
           <PermGroup key={group.label}>
             <PermGroupLabel>{group.label}</PermGroupLabel>
-            {group.permissions.map(perm => (
+            {group.permissions.map((perm) => (
               <PermRow key={perm.key}>
                 <PermInfo>
                   <PermLabel>{perm.label}</PermLabel>
@@ -364,5 +381,5 @@ export default function InviteFamilyStep({
         ))}
       </Section>
     </StepShell>
-  )
+  );
 }

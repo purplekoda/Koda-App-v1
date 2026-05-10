@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import styled, { keyframes } from 'styled-components'
-import { SettingsModeProvider } from './SettingsModeContext'
+import styled, { keyframes } from 'styled-components';
+import { SettingsModeProvider } from './SettingsModeContext';
 
 const PageWrapper = styled.div`
   max-width: 560px;
@@ -15,7 +15,7 @@ const PageWrapper = styled.div`
     padding: ${({ theme }) => theme.spacing.lg};
     padding-bottom: calc(${({ theme }) => theme.bottomNavHeight} + ${({ theme }) => theme.spacing.xl});
   }
-`
+`;
 
 const ErrorBanner = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
@@ -24,17 +24,17 @@ const ErrorBanner = styled.div`
   color: #991B1B;
   font-size: 13px;
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
-`
+`;
 
 const fadeOut = keyframes`
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(12px); }
-`
+`;
 
 const Toast = styled.div`
   position: fixed;
@@ -50,7 +50,7 @@ const Toast = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.elevated};
   z-index: 1000;
   animation: ${fadeIn} 0.2s ease, ${fadeOut} 0.2s ease 1.3s forwards;
-`
+`;
 
 export default function SettingsStepLayout({ children, error, toast }) {
   return (
@@ -61,5 +61,5 @@ export default function SettingsStepLayout({ children, error, toast }) {
         {toast && <Toast>{toast}</Toast>}
       </PageWrapper>
     </SettingsModeProvider>
-  )
+  );
 }

@@ -1,14 +1,14 @@
-import { requireUser } from '@/lib/dal/require-user'
-import { getProfile, getGroceryPreferences, getRecipeCardSettings } from '@/lib/dal/profile'
-import { getCookingPreferences, getDietaryRestrictions } from '@/lib/dal/cooking-preferences'
-import { getTasteProfile } from '@/lib/dal/taste-profile'
-import { getHouseholdFaithPractices } from '@/lib/dal/faith-practices'
-import { getOnboardingProfile, getHouseholdMembers } from '@/lib/dal/onboarding'
-import { getVoiceSettings } from '@/lib/dal/voice-settings'
-import SettingsPageClient from './SettingsPageClient'
+import { requireUser } from '@/lib/dal/require-user';
+import { getProfile, getGroceryPreferences, getRecipeCardSettings } from '@/lib/dal/profile';
+import { getCookingPreferences, getDietaryRestrictions } from '@/lib/dal/cooking-preferences';
+import { getTasteProfile } from '@/lib/dal/taste-profile';
+import { getHouseholdFaithPractices } from '@/lib/dal/faith-practices';
+import { getOnboardingProfile, getHouseholdMembers } from '@/lib/dal/onboarding';
+import { getVoiceSettings } from '@/lib/dal/voice-settings';
+import SettingsPageClient from './SettingsPageClient';
 
 export default async function SettingsPage() {
-  const user = await requireUser()
+  const user = await requireUser();
 
   const [
     profile,
@@ -32,7 +32,7 @@ export default async function SettingsPage() {
     getHouseholdFaithPractices(user.id).catch(() => ({ follows_faith_based_diet: false })),
     getRecipeCardSettings(user.id).catch(() => null),
     getVoiceSettings(user.id).catch(() => ({ voice_responses_enabled: false })),
-  ])
+  ]);
 
   return (
     <SettingsPageClient
@@ -52,5 +52,5 @@ export default async function SettingsPage() {
       recipeCardSettings={recipeCardSettings}
       voiceSettings={voiceSettings}
     />
-  )
+  );
 }

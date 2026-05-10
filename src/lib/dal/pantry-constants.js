@@ -1,10 +1,30 @@
 export const PANTRY_CATEGORIES = [
-  'Produce', 'Meat', 'Dairy', 'Pantry', 'Frozen',
-  'Bakery', 'Beverage', 'Condiment', 'Snack', 'Other',
-]
+  'Produce',
+  'Meat',
+  'Dairy',
+  'Pantry',
+  'Frozen',
+  'Bakery',
+  'Beverage',
+  'Condiment',
+  'Snack',
+  'Other',
+];
 
 export const PANTRY_UNITS = [
-  'whole', 'lbs', 'oz', 'g', 'kg',
-  'cups', 'tbsp', 'tsp', 'ml', 'L',
-  'fl oz', 'slices', 'cans', 'bags', 'boxes',
-]
+  'whole',
+  'lbs',
+  'oz',
+  'g',
+  'kg',
+  'cups',
+  'tbsp',
+  'tsp',
+  'ml',
+  'L',
+  'fl oz',
+  'slices',
+  'cans',
+  'bags',
+  'boxes',
+];

@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
+import styled from 'styled-components';
 
 const Card = styled.div`
   align-self: flex-start;
@@ -10,50 +10,48 @@ const Card = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.lg};
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-`
+`;
 
 const ItemName = styled.div`
   font-size: 15px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: 4px;
-`
+`;
 
 const Description = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.4;
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const MetaRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const CookTime = styled.span`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const PantryBadge = styled.span`
   font-size: 11px;
   font-weight: 500;
   padding: 3px 8px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ $match, theme }) =>
-    $match ? theme.colors.tealLight : theme.colors.amberLight};
-  color: ${({ $match, theme }) =>
-    $match ? theme.colors.teal : theme.colors.amber};
-`
+  background: ${({ $match, theme }) => ($match ? theme.colors.tealLight : theme.colors.amberLight)};
+  color: ${({ $match, theme }) => ($match ? theme.colors.teal : theme.colors.amber)};
+`;
 
 const ButtonRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   margin-top: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const ConfirmButton = styled.button`
   flex: 1;
@@ -74,7 +72,7 @@ const ConfirmButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 const RejectButton = styled.button`
   flex: 1;
@@ -95,13 +93,13 @@ const RejectButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 export default function SuggestionCard({ card, onConfirm, onReject, disabled }) {
-  const { suggestion } = card
-  if (!suggestion) return null
+  const { suggestion } = card;
+  if (!suggestion) return null;
 
-  const needsCount = suggestion.ingredients_needed?.length || 0
+  const needsCount = suggestion.ingredients_needed?.length || 0;
 
   return (
     <Card>
@@ -124,5 +122,5 @@ export default function SuggestionCard({ card, onConfirm, onReject, disabled }) 
         </RejectButton>
       </ButtonRow>
     </Card>
-  )
+  );
 }

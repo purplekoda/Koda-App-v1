@@ -56,7 +56,7 @@ export const SECTION_DEFS = [
     label: 'Today',
     description: "Today's schedule and events",
   },
-]
+];
 
 /**
  * Default layout for new users.
@@ -72,7 +72,7 @@ export const DEFAULT_SECTIONS = [
   { section_id: 'recipe_suggestions', is_visible: false, sort_order: 6 },
   { section_id: 'budget_tracker', is_visible: false, sort_order: 7 },
   { section_id: 'macro_summary', is_visible: false, sort_order: 8 },
-]
+];
 
 /** Set of all valid section IDs */
-export const VALID_SECTION_IDS = new Set(SECTION_DEFS.map(s => s.section_id))
+export const VALID_SECTION_IDS = new Set(SECTION_DEFS.map((s) => s.section_id));

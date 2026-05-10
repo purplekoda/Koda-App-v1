@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
+import styled from 'styled-components';
 
 const Wrapper = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.xl};
   justify-content: center;
-`
+`;
 
 const StepperBtn = styled.button`
   width: ${({ theme }) => theme.touchTarget};
@@ -33,7 +33,7 @@ const StepperBtn = styled.button`
     opacity: 0.3;
     cursor: not-allowed;
   }
-`
+`;
 
 const Value = styled.span`
   font-size: 48px;
@@ -43,13 +43,21 @@ const Value = styled.span`
   text-align: center;
   line-height: 1;
   transition: transform 0.3s ease, color 0.3s ease;
-  ${({ $voiceAnimating }) => $voiceAnimating && `
+  ${({ $voiceAnimating }) =>
+    $voiceAnimating &&
+    `
     transform: scale(1.1);
     color: #1D9E75;
   `}
-`
+`;
 
-export default function NumberStepper({ value, onChange, min = 1, max = 10, voiceAnimating = false }) {
+export default function NumberStepper({
+  value,
+  onChange,
+  min = 1,
+  max = 10,
+  voiceAnimating = false,
+}) {
   return (
     <Wrapper>
       <StepperBtn
@@ -70,5 +78,5 @@ export default function NumberStepper({ value, onChange, min = 1, max = 10, voic
         +
       </StepperBtn>
     </Wrapper>
-  )
+  );
 }

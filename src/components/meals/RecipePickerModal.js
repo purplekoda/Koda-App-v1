@@ -1,27 +1,27 @@
-'use client'
+'use client';
 
-import { useState, useTransition, useMemo, useRef, useEffect, useCallback } from 'react'
-import styled, { keyframes } from 'styled-components'
-import { assignRecipeToSlot, swapMeal, surpriseMeAction } from '@/app/(app)/meals/actions'
+import { useState, useTransition, useMemo, useRef, useEffect, useCallback } from 'react';
+import styled, { keyframes } from 'styled-components';
+import { assignRecipeToSlot, swapMeal, surpriseMeAction } from '@/app/(app)/meals/actions';
 import {
   importRecipeFromUrlAction,
   generateRecipeAction,
   generateRecipeIdeasAction,
   createRecipeAction,
   searchWebRecipesAction,
-} from '@/app/(app)/recipes/actions'
+} from '@/app/(app)/recipes/actions';
 
 // ─── Animations ───────────────────────────────────────────────────────────────
 
 const fadeIn = keyframes`
   from { opacity: 0; }
   to   { opacity: 1; }
-`
+`;
 
 const slideUp = keyframes`
   from { transform: translateY(16px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
-`
+`;
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
@@ -35,7 +35,7 @@ const Overlay = styled.div`
   z-index: 1000;
   padding: ${({ theme }) => theme.spacing.lg};
   animation: ${fadeIn} 0.15s ease;
-`
+`;
 
 const Modal = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -48,7 +48,7 @@ const Modal = styled.div`
   flex-direction: column;
   box-shadow: ${({ theme }) => theme.shadows.elevated};
   animation: ${slideUp} 0.2s ease;
-`
+`;
 
 const ModalHeader = styled.div`
   display: flex;
@@ -57,13 +57,13 @@ const ModalHeader = styled.div`
   padding: ${({ theme }) => theme.spacing.xl};
   border-bottom: 1px solid ${({ theme }) => theme.colors.borderLight};
   flex-shrink: 0;
-`
+`;
 
 const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const BackButton = styled.button`
   width: 32px;
@@ -83,22 +83,22 @@ const BackButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
-const HeaderText = styled.div``
+const HeaderText = styled.div``;
 
 const ModalTitle = styled.h3`
   font-size: 18px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const ModalSubtitle = styled.p`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 2px;
   text-transform: capitalize;
-`
+`;
 
 const CloseButton = styled.button`
   width: 32px;
@@ -117,7 +117,7 @@ const CloseButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
 // ─── Options Screen ───────────────────────────────────────────────────────────
 
@@ -132,7 +132,7 @@ const OptionsBody = styled.div`
   & > * {
     flex-shrink: 0;
   }
-`
+`;
 
 const OptionCard = styled.button`
   display: flex;
@@ -155,7 +155,7 @@ const OptionCard = styled.button`
   &:active {
     transform: scale(0.99);
   }
-`
+`;
 
 const OptionIconWrap = styled.div`
   width: 44px;
@@ -167,37 +167,37 @@ const OptionIconWrap = styled.div`
   justify-content: center;
   font-size: 22px;
   flex-shrink: 0;
-`
+`;
 
 const OptionText = styled.div`
   flex: 1;
   min-width: 0;
-`
+`;
 
 const OptionTitle = styled.div`
   font-size: 15px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const OptionDesc = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 2px;
-`
+`;
 
 const OptionChevron = styled.div`
   font-size: 16px;
   color: ${({ theme }) => theme.colors.textMuted};
   flex-shrink: 0;
-`
+`;
 
 // ─── Surprise Me (swap screen) ───────────────────────────────────────────────
 
 const pulse = keyframes`
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
-`
+`;
 
 const SurpriseLoadingWrap = styled.div`
   display: flex;
@@ -206,7 +206,7 @@ const SurpriseLoadingWrap = styled.div`
   justify-content: center;
   gap: 12px;
   padding: 40px 20px;
-`
+`;
 
 const SurpriseLoadingDot = styled.div`
   width: 12px;
@@ -214,12 +214,12 @@ const SurpriseLoadingDot = styled.div`
   border-radius: 50%;
   background: #D85A30;
   animation: ${pulse} 1.2s ease-in-out infinite;
-`
+`;
 
 const SurpriseLoadingText = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const SurpriseCardWrap = styled.div`
   background: #FFF7F5;
@@ -229,26 +229,26 @@ const SurpriseCardWrap = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
-`
+`;
 
 const SurpriseCardName = styled.div`
   font-size: 16px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const SurpriseCardTrending = styled.div`
   font-size: 13px;
   color: #D85A30;
   font-weight: 500;
   line-height: 1.4;
-`
+`;
 
 const SurpriseCardDesc = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.4;
-`
+`;
 
 const SurpriseCardMeta = styled.div`
   display: flex;
@@ -257,19 +257,19 @@ const SurpriseCardMeta = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textMuted};
   margin-top: 2px;
-`
+`;
 
 const SurpriseCardLink = styled.a`
   font-size: 12px;
   color: #D85A30;
   text-decoration: none;
   &:hover { text-decoration: underline; }
-`
+`;
 
 const SurpriseCardActions = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const SurpriseCardAccept = styled.button`
   flex: 1;
@@ -283,7 +283,7 @@ const SurpriseCardAccept = styled.button`
   cursor: pointer;
   &:hover { opacity: 0.9; }
   &:disabled { opacity: 0.5; cursor: wait; }
-`
+`;
 
 const SurpriseCardAgain = styled.button`
   padding: 10px 16px;
@@ -296,7 +296,7 @@ const SurpriseCardAgain = styled.button`
   cursor: pointer;
   &:hover { background: #F0997B; color: white; }
   &:disabled { opacity: 0.5; cursor: wait; }
-`
+`;
 
 // ─── Collection Chips (library mode) ─────────────────────────────────────────
 
@@ -309,7 +309,7 @@ const PickerChipRow = styled.div`
   -ms-overflow-style: none;
   &::-webkit-scrollbar { display: none; }
   flex-shrink: 0;
-`
+`;
 
 const PickerChip = styled.button`
   display: flex;
@@ -323,16 +323,14 @@ const PickerChip = styled.button`
   cursor: pointer;
   border: 1.5px solid ${({ theme, $active }) =>
     $active ? theme.colors.teal : theme.colors.border};
-  background: ${({ theme, $active }) =>
-    $active ? theme.colors.tealLight : 'transparent'};
-  color: ${({ theme, $active }) =>
-    $active ? theme.colors.teal : theme.colors.textSecondary};
+  background: ${({ theme, $active }) => ($active ? theme.colors.tealLight : 'transparent')};
+  color: ${({ theme, $active }) => ($active ? theme.colors.teal : theme.colors.textSecondary)};
   transition: all 0.15s ease;
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 // ─── Controls (library mode) ──────────────────────────────────────────────────
 
@@ -343,7 +341,7 @@ const ControlsBar = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const SearchInput = styled.input`
   width: 100%;
@@ -364,7 +362,7 @@ const SearchInput = styled.input`
     border-color: ${({ theme }) => theme.colors.teal};
     box-shadow: ${({ theme }) => theme.shadows.input};
   }
-`
+`;
 
 const UnassignButton = styled.button`
   display: flex;
@@ -389,7 +387,7 @@ const UnassignButton = styled.button`
     opacity: 0.5;
     cursor: wait;
   }
-`
+`;
 
 // ─── Recipe List ──────────────────────────────────────────────────────────────
 
@@ -404,14 +402,14 @@ const RecipeList = styled.div`
   & > * {
     flex-shrink: 0;
   }
-`
+`;
 
 const EmptyState = styled.div`
   text-align: center;
   padding: ${({ theme }) => theme.spacing.xxxl} 0;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 14px;
-`
+`;
 
 const RecipeCard = styled.div`
   display: flex;
@@ -431,7 +429,7 @@ const RecipeCard = styled.div`
     background: ${({ $isCurrent, theme }) =>
       $isCurrent ? theme.colors.tealLight : theme.colors.borderLight};
   }
-`
+`;
 
 const RecipeThumbnail = styled.div`
   width: 52px;
@@ -446,7 +444,7 @@ const RecipeThumbnail = styled.div`
     height: 100%;
     object-fit: cover;
   }
-`
+`;
 
 const ThumbnailPlaceholder = styled.div`
   width: 100%;
@@ -455,12 +453,12 @@ const ThumbnailPlaceholder = styled.div`
   align-items: center;
   justify-content: center;
   font-size: 22px;
-`
+`;
 
 const RecipeInfo = styled.div`
   flex: 1;
   min-width: 0;
-`
+`;
 
 const RecipeName = styled.div`
   font-size: 14px;
@@ -469,7 +467,7 @@ const RecipeName = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`
+`;
 
 const RecipeMeta = styled.div`
   display: flex;
@@ -477,18 +475,18 @@ const RecipeMeta = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
   margin-top: 4px;
   flex-wrap: wrap;
-`
+`;
 
 const RecipeTime = styled.span`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const TagList = styled.div`
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-`
+`;
 
 const Tag = styled.span`
   font-size: 11px;
@@ -497,7 +495,7 @@ const Tag = styled.span`
   background: ${({ theme }) => theme.colors.grayLight};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-weight: 500;
-`
+`;
 
 const CurrentBadge = styled.span`
   font-size: 11px;
@@ -507,7 +505,7 @@ const CurrentBadge = styled.span`
   color: ${({ theme }) => theme.colors.tealDark};
   font-weight: 600;
   white-space: nowrap;
-`
+`;
 
 const AssignButton = styled.button`
   padding: 7px 14px;
@@ -520,10 +518,8 @@ const AssignButton = styled.button`
   flex-shrink: 0;
   transition: all 0.15s ease;
 
-  background: ${({ $isCurrent, theme }) =>
-    $isCurrent ? theme.colors.tealMid : theme.colors.teal};
-  color: ${({ $isCurrent, theme }) =>
-    $isCurrent ? theme.colors.tealDark : '#FFFFFF'};
+  background: ${({ $isCurrent, theme }) => ($isCurrent ? theme.colors.tealMid : theme.colors.teal)};
+  color: ${({ $isCurrent, theme }) => ($isCurrent ? theme.colors.tealDark : '#FFFFFF')};
 
   &:hover {
     opacity: 0.85;
@@ -533,7 +529,7 @@ const AssignButton = styled.button`
     opacity: 0.5;
     cursor: wait;
   }
-`
+`;
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
@@ -541,7 +537,7 @@ const ModalFooter = styled.div`
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
   border-top: 1px solid ${({ theme }) => theme.colors.borderLight};
   flex-shrink: 0;
-`
+`;
 
 const CustomNameToggle = styled.button`
   font-size: 13px;
@@ -555,13 +551,13 @@ const CustomNameToggle = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 const CustomNameForm = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   margin-top: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const CustomNameInput = styled.input`
   flex: 1;
@@ -580,7 +576,7 @@ const CustomNameInput = styled.input`
   &:focus {
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const CustomNameSubmit = styled.button`
   padding: 9px 16px;
@@ -600,7 +596,7 @@ const CustomNameSubmit = styled.button`
     opacity: 0.5;
     cursor: wait;
   }
-`
+`;
 
 // ─── URL / AI shared input area ───────────────────────────────────────────────
 
@@ -617,13 +613,13 @@ const InputBody = styled.div`
   & > * {
     flex-shrink: 0;
   }
-`
+`;
 
 const InputLabel = styled.label`
   font-size: 13px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const UrlInput = styled.input`
   width: 100%;
@@ -644,7 +640,7 @@ const UrlInput = styled.input`
     border-color: ${({ theme }) => theme.colors.teal};
     box-shadow: ${({ theme }) => theme.shadows.input};
   }
-`
+`;
 
 const PromptTextarea = styled.textarea`
   width: 100%;
@@ -668,17 +664,17 @@ const PromptTextarea = styled.textarea`
     border-color: ${({ theme }) => theme.colors.purple};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.purpleLight};
   }
-`
+`;
 
 const ActionRow = styled.div`
   display: flex;
   justify-content: flex-end;
-`
+`;
 
 const PrimaryButton = styled.button`
   padding: 10px 20px;
   border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ $purple, theme }) => $purple ? theme.colors.purple : theme.colors.teal};
+  background: ${({ $purple, theme }) => ($purple ? theme.colors.purple : theme.colors.teal)};
   color: #fff;
   border: none;
   font-size: 14px;
@@ -694,7 +690,7 @@ const PrimaryButton = styled.button`
     opacity: 0.5;
     cursor: wait;
   }
-`
+`;
 
 const InlineError = styled.p`
   font-size: 13px;
@@ -704,7 +700,7 @@ const InlineError = styled.p`
   border-radius: ${({ theme }) => theme.radii.md};
   padding: 10px 14px;
   margin: 0;
-`
+`;
 
 // ─── Preview panel ────────────────────────────────────────────────────────────
 
@@ -713,14 +709,14 @@ const PreviewCard = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.tealLight};
   overflow: hidden;
-`
+`;
 
 const PreviewImage = styled.img`
   width: 100%;
   height: 160px;
   object-fit: cover;
   display: block;
-`
+`;
 
 const PreviewHeader = styled.button`
   width: 100%;
@@ -730,13 +726,13 @@ const PreviewHeader = styled.button`
   border: none;
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
   cursor: pointer;
-`
+`;
 
 const PreviewName = styled.div`
   font-size: 15px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const PreviewDesc = styled.div`
   font-size: 13px;
@@ -746,7 +742,7 @@ const PreviewDesc = styled.div`
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-`
+`;
 
 const PreviewMetaRow = styled.div`
   display: flex;
@@ -754,12 +750,12 @@ const PreviewMetaRow = styled.div`
   gap: ${({ theme }) => theme.spacing.lg};
   margin-top: 6px;
   flex-wrap: wrap;
-`
+`;
 
 const PreviewMetaItem = styled.span`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const ExpandToggle = styled.button`
   display: flex;
@@ -777,18 +773,18 @@ const ExpandToggle = styled.button`
   &:hover {
     opacity: 0.8;
   }
-`
+`;
 
 const ExpandChevron = styled.span`
   display: inline-block;
   transition: transform 0.2s ease;
-  transform: ${({ $expanded }) => $expanded ? 'rotate(180deg)' : 'rotate(0deg)'};
-`
+  transform: ${({ $expanded }) => ($expanded ? 'rotate(180deg)' : 'rotate(0deg)')};
+`;
 
 const ExpandedBody = styled.div`
   padding: 0 ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.md};
   border-top: 1px solid ${({ theme }) => theme.colors.tealMid};
-`
+`;
 
 const SectionLabel = styled.div`
   font-size: 11px;
@@ -797,7 +793,7 @@ const SectionLabel = styled.div`
   text-transform: uppercase;
   color: ${({ theme }) => theme.colors.textMuted};
   margin: ${({ theme }) => theme.spacing.md} 0 ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const IngredientRow = styled.div`
   display: flex;
@@ -809,13 +805,13 @@ const IngredientRow = styled.div`
   &:last-child {
     border-bottom: none;
   }
-`
+`;
 
 const IngredientText = styled.span`
   flex: 1;
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const EditIngredientButton = styled.button`
   flex-shrink: 0;
@@ -832,7 +828,7 @@ const EditIngredientButton = styled.button`
     color: ${({ theme }) => theme.colors.teal};
     background: ${({ theme }) => theme.colors.tealMid};
   }
-`
+`;
 
 const IngredientEditRow = styled.div`
   display: flex;
@@ -840,7 +836,7 @@ const IngredientEditRow = styled.div`
   gap: 4px;
   flex: 1;
   flex-wrap: wrap;
-`
+`;
 
 const IngredientEditInput = styled.input`
   padding: 4px 7px;
@@ -855,7 +851,7 @@ const IngredientEditInput = styled.input`
   &:focus {
     box-shadow: ${({ theme }) => theme.shadows.input};
   }
-`
+`;
 
 const IngredientEditConfirm = styled.button`
   background: none;
@@ -869,7 +865,7 @@ const IngredientEditConfirm = styled.button`
   &:hover {
     opacity: 0.7;
   }
-`
+`;
 
 const IngredientEditCancel = styled.button`
   background: none;
@@ -883,14 +879,14 @@ const IngredientEditCancel = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.coral};
   }
-`
+`;
 
 const InstructionItem = styled.li`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textPrimary};
   line-height: 1.5;
   padding: 4px 0;
-`
+`;
 
 const TryAgainButton = styled.button`
   background: none;
@@ -906,7 +902,7 @@ const TryAgainButton = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 const SaveButton = styled.button`
   width: 100%;
@@ -929,7 +925,7 @@ const SaveButton = styled.button`
     opacity: 0.5;
     cursor: wait;
   }
-`
+`;
 
 const SavedRow = styled.div`
   display: flex;
@@ -941,13 +937,13 @@ const SavedRow = styled.div`
   background: ${({ theme }) => theme.colors.tealLight};
   border: 1px solid ${({ theme }) => theme.colors.tealMid};
   border-radius: ${({ theme }) => theme.radii.md};
-`
+`;
 
 const SavedLabel = styled.span`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.tealDark};
   font-weight: 500;
-`
+`;
 
 const ViewRecipeLink = styled.a`
   font-size: 13px;
@@ -959,7 +955,7 @@ const ViewRecipeLink = styled.a`
   &:hover {
     text-decoration: underline;
   }
-`
+`;
 
 // ─── Side prompt styles ───────────────────────────────────────────────────────
 
@@ -974,7 +970,7 @@ const MealAddedRow = styled.div`
   font-size: 13px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.tealDark};
-`
+`;
 
 const SkipButton = styled.button`
   padding: 10px 16px;
@@ -995,13 +991,13 @@ const SkipButton = styled.button`
     opacity: 0.5;
     cursor: wait;
   }
-`
+`;
 
 const SideActionRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   justify-content: space-between;
-`
+`;
 
 // ─── AI wizard styles ─────────────────────────────────────────────────────────
 
@@ -1009,7 +1005,7 @@ const AiModeGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const AiModeCard = styled.button`
   display: flex;
@@ -1033,23 +1029,23 @@ const AiModeCard = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 const AiModeIcon = styled.div`
   font-size: 24px;
-`
+`;
 
 const AiModeTitle = styled.div`
   font-size: 14px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const AiModeMeta = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.4;
-`
+`;
 
 const AiBackLink = styled.button`
   background: none;
@@ -1065,20 +1061,20 @@ const AiBackLink = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 const AiLoadingMsg = styled.div`
   padding: ${({ theme }) => theme.spacing.xl};
   text-align: center;
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const AiIdeasGrid = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const AiIdeaCard = styled.button`
   display: flex;
@@ -1104,26 +1100,26 @@ const AiIdeaCard = styled.button`
     opacity: 0.6;
     cursor: not-allowed;
   }
-`
+`;
 
 const AiIdeaName = styled.div`
   font-size: 14px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const AiIdeaDesc = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.4;
-`
+`;
 
 const AiIdeaIngredients = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 2px;
-`
+`;
 
 const AiIdeaTag = styled.span`
   padding: 2px 8px;
@@ -1131,19 +1127,19 @@ const AiIdeaTag = styled.span`
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.tealLight};
   color: ${({ theme }) => theme.colors.tealDark};
-`
+`;
 
 const AiPromptHint = styled.p`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0 0 ${({ theme }) => theme.spacing.xs} 0;
-`
+`;
 
 const AiPrefsAccordion = styled.div`
   border: 0.5px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.md};
   overflow: hidden;
-`
+`;
 
 const AiPrefsHeader = styled.button`
   display: flex;
@@ -1157,14 +1153,14 @@ const AiPrefsHeader = styled.button`
   font-size: 13px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const AiPrefsChevron = styled.span`
   font-size: 10px;
   color: ${({ theme }) => theme.colors.textMuted};
-  transform: ${({ $open }) => $open ? 'rotate(180deg)' : 'rotate(0deg)'};
+  transform: ${({ $open }) => ($open ? 'rotate(180deg)' : 'rotate(0deg)')};
   transition: transform 0.15s ease;
-`
+`;
 
 const AiPrefsBody = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
@@ -1172,7 +1168,7 @@ const AiPrefsBody = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
   border-top: 0.5px solid ${({ theme }) => theme.colors.border};
-`
+`;
 
 const AiPrefsLabel = styled.p`
   font-size: 11px;
@@ -1181,13 +1177,13 @@ const AiPrefsLabel = styled.p`
   letter-spacing: 0.05em;
   color: ${({ theme }) => theme.colors.textMuted};
   margin: 0 0 6px 0;
-`
+`;
 
 const AiPrefsChipRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-`
+`;
 
 const AiPrefChip = styled.button`
   padding: 5px 12px;
@@ -1204,7 +1200,7 @@ const AiPrefChip = styled.button`
   &:hover {
     border-color: ${({ theme }) => theme.colors.purple};
   }
-`
+`;
 
 const AiPrefsServingInput = styled.input`
   width: 60px;
@@ -1220,7 +1216,7 @@ const AiPrefsServingInput = styled.input`
     outline: none;
     border-color: ${({ theme }) => theme.colors.purple};
   }
-`
+`;
 
 const AiPrefsNotesTextarea = styled.textarea`
   padding: 8px 10px;
@@ -1239,7 +1235,7 @@ const AiPrefsNotesTextarea = styled.textarea`
     outline: none;
     border-color: ${({ theme }) => theme.colors.purple};
   }
-`
+`;
 
 // ─── Web search styles ────────────────────────────────────────────────────────
 
@@ -1248,26 +1244,26 @@ const SearchHintText = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0;
   line-height: 1.5;
-`
+`;
 
 const SearchLoadingMsg = styled.div`
   padding: ${({ theme }) => theme.spacing.xl} 0;
   text-align: center;
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const SearchResultsHeader = styled.div`
   font-size: 13px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const SearchResultsList = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const SearchResultCard = styled.button`
   display: flex;
@@ -1286,7 +1282,7 @@ const SearchResultCard = styled.button`
     border-color: ${({ theme }) => theme.colors.teal};
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   }
-`
+`;
 
 const ResultThumb = styled.div`
   width: 100%;
@@ -1305,39 +1301,39 @@ const ResultThumb = styled.div`
     object-fit: cover;
     display: block;
   }
-`
+`;
 
 const ResultBody = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
   display: flex;
   flex-direction: column;
   gap: 5px;
-`
+`;
 
 const ResultName = styled.div`
   font-size: 15px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const ResultRatingRow = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-`
+`;
 
 const ResultStars = styled.span`
   font-size: 13px;
   color: #F59E0B;
   font-weight: 600;
   letter-spacing: 0.3px;
-`
+`;
 
 const ResultReviews = styled.span`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const ResultCookTime = styled.span`
   font-size: 12px;
@@ -1345,7 +1341,7 @@ const ResultCookTime = styled.span`
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.borderLight};
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const ResultDesc = styled.div`
   font-size: 13px;
@@ -1355,27 +1351,27 @@ const ResultDesc = styled.div`
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-`
+`;
 
 const ResultViewHint = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.teal};
   font-weight: 500;
-`
+`;
 
 const DetailRecipeName = styled.div`
   font-size: 17px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: 6px;
-`
+`;
 
 const DetailMetaRow = styled.div`
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const DetailMetaChip = styled.span`
   font-size: 12px;
@@ -1383,7 +1379,7 @@ const DetailMetaChip = styled.span`
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme }) => theme.colors.borderLight};
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const SourceLink = styled.a`
   display: inline-flex;
@@ -1396,7 +1392,7 @@ const SourceLink = styled.a`
   &:hover {
     text-decoration: underline;
   }
-`
+`;
 
 const AddToMealButton = styled.button`
   width: 100%;
@@ -1418,80 +1414,98 @@ const AddToMealButton = styled.button`
     opacity: 0.5;
     cursor: wait;
   }
-`
+`;
 
 const CUISINE_OPTIONS = [
-  'Italian', 'Mexican', 'Asian', 'Indian', 'American',
-  'Mediterranean', 'French', 'Japanese', 'Thai', 'Middle Eastern',
-]
+  'Italian',
+  'Mexican',
+  'Asian',
+  'Indian',
+  'American',
+  'Mediterranean',
+  'French',
+  'Japanese',
+  'Thai',
+  'Middle Eastern',
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTime(prepMins, cookMins) {
-  const total = (prepMins || 0) + (cookMins || 0)
-  if (!total) return null
-  if (total < 60) return `${total} min`
-  const h = Math.floor(total / 60)
-  const m = total % 60
-  return m ? `${h}h ${m}m` : `${h}h`
+  const total = (prepMins || 0) + (cookMins || 0);
+  if (!total) return null;
+  if (total < 60) return `${total} min`;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
 }
 
 // ─── Expandable preview panel ─────────────────────────────────────────────────
 
-function ExpandablePreview({ preview, setPreview, onSave, onTryAgain, loading, savedRecipeId, tryAgainLabel, onDone, duplicate }) {
-  const [expanded, setExpanded] = useState(false)
-  const [editingIdx, setEditingIdx] = useState(null)
-  const [editDraft, setEditDraft] = useState({ amount: '', unit: '', name: '' })
+function ExpandablePreview({
+  preview,
+  setPreview,
+  onSave,
+  onTryAgain,
+  loading,
+  savedRecipeId,
+  tryAgainLabel,
+  onDone,
+  duplicate,
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [editingIdx, setEditingIdx] = useState(null);
+  const [editDraft, setEditDraft] = useState({ amount: '', unit: '', name: '' });
 
-  const timeLabel = formatTime(preview.prep_time_minutes, preview.cook_time_minutes)
+  const timeLabel = formatTime(preview.prep_time_minutes, preview.cook_time_minutes);
 
   function startEdit(idx) {
-    const ing = preview.ingredients[idx]
-    setEditDraft({ amount: ing.amount || '', unit: ing.unit || '', name: ing.name || '' })
-    setEditingIdx(idx)
+    const ing = preview.ingredients[idx];
+    setEditDraft({ amount: ing.amount || '', unit: ing.unit || '', name: ing.name || '' });
+    setEditingIdx(idx);
   }
 
   function cancelEdit() {
-    setEditingIdx(null)
+    setEditingIdx(null);
   }
 
   function confirmEdit() {
-    if (editingIdx === null) return
+    if (editingIdx === null) return;
     const updated = preview.ingredients.map((ing, i) =>
-      i === editingIdx ? { ...ing, ...editDraft } : ing
-    )
-    setPreview((prev) => ({ ...prev, ingredients: updated }))
-    setEditingIdx(null)
+      i === editingIdx ? { ...ing, ...editDraft } : ing,
+    );
+    setPreview((prev) => ({ ...prev, ingredients: updated }));
+    setEditingIdx(null);
   }
 
   return (
     <>
       {preview._isPartial && (
-        <div style={{
-          padding: '10px 14px',
-          borderRadius: '8px',
-          background: '#FAEEDA',
-          border: '1px solid #FAC775',
-          color: '#633806',
-          fontSize: '13px',
-          marginBottom: '8px',
-        }}>
+        <div
+          style={{
+            padding: '10px 14px',
+            borderRadius: '8px',
+            background: '#FAEEDA',
+            border: '1px solid #FAC775',
+            color: '#633806',
+            fontSize: '13px',
+            marginBottom: '8px',
+          }}
+        >
           We found a partial recipe &mdash; please fill in the missing details before saving.
         </div>
       )}
       <PreviewCard>
-        {preview.image_url && (
-          <PreviewImage src={preview.image_url} alt={preview.name} />
-        )}
+        {preview.image_url && <PreviewImage src={preview.image_url} alt={preview.name} />}
         <PreviewHeader onClick={() => setExpanded((v) => !v)}>
           <PreviewName>{preview.name}</PreviewName>
-          {preview.description && (
-            <PreviewDesc>{preview.description}</PreviewDesc>
-          )}
+          {preview.description && <PreviewDesc>{preview.description}</PreviewDesc>}
           <PreviewMetaRow>
             {timeLabel && <PreviewMetaItem>&#128336; {timeLabel}</PreviewMetaItem>}
             {preview.servings > 0 && (
-              <PreviewMetaItem>&#128101; {preview.servings} serving{preview.servings !== 1 ? 's' : ''}</PreviewMetaItem>
+              <PreviewMetaItem>
+                &#128101; {preview.servings} serving{preview.servings !== 1 ? 's' : ''}
+              </PreviewMetaItem>
             )}
           </PreviewMetaRow>
           <ExpandToggle as="span">
@@ -1513,7 +1527,9 @@ function ExpandablePreview({ preview, setPreview, onSave, onTryAgain, loading, s
                           <IngredientEditInput
                             $w="52px"
                             value={editDraft.amount}
-                            onChange={(e) => setEditDraft((d) => ({ ...d, amount: e.target.value }))}
+                            onChange={(e) =>
+                              setEditDraft((d) => ({ ...d, amount: e.target.value }))
+                            }
                             placeholder="amt"
                             autoFocus
                           />
@@ -1529,20 +1545,27 @@ function ExpandablePreview({ preview, setPreview, onSave, onTryAgain, loading, s
                             onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
                             placeholder="ingredient"
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter') confirmEdit()
-                              if (e.key === 'Escape') cancelEdit()
+                              if (e.key === 'Enter') confirmEdit();
+                              if (e.key === 'Escape') cancelEdit();
                             }}
                           />
                         </IngredientEditRow>
-                        <IngredientEditConfirm onClick={confirmEdit} title="Confirm">&#10003;</IngredientEditConfirm>
-                        <IngredientEditCancel onClick={cancelEdit} title="Cancel">&#215;</IngredientEditCancel>
+                        <IngredientEditConfirm onClick={confirmEdit} title="Confirm">
+                          &#10003;
+                        </IngredientEditConfirm>
+                        <IngredientEditCancel onClick={cancelEdit} title="Cancel">
+                          &#215;
+                        </IngredientEditCancel>
                       </>
                     ) : (
                       <>
                         <IngredientText>
                           {[ing.amount, ing.unit, ing.name].filter(Boolean).join(' ')}
                         </IngredientText>
-                        <EditIngredientButton onClick={() => startEdit(idx)} title="Edit ingredient">
+                        <EditIngredientButton
+                          onClick={() => startEdit(idx)}
+                          title="Edit ingredient"
+                        >
                           &#9998;
                         </EditIngredientButton>
                       </>
@@ -1572,7 +1595,11 @@ function ExpandablePreview({ preview, setPreview, onSave, onTryAgain, loading, s
             {duplicate ? 'Already in your Recipe Box — assigned to slot!' : 'Added to slot!'}
           </SavedLabel>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <ViewRecipeLink href={`/recipes/${savedRecipeId}`} target="_blank" rel="noopener noreferrer">
+            <ViewRecipeLink
+              href={`/recipes/${savedRecipeId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               View recipe &#8594;
             </ViewRecipeLink>
             {onDone && (
@@ -1593,66 +1620,66 @@ function ExpandablePreview({ preview, setPreview, onSave, onTryAgain, loading, s
         </>
       )}
     </>
-  )
+  );
 }
 
 // ─── Sub-screens ──────────────────────────────────────────────────────────────
 
 function UrlImportScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBusy, onDone }) {
-  const [url, setUrl] = useState('')
-  const [error, setError] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [savedRecipeId, setSavedRecipeId] = useState(null)
-  const [duplicate, setDuplicate] = useState(false)
-  const [isPending, startTransition] = useTransition()
-  const urlInputRef = useRef(null)
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [savedRecipeId, setSavedRecipeId] = useState(null);
+  const [duplicate, setDuplicate] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const urlInputRef = useRef(null);
 
-  const loading = isPending || isBusy
+  const loading = isPending || isBusy;
 
   function handleImport() {
-    if (!url.trim() || loading) return
-    setError(null)
-    setPreview(null)
-    setSavedRecipeId(null)
+    if (!url.trim() || loading) return;
+    setError(null);
+    setPreview(null);
+    setSavedRecipeId(null);
     startTransition(async () => {
-      const result = await importRecipeFromUrlAction(url.trim())
+      const result = await importRecipeFromUrlAction(url.trim());
       if (result.success) {
-        setPreview(result.data)
+        setPreview(result.data);
       } else {
-        setError(result.error)
+        setError(result.error);
       }
-    })
+    });
   }
 
   function handleSave() {
-    if (!preview || loading) return
-    setIsBusy(true)
+    if (!preview || loading) return;
+    setIsBusy(true);
     startTransition(async () => {
-      const createResult = await createRecipeAction(preview)
+      const createResult = await createRecipeAction(preview);
       if (!createResult.success) {
-        setError(createResult.error)
-        setIsBusy(false)
-        return
+        setError(createResult.error);
+        setIsBusy(false);
+        return;
       }
-      const savedRecipe = createResult.data
-      const assignResult = await assignRecipeToSlot(day, mealType, savedRecipe.id)
-      setIsBusy(false)
+      const savedRecipe = createResult.data;
+      const assignResult = await assignRecipeToSlot(day, mealType, savedRecipe.id);
+      setIsBusy(false);
       if (assignResult.success) {
-        setSavedRecipeId(savedRecipe.id)
-        setDuplicate(savedRecipe.alreadyExists === true)
-        onAssigned?.({ recipeId: savedRecipe.id, recipeName: savedRecipe.name })
+        setSavedRecipeId(savedRecipe.id);
+        setDuplicate(savedRecipe.alreadyExists === true);
+        onAssigned?.({ recipeId: savedRecipe.id, recipeName: savedRecipe.name });
       } else {
-        setError(assignResult.error)
+        setError(assignResult.error);
       }
-    })
+    });
   }
 
   function handleTryAgain() {
-    setPreview(null)
-    setSavedRecipeId(null)
-    setError(null)
-    setDuplicate(false)
-    setTimeout(() => urlInputRef.current?.focus(), 0)
+    setPreview(null);
+    setSavedRecipeId(null);
+    setError(null);
+    setDuplicate(false);
+    setTimeout(() => urlInputRef.current?.focus(), 0);
   }
 
   return (
@@ -1691,132 +1718,139 @@ function UrlImportScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBusy
         />
       )}
     </InputBody>
-  )
+  );
 }
 
 function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBusy, onDone }) {
-  const [aiStep, setAiStep] = useState('choose') // 'choose' | 'ideas' | 'custom'
-  const [prompt, setPrompt] = useState('')
-  const [ideas, setIdeas] = useState([])
-  const [selectedIdeaIdx, setSelectedIdeaIdx] = useState(null)
-  const [isLoadingIdeas, setIsLoadingIdeas] = useState(false)
-  const [ideasError, setIdeasError] = useState(null)
-  const [error, setError] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [savedRecipeId, setSavedRecipeId] = useState(null)
-  const [duplicate, setDuplicate] = useState(false)
-  const [isPending, startTransition] = useTransition()
-  const promptRef = useRef(null)
+  const [aiStep, setAiStep] = useState('choose'); // 'choose' | 'ideas' | 'custom'
+  const [prompt, setPrompt] = useState('');
+  const [ideas, setIdeas] = useState([]);
+  const [selectedIdeaIdx, setSelectedIdeaIdx] = useState(null);
+  const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
+  const [ideasError, setIdeasError] = useState(null);
+  const [error, setError] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [savedRecipeId, setSavedRecipeId] = useState(null);
+  const [duplicate, setDuplicate] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const promptRef = useRef(null);
 
   // Cooking preferences (custom screen)
-  const [prefExpanded, setPrefExpanded] = useState(false)
-  const [prefSkill, setPrefSkill] = useState(null)
-  const [prefTime, setPrefTime] = useState(null)
-  const [prefCuisines, setPrefCuisines] = useState([])
-  const [prefServings, setPrefServings] = useState('')
-  const [prefNotes, setPrefNotes] = useState('')
+  const [prefExpanded, setPrefExpanded] = useState(false);
+  const [prefSkill, setPrefSkill] = useState(null);
+  const [prefTime, setPrefTime] = useState(null);
+  const [prefCuisines, setPrefCuisines] = useState([]);
+  const [prefServings, setPrefServings] = useState('');
+  const [prefNotes, setPrefNotes] = useState('');
 
   function toggleCuisine(c) {
-    setPrefCuisines(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
+    setPrefCuisines((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   }
 
   function buildPromptWithPrefs(text) {
-    const parts = []
-    if (prefSkill) parts.push(`Skill level: ${prefSkill}`)
+    const parts = [];
+    if (prefSkill) parts.push(`Skill level: ${prefSkill}`);
     if (prefTime) {
-      const label = prefTime === 'quick' ? 'quick (<30 min)' : prefTime === 'medium' ? 'medium (30–60 min)' : 'elaborate (60+ min)'
-      parts.push(`Time preference: ${label}`)
+      const label =
+        prefTime === 'quick'
+          ? 'quick (<30 min)'
+          : prefTime === 'medium'
+            ? 'medium (30–60 min)'
+            : 'elaborate (60+ min)';
+      parts.push(`Time preference: ${label}`);
     }
-    if (prefCuisines.length) parts.push(`Cuisine: ${prefCuisines.join(', ')}`)
-    if (prefServings) parts.push(`Servings: ${prefServings}`)
-    if (prefNotes.trim()) parts.push(`Notes: ${prefNotes.trim()}`)
-    return parts.length ? `${text.trim()}\n\nPreferences: ${parts.join('. ')}` : text.trim()
+    if (prefCuisines.length) parts.push(`Cuisine: ${prefCuisines.join(', ')}`);
+    if (prefServings) parts.push(`Servings: ${prefServings}`);
+    if (prefNotes.trim()) parts.push(`Notes: ${prefNotes.trim()}`);
+    return parts.length ? `${text.trim()}\n\nPreferences: ${parts.join('. ')}` : text.trim();
   }
 
-  const loading = isPending || isBusy
+  const loading = isPending || isBusy;
 
   function resetPreview() {
-    setPreview(null)
-    setSavedRecipeId(null)
-    setError(null)
+    setPreview(null);
+    setSavedRecipeId(null);
+    setError(null);
   }
 
   function goToChoose() {
-    setAiStep('choose')
-    resetPreview()
+    setAiStep('choose');
+    resetPreview();
   }
 
   async function handlePantryScan() {
-    setAiStep('ideas')
-    setIdeas([])
-    setIdeasError(null)
-    setSelectedIdeaIdx(null)
-    resetPreview()
-    setIsLoadingIdeas(true)
-    const result = await generateRecipeIdeasAction('general')
-    setIsLoadingIdeas(false)
+    setAiStep('ideas');
+    setIdeas([]);
+    setIdeasError(null);
+    setSelectedIdeaIdx(null);
+    resetPreview();
+    setIsLoadingIdeas(true);
+    const result = await generateRecipeIdeasAction('general');
+    setIsLoadingIdeas(false);
     if (result.success) {
-      setIdeas(result.data)
+      setIdeas(result.data);
     } else {
-      setIdeasError(result.error)
+      setIdeasError(result.error);
     }
   }
 
   function handleGenerateFromIdea() {
-    if (selectedIdeaIdx === null || loading) return
-    const idea = ideas[selectedIdeaIdx]
-    const ideaPrompt = idea.name + (idea.description ? ' — ' + idea.description : '')
-    resetPreview()
+    if (selectedIdeaIdx === null || loading) return;
+    const idea = ideas[selectedIdeaIdx];
+    const ideaPrompt = idea.name + (idea.description ? ' — ' + idea.description : '');
+    resetPreview();
     startTransition(async () => {
-      const result = await generateRecipeAction(ideaPrompt, { includePantry: true })
+      const result = await generateRecipeAction(ideaPrompt, { includePantry: true });
       if (result.success) {
-        setPreview(result.data)
+        setPreview(result.data);
       } else {
-        setError(result.error)
+        setError(result.error);
       }
-    })
+    });
   }
 
   function handleGenerateCustom() {
-    if (!prompt.trim() || loading) return
-    resetPreview()
+    if (!prompt.trim() || loading) return;
+    resetPreview();
     startTransition(async () => {
-      const result = await generateRecipeAction(buildPromptWithPrefs(prompt), { includePantry: true })
+      const result = await generateRecipeAction(buildPromptWithPrefs(prompt), {
+        includePantry: true,
+      });
       if (result.success) {
-        setPreview(result.data)
+        setPreview(result.data);
       } else {
-        setError(result.error)
+        setError(result.error);
       }
-    })
+    });
   }
 
   function handleSave() {
-    if (!preview || loading) return
-    setIsBusy(true)
+    if (!preview || loading) return;
+    setIsBusy(true);
     startTransition(async () => {
-      const createResult = await createRecipeAction(preview)
+      const createResult = await createRecipeAction(preview);
       if (!createResult.success) {
-        setError(createResult.error)
-        setIsBusy(false)
-        return
+        setError(createResult.error);
+        setIsBusy(false);
+        return;
       }
-      const savedRecipe = createResult.data
-      const assignResult = await assignRecipeToSlot(day, mealType, savedRecipe.id)
-      setIsBusy(false)
+      const savedRecipe = createResult.data;
+      const assignResult = await assignRecipeToSlot(day, mealType, savedRecipe.id);
+      setIsBusy(false);
       if (assignResult.success) {
-        setSavedRecipeId(savedRecipe.id)
-        setDuplicate(savedRecipe.alreadyExists === true)
-        onAssigned?.({ recipeId: savedRecipe.id, recipeName: savedRecipe.name })
+        setSavedRecipeId(savedRecipe.id);
+        setDuplicate(savedRecipe.alreadyExists === true);
+        onAssigned?.({ recipeId: savedRecipe.id, recipeName: savedRecipe.name });
       } else {
-        setError(assignResult.error)
+        setError(assignResult.error);
       }
-    })
+    });
   }
 
   function handleTryAgain() {
-    resetPreview()
-    setDuplicate(false)
-    if (aiStep === 'custom') setTimeout(() => promptRef.current?.focus(), 0)
+    resetPreview();
+    setDuplicate(false);
+    if (aiStep === 'custom') setTimeout(() => promptRef.current?.focus(), 0);
   }
 
   // ── choose screen ─────────────────────────────────────────────────────────
@@ -1836,14 +1870,16 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
           </AiModeCard>
         </AiModeGrid>
       </InputBody>
-    )
+    );
   }
 
   // ── ideas screen ──────────────────────────────────────────────────────────
   if (aiStep === 'ideas') {
     return (
       <InputBody>
-        <AiBackLink type="button" onClick={goToChoose}>&#8592; Back</AiBackLink>
+        <AiBackLink type="button" onClick={goToChoose}>
+          &#8592; Back
+        </AiBackLink>
         {isLoadingIdeas && (
           <AiLoadingMsg>Finding recipe ideas from your pantry&hellip;</AiLoadingMsg>
         )}
@@ -1897,14 +1933,18 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
           />
         )}
       </InputBody>
-    )
+    );
   }
 
   // ── custom screen ─────────────────────────────────────────────────────────
   return (
     <InputBody>
-      <AiBackLink type="button" onClick={goToChoose}>&#8592; Back</AiBackLink>
-      <AiPromptHint>Describe what you want &mdash; ingredients, cuisine, dietary needs, servings, etc.</AiPromptHint>
+      <AiBackLink type="button" onClick={goToChoose}>
+        &#8592; Back
+      </AiBackLink>
+      <AiPromptHint>
+        Describe what you want &mdash; ingredients, cuisine, dietary needs, servings, etc.
+      </AiPromptHint>
       <PromptTextarea
         ref={promptRef}
         id="ai-custom-prompt"
@@ -1916,7 +1956,7 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
       />
 
       <AiPrefsAccordion>
-        <AiPrefsHeader type="button" onClick={() => setPrefExpanded(p => !p)}>
+        <AiPrefsHeader type="button" onClick={() => setPrefExpanded((p) => !p)}>
           <span>Cooking preferences</span>
           <AiPrefsChevron $open={prefExpanded}>&#9662;</AiPrefsChevron>
         </AiPrefsHeader>
@@ -1925,7 +1965,7 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
             <div>
               <AiPrefsLabel>Skill level</AiPrefsLabel>
               <AiPrefsChipRow>
-                {['beginner', 'intermediate', 'advanced'].map(val => (
+                {['beginner', 'intermediate', 'advanced'].map((val) => (
                   <AiPrefChip
                     key={val}
                     type="button"
@@ -1944,7 +1984,7 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
                   { value: 'quick', label: 'Quick (<30m)' },
                   { value: 'medium', label: 'Medium (30-60m)' },
                   { value: 'elaborate', label: 'Elaborate (60m+)' },
-                ].map(opt => (
+                ].map((opt) => (
                   <AiPrefChip
                     key={opt.value}
                     type="button"
@@ -1959,7 +1999,7 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
             <div>
               <AiPrefsLabel>Cuisines</AiPrefsLabel>
               <AiPrefsChipRow>
-                {CUISINE_OPTIONS.map(cuisine => (
+                {CUISINE_OPTIONS.map((cuisine) => (
                   <AiPrefChip
                     key={cuisine}
                     type="button"
@@ -1978,7 +2018,7 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
                 min="1"
                 max="20"
                 value={prefServings}
-                onChange={e => setPrefServings(e.target.value)}
+                onChange={(e) => setPrefServings(e.target.value)}
                 placeholder="4"
               />
             </div>
@@ -1986,7 +2026,7 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
               <AiPrefsLabel>Additional notes</AiPrefsLabel>
               <AiPrefsNotesTextarea
                 value={prefNotes}
-                onChange={e => setPrefNotes(e.target.value)}
+                onChange={(e) => setPrefNotes(e.target.value)}
                 placeholder="e.g. No spicy food, kid-friendly, low sodium..."
                 maxLength={300}
               />
@@ -2014,48 +2054,48 @@ function AiGenerateScreen({ day, mealType, onAssigned, onClose, isBusy, setIsBus
         />
       )}
     </InputBody>
-  )
+  );
 }
 
 function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone }) {
-  const [step, setStep] = useState('input') // 'input' | 'results' | 'detail'
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [selectedResult, setSelectedResult] = useState(null)
-  const [error, setError] = useState(null)
-  const [savedRecipeId, setSavedRecipeId] = useState(null)
-  const [duplicate, setDuplicate] = useState(false)
-  const [isSearching, startSearchTransition] = useTransition()
-  const [, startSaveTransition] = useTransition()
+  const [step, setStep] = useState('input'); // 'input' | 'results' | 'detail'
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [selectedResult, setSelectedResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [savedRecipeId, setSavedRecipeId] = useState(null);
+  const [duplicate, setDuplicate] = useState(false);
+  const [isSearching, startSearchTransition] = useTransition();
+  const [, startSaveTransition] = useTransition();
 
-  const loading = isSearching || isBusy
+  const loading = isSearching || isBusy;
 
   function handleSearch() {
-    const q = query.trim()
-    if (!q || loading) return
-    setError(null)
+    const q = query.trim();
+    if (!q || loading) return;
+    setError(null);
     startSearchTransition(async () => {
-      const result = await searchWebRecipesAction(q)
+      const result = await searchWebRecipesAction(q);
       if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-        setResults(result.data)
-        setStep('results')
+        setResults(result.data);
+        setStep('results');
       } else {
-        setError(result.error || 'No qualifying recipes found. Try a different search.')
+        setError(result.error || 'No qualifying recipes found. Try a different search.');
       }
-    })
+    });
   }
 
   function handleSelectResult(recipe) {
-    setSelectedResult(recipe)
-    setSavedRecipeId(null)
-    setDuplicate(false)
-    setError(null)
-    setStep('detail')
+    setSelectedResult(recipe);
+    setSavedRecipeId(null);
+    setDuplicate(false);
+    setError(null);
+    setStep('detail');
   }
 
   function handleSave() {
-    if (!selectedResult || loading) return
-    setIsBusy(true)
+    if (!selectedResult || loading) return;
+    setIsBusy(true);
     startSaveTransition(async () => {
       const recipeData = {
         name: selectedResult.name,
@@ -2068,46 +2108,46 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
         source: selectedResult.source_url || '',
         image_url: selectedResult.image_url || undefined,
         tags: [],
-      }
-      const createResult = await createRecipeAction(recipeData)
+      };
+      const createResult = await createRecipeAction(recipeData);
       if (!createResult.success) {
-        setError(createResult.error)
-        setIsBusy(false)
-        return
+        setError(createResult.error);
+        setIsBusy(false);
+        return;
       }
-      const savedRecipe = createResult.data
-      const assignResult = await assignRecipeToSlot(day, mealType, savedRecipe.id)
-      setIsBusy(false)
+      const savedRecipe = createResult.data;
+      const assignResult = await assignRecipeToSlot(day, mealType, savedRecipe.id);
+      setIsBusy(false);
       if (assignResult.success) {
-        setSavedRecipeId(savedRecipe.id)
-        setDuplicate(savedRecipe.alreadyExists === true)
-        onAssigned?.({ recipeId: savedRecipe.id, recipeName: savedRecipe.name })
+        setSavedRecipeId(savedRecipe.id);
+        setDuplicate(savedRecipe.alreadyExists === true);
+        onAssigned?.({ recipeId: savedRecipe.id, recipeName: savedRecipe.name });
       } else {
-        setError(assignResult.error || 'Could not assign recipe to slot.')
+        setError(assignResult.error || 'Could not assign recipe to slot.');
       }
-    })
+    });
   }
 
   function renderStars(rating) {
-    if (!rating) return ''
-    const r = Math.min(5, Math.max(0, rating))
-    const full = Math.floor(r)
-    const hasHalf = r - full >= 0.3
-    const empty = Math.max(0, 5 - full - (hasHalf ? 1 : 0))
-    return '\u2605'.repeat(full) + (hasHalf ? '\u00bd' : '') + '\u2606'.repeat(empty)
+    if (!rating) return '';
+    const r = Math.min(5, Math.max(0, rating));
+    const full = Math.floor(r);
+    const hasHalf = r - full >= 0.3;
+    const empty = Math.max(0, 5 - full - (hasHalf ? 1 : 0));
+    return '\u2605'.repeat(full) + (hasHalf ? '\u00bd' : '') + '\u2606'.repeat(empty);
   }
 
   function formatMinutes(mins) {
-    if (!mins) return null
-    if (mins < 60) return `${mins} min`
-    const h = Math.floor(mins / 60)
-    const m = mins % 60
-    return m ? `${h}h ${m}m` : `${h}h`
+    if (!mins) return null;
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
   }
 
   function formatReviews(n) {
-    if (!n) return ''
-    return n >= 1000 ? `${(n / 1000).toFixed(1)}k reviews` : `${n} reviews`
+    if (!n) return '';
+    return n >= 1000 ? `${(n / 1000).toFixed(1)}k reviews` : `${n} reviews`;
   }
 
   // ── Input step ──────────────────────────────────────────────────────────────
@@ -2115,7 +2155,8 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
     return (
       <InputBody>
         <SearchHintText>
-          Koda searches the web for top-rated recipes — only returns results with 4.5+ stars and 100+ reviews.
+          Koda searches the web for top-rated recipes — only returns results with 4.5+ stars and
+          100+ reviews.
         </SearchHintText>
         <InputLabel htmlFor="web-recipe-search">What are you in the mood for?</InputLabel>
         <UrlInput
@@ -2128,44 +2169,59 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
           autoFocus
           disabled={isSearching}
         />
-        {isSearching
-          ? <SearchLoadingMsg>Searching the web for top-rated recipes&hellip;</SearchLoadingMsg>
-          : (
-            <ActionRow>
-              <PrimaryButton onClick={handleSearch} disabled={!query.trim()}>
-                Search
-              </PrimaryButton>
-            </ActionRow>
-          )
-        }
+        {isSearching ? (
+          <SearchLoadingMsg>Searching the web for top-rated recipes&hellip;</SearchLoadingMsg>
+        ) : (
+          <ActionRow>
+            <PrimaryButton onClick={handleSearch} disabled={!query.trim()}>
+              Search
+            </PrimaryButton>
+          </ActionRow>
+        )}
         {error && <InlineError>{error}</InlineError>}
       </InputBody>
-    )
+    );
   }
 
   // ── Results step ────────────────────────────────────────────────────────────
   if (step === 'results') {
     return (
       <InputBody>
-        <AiBackLink type="button" onClick={() => { setStep('input'); setError(null) }}>
+        <AiBackLink
+          type="button"
+          onClick={() => {
+            setStep('input');
+            setError(null);
+          }}
+        >
           &#8592; New search
         </AiBackLink>
         <SearchResultsHeader>Top results for &ldquo;{query}&rdquo;</SearchResultsHeader>
         <SearchResultsList>
           {results.map((recipe, i) => {
-            const cookTime = formatMinutes(recipe.cook_time_minutes)
+            const cookTime = formatMinutes(recipe.cook_time_minutes);
             return (
               <SearchResultCard key={i} type="button" onClick={() => handleSelectResult(recipe)}>
                 <ResultThumb>
-                  {recipe.image_url
-                    ? <img src={recipe.image_url} alt={recipe.name} onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                    : '\uD83C\uDF7D'}
+                  {recipe.image_url ? (
+                    <img
+                      src={recipe.image_url}
+                      alt={recipe.name}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    '\uD83C\uDF7D'
+                  )}
                 </ResultThumb>
                 <ResultBody>
                   <ResultName>{recipe.name}</ResultName>
                   <ResultRatingRow>
                     {recipe.rating && (
-                      <ResultStars>{renderStars(recipe.rating)} {recipe.rating.toFixed(1)}</ResultStars>
+                      <ResultStars>
+                        {renderStars(recipe.rating)} {recipe.rating.toFixed(1)}
+                      </ResultStars>
                     )}
                     {recipe.review_count > 0 && (
                       <ResultReviews>{formatReviews(recipe.review_count)}</ResultReviews>
@@ -2176,20 +2232,26 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
                   <ResultViewHint>Tap to see full recipe \u2192</ResultViewHint>
                 </ResultBody>
               </SearchResultCard>
-            )
+            );
           })}
         </SearchResultsList>
       </InputBody>
-    )
+    );
   }
 
   // ── Detail step ─────────────────────────────────────────────────────────────
-  const r = selectedResult
-  const totalTime = (r.prep_time_minutes || 0) + (r.cook_time_minutes || 0)
+  const r = selectedResult;
+  const totalTime = (r.prep_time_minutes || 0) + (r.cook_time_minutes || 0);
 
   return (
     <InputBody>
-      <AiBackLink type="button" onClick={() => { setStep('results'); setError(null) }}>
+      <AiBackLink
+        type="button"
+        onClick={() => {
+          setStep('results');
+          setError(null);
+        }}
+      >
         &#8592; Back to results
       </AiBackLink>
 
@@ -2197,14 +2259,24 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
         <DetailRecipeName>{r.name}</DetailRecipeName>
         {(r.rating || r.review_count) && (
           <ResultRatingRow style={{ marginBottom: 8 }}>
-            {r.rating && <ResultStars>{renderStars(r.rating)} {r.rating.toFixed(1)}</ResultStars>}
+            {r.rating && (
+              <ResultStars>
+                {renderStars(r.rating)} {r.rating.toFixed(1)}
+              </ResultStars>
+            )}
             {r.review_count > 0 && <ResultReviews>{formatReviews(r.review_count)}</ResultReviews>}
           </ResultRatingRow>
         )}
         <DetailMetaRow>
-          {r.prep_time_minutes ? <DetailMetaChip>Prep: {formatMinutes(r.prep_time_minutes)}</DetailMetaChip> : null}
-          {r.cook_time_minutes ? <DetailMetaChip>Cook: {formatMinutes(r.cook_time_minutes)}</DetailMetaChip> : null}
-          {totalTime > 0 ? <DetailMetaChip>Total: {formatMinutes(totalTime)}</DetailMetaChip> : null}
+          {r.prep_time_minutes ? (
+            <DetailMetaChip>Prep: {formatMinutes(r.prep_time_minutes)}</DetailMetaChip>
+          ) : null}
+          {r.cook_time_minutes ? (
+            <DetailMetaChip>Cook: {formatMinutes(r.cook_time_minutes)}</DetailMetaChip>
+          ) : null}
+          {totalTime > 0 ? (
+            <DetailMetaChip>Total: {formatMinutes(totalTime)}</DetailMetaChip>
+          ) : null}
           {r.servings ? <DetailMetaChip>{r.servings} servings</DetailMetaChip> : null}
         </DetailMetaRow>
         {r.source_url && (
@@ -2219,9 +2291,7 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
           <SectionLabel>Ingredients</SectionLabel>
           {r.ingredients.map((ing, idx) => (
             <IngredientRow key={idx}>
-              <IngredientText>
-                {[ing.quantity, ing.name].filter(Boolean).join(' ')}
-              </IngredientText>
+              <IngredientText>{[ing.quantity, ing.name].filter(Boolean).join(' ')}</IngredientText>
             </IngredientRow>
           ))}
         </div>
@@ -2230,7 +2300,14 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
       {r.instructions && (
         <div>
           <SectionLabel>Instructions</SectionLabel>
-          <div style={{ fontSize: '13px', lineHeight: '1.6', whiteSpace: 'pre-wrap', color: 'inherit' }}>
+          <div
+            style={{
+              fontSize: '13px',
+              lineHeight: '1.6',
+              whiteSpace: 'pre-wrap',
+              color: 'inherit',
+            }}
+          >
             {r.instructions}
           </div>
         </div>
@@ -2241,10 +2318,16 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
       {savedRecipeId ? (
         <SavedRow>
           <SavedLabel>
-            {duplicate ? 'Already in your Recipe Box \u2014 assigned to slot!' : 'Added to your Recipe Box & meal plan!'}
+            {duplicate
+              ? 'Already in your Recipe Box \u2014 assigned to slot!'
+              : 'Added to your Recipe Box & meal plan!'}
           </SavedLabel>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <ViewRecipeLink href={`/recipes/${savedRecipeId}`} target="_blank" rel="noopener noreferrer">
+            <ViewRecipeLink
+              href={`/recipes/${savedRecipeId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               View recipe &#8594;
             </ViewRecipeLink>
             {onDone && (
@@ -2260,20 +2343,20 @@ function WebSearchScreen({ day, mealType, onAssigned, isBusy, setIsBusy, onDone 
         </AddToMealButton>
       )}
     </InputBody>
-  )
+  );
 }
 
 function SideScreen({ day, sideType, mainMealName, onAssigned, onClose }) {
-  const [sideName, setSideName] = useState('')
-  const [error, setError] = useState(null)
-  const [isPending, startTransition] = useTransition()
+  const [sideName, setSideName] = useState('');
+  const [error, setError] = useState(null);
+  const [isPending, startTransition] = useTransition();
 
   function handleSave() {
-    const name = sideName.trim()
-    if (!name || isPending) return
-    setError(null)
+    const name = sideName.trim();
+    if (!name || isPending) return;
+    setError(null);
     startTransition(async () => {
-      const result = await swapMeal(day, sideType, name)
+      const result = await swapMeal(day, sideType, name);
       if (result.success) {
         // Pass sideType and any full meals data back so the parent can update
         // the correct slot (not the main meal slot).
@@ -2282,12 +2365,12 @@ function SideScreen({ day, sideType, mainMealName, onAssigned, onClose }) {
           recipeName: name,
           sideType,
           meals: result.data?.meals ?? null,
-        })
-        onClose()
+        });
+        onClose();
       } else {
-        setError(result.error)
+        setError(result.error);
       }
-    })
+    });
   }
 
   return (
@@ -2307,34 +2390,36 @@ function SideScreen({ day, sideType, mainMealName, onAssigned, onClose }) {
         disabled={isPending}
       />
       <SideActionRow>
-        <SkipButton onClick={onClose} disabled={isPending}>Skip</SkipButton>
+        <SkipButton onClick={onClose} disabled={isPending}>
+          Skip
+        </SkipButton>
         <PrimaryButton onClick={handleSave} disabled={isPending || !sideName.trim()}>
           {isPending ? 'Saving...' : 'Add side'}
         </PrimaryButton>
       </SideActionRow>
       {error && <InlineError>{error}</InlineError>}
     </InputBody>
-  )
+  );
 }
 
 function ManualAddScreen({ day, mealType, onAssigned, onClose }) {
-  const [mealName, setMealName] = useState('')
-  const [error, setError] = useState(null)
-  const [isPending, startTransition] = useTransition()
+  const [mealName, setMealName] = useState('');
+  const [error, setError] = useState(null);
+  const [isPending, startTransition] = useTransition();
 
   function handleSave() {
-    const name = mealName.trim()
-    if (!name || isPending) return
-    setError(null)
+    const name = mealName.trim();
+    if (!name || isPending) return;
+    setError(null);
     startTransition(async () => {
-      const result = await swapMeal(day, mealType, name)
+      const result = await swapMeal(day, mealType, name);
       if (result.success) {
-        onAssigned?.({ recipeId: null, recipeName: name })
-        onClose()
+        onAssigned?.({ recipeId: null, recipeName: name });
+        onClose();
       } else {
-        setError(result.error)
+        setError(result.error);
       }
-    })
+    });
   }
 
   return (
@@ -2357,7 +2442,7 @@ function ManualAddScreen({ day, mealType, onAssigned, onClose }) {
       </ActionRow>
       {error && <InlineError>{error}</InlineError>}
     </InputBody>
-  )
+  );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -2375,163 +2460,178 @@ export default function RecipePickerModal({
   collections = [],
   collectionLinks = [],
 }) {
-  const [mode, setMode] = useState('options')
-  const [query, setQuery] = useState('')
-  const [pickerCollection, setPickerCollection] = useState(null)
+  const [mode, setMode] = useState('options');
+  const [query, setQuery] = useState('');
+  const [pickerCollection, setPickerCollection] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
-      setMode(initialMode || 'options')
-      savedMealNameRef.current = null
+      setMode(initialMode || 'options');
+      savedMealNameRef.current = null;
     }
-  }, [isOpen, initialMode])
-  const [showCustom, setShowCustom] = useState(false)
-  const [customName, setCustomName] = useState('')
-  const [assigningId, setAssigningId] = useState(null)
-  const [saveBusy, setSaveBusy] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  }, [isOpen, initialMode]);
+  const [showCustom, setShowCustom] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [assigningId, setAssigningId] = useState(null);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Surprise Me state
-  const [surpriseResult, setSurpriseResult] = useState(null)
-  const [isSurprising, startSurpriseTransition] = useTransition()
+  const [surpriseResult, setSurpriseResult] = useState(null);
+  const [isSurprising, startSurpriseTransition] = useTransition();
 
   // Determine the side dish slot type for the optional side prompt.
   // Explicit prop takes precedence (e.g. dinner's next empty sides slot);
   // otherwise derive from meal type for breakfast / lunch.
-  const sideType = propSideType !== undefined ? propSideType : (
-    mealType === 'breakfast' ? 'breakfast_side'
-    : mealType === 'lunch' ? 'lunch_side'
-    : null
-  )
-  const savedMealNameRef = useRef(null)
+  const sideType =
+    propSideType !== undefined
+      ? propSideType
+      : mealType === 'breakfast'
+        ? 'breakfast_side'
+        : mealType === 'lunch'
+          ? 'lunch_side'
+          : null;
+  const savedMealNameRef = useRef(null);
 
   // After saving any meal for breakfast/lunch, advance to side prompt instead of closing
   const advanceToSideOrClose = useCallback(() => {
     if (sideType && savedMealNameRef.current) {
-      setMode('side')
+      setMode('side');
     } else {
-      onClose()
+      onClose();
     }
-  }, [sideType, onClose])
+  }, [sideType, onClose]);
 
   // Intercept onAssigned from sub-screens so we can capture the meal name
-  const handleSubScreenAssigned = useCallback((info) => {
-    if (info?.recipeName) savedMealNameRef.current = info.recipeName
-    onAssigned?.(info)
-  }, [onAssigned])
+  const handleSubScreenAssigned = useCallback(
+    (info) => {
+      if (info?.recipeName) savedMealNameRef.current = info.recipeName;
+      onAssigned?.(info);
+    },
+    [onAssigned],
+  );
 
   const pickerColIds = useMemo(() => {
-    if (!pickerCollection) return null
-    const ids = new Set()
+    if (!pickerCollection) return null;
+    const ids = new Set();
     for (const l of collectionLinks) {
-      if (l.collection_id === pickerCollection) ids.add(String(l.recipe_id))
+      if (l.collection_id === pickerCollection) ids.add(String(l.recipe_id));
     }
-    return ids
-  }, [pickerCollection, collectionLinks])
+    return ids;
+  }, [pickerCollection, collectionLinks]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    let base = recipes
+    const q = query.trim().toLowerCase();
+    let base = recipes;
     if (pickerColIds) {
-      base = base.filter(r => pickerColIds.has(String(r.id)))
+      base = base.filter((r) => pickerColIds.has(String(r.id)));
     }
-    if (!q) return base
-    return base.filter(r => {
-      const nameMatch = r.name.toLowerCase().includes(q)
-      const tagMatch = Array.isArray(r.tags) && r.tags.some(t => t.toLowerCase().includes(q))
-      return nameMatch || tagMatch
-    })
-  }, [query, recipes, pickerColIds])
+    if (!q) return base;
+    return base.filter((r) => {
+      const nameMatch = r.name.toLowerCase().includes(q);
+      const tagMatch = Array.isArray(r.tags) && r.tags.some((t) => t.toLowerCase().includes(q));
+      return nameMatch || tagMatch;
+    });
+  }, [query, recipes, pickerColIds]);
 
   function handleAssign(recipeId) {
-    setAssigningId(recipeId)
+    setAssigningId(recipeId);
     startTransition(async () => {
-      const result = await assignRecipeToSlot(day, mealType, recipeId)
-      setAssigningId(null)
+      const result = await assignRecipeToSlot(day, mealType, recipeId);
+      setAssigningId(null);
       if (result.success) {
-        const recipeName = result.data?.recipeName
-        if (recipeName) savedMealNameRef.current = recipeName
-        onAssigned?.({ recipeId, recipeName, meals: result.data?.meals })
-        advanceToSideOrClose()
+        const recipeName = result.data?.recipeName;
+        if (recipeName) savedMealNameRef.current = recipeName;
+        onAssigned?.({ recipeId, recipeName, meals: result.data?.meals });
+        advanceToSideOrClose();
       } else {
-        alert('Assign failed: ' + result.error + '\nday=' + day + ' mealType=' + mealType + ' recipeId=' + recipeId)
-        onAssigned?.({ error: result.error })
+        alert(
+          'Assign failed: ' +
+            result.error +
+            '\nday=' +
+            day +
+            ' mealType=' +
+            mealType +
+            ' recipeId=' +
+            recipeId,
+        );
+        onAssigned?.({ error: result.error });
       }
-    })
+    });
   }
 
   function handleUnassign() {
-    setAssigningId('unassign')
+    setAssigningId('unassign');
     startTransition(async () => {
-      const result = await assignRecipeToSlot(day, mealType, null)
-      setAssigningId(null)
+      const result = await assignRecipeToSlot(day, mealType, null);
+      setAssigningId(null);
       if (result.success) {
-        onAssigned?.({ recipeId: null, recipeName: null })
-        onClose()
+        onAssigned?.({ recipeId: null, recipeName: null });
+        onClose();
       } else {
-        onAssigned?.({ error: result.error })
+        onAssigned?.({ error: result.error });
       }
-    })
+    });
   }
 
   function handleCustomSubmit(e) {
-    e.preventDefault()
-    const name = customName.trim()
-    if (!name) return
-    setAssigningId('custom')
+    e.preventDefault();
+    const name = customName.trim();
+    if (!name) return;
+    setAssigningId('custom');
     startTransition(async () => {
-      const result = await swapMeal(day, mealType, name)
-      setAssigningId(null)
+      const result = await swapMeal(day, mealType, name);
+      setAssigningId(null);
       if (result.success) {
-        savedMealNameRef.current = name
-        onAssigned?.({ recipeName: name, recipeId: null })
-        advanceToSideOrClose()
+        savedMealNameRef.current = name;
+        onAssigned?.({ recipeName: name, recipeId: null });
+        advanceToSideOrClose();
       } else {
-        onAssigned?.({ error: result.error })
+        onAssigned?.({ error: result.error });
       }
-    })
+    });
   }
 
   function goBack() {
-    setMode('options')
-    setQuery('')
-    setShowCustom(false)
-    setCustomName('')
-    setSurpriseResult(null)
+    setMode('options');
+    setQuery('');
+    setShowCustom(false);
+    setCustomName('');
+    setSurpriseResult(null);
   }
 
   function handleSurpriseMe() {
     startSurpriseTransition(async () => {
-      setSurpriseResult(null)
-      const result = await surpriseMeAction(mealType || null)
+      setSurpriseResult(null);
+      const result = await surpriseMeAction(mealType || null);
       if (result.success && result.data?.recipe) {
-        setSurpriseResult(result.data.recipe)
+        setSurpriseResult(result.data.recipe);
       }
-    })
+    });
   }
 
   function handleSurpriseAccept() {
-    if (!surpriseResult) return
+    if (!surpriseResult) return;
     startTransition(async () => {
-      const result = await swapMeal(day, mealType, surpriseResult.name)
+      const result = await swapMeal(day, mealType, surpriseResult.name);
       if (result.success) {
-        savedMealNameRef.current = surpriseResult.name
-        onAssigned({ recipeName: surpriseResult.name, meals: result.data?.meals })
-        setSurpriseResult(null)
-        advanceToSideOrClose()
+        savedMealNameRef.current = surpriseResult.name;
+        onAssigned({ recipeName: surpriseResult.name, meals: result.data?.meals });
+        setSurpriseResult(null);
+        advanceToSideOrClose();
       }
-    })
+    });
   }
 
   function handleClose() {
-    if (isPending || saveBusy || isSurprising) return
-    setSurpriseResult(null)
-    onClose()
+    if (isPending || saveBusy || isSurprising) return;
+    setSurpriseResult(null);
+    onClose();
   }
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
-  const isBusy = isPending || saveBusy || isSurprising
+  const isBusy = isPending || saveBusy || isSurprising;
 
   // ── Title per mode ──────────────────────────────────────────────────────────
   const titles = {
@@ -2543,7 +2643,7 @@ export default function RecipePickerModal({
     side: 'Add a side dish',
     'web-search': 'Search for a recipe',
     surprise: 'Surprise Me!',
-  }
+  };
 
   return (
     <Overlay onClick={(e) => e.target === e.currentTarget && !isBusy && handleClose()}>
@@ -2557,10 +2657,14 @@ export default function RecipePickerModal({
             )}
             <HeaderText>
               <ModalTitle>{titles[mode]}</ModalTitle>
-              <ModalSubtitle>{day} &mdash; {mealType}</ModalSubtitle>
+              <ModalSubtitle>
+                {day} &mdash; {mealType}
+              </ModalSubtitle>
             </HeaderText>
           </HeaderLeft>
-          <CloseButton onClick={handleClose} disabled={isBusy}>{'\u2715'}</CloseButton>
+          <CloseButton onClick={handleClose} disabled={isBusy}>
+            {'\u2715'}
+          </CloseButton>
         </ModalHeader>
 
         {/* ── Options screen ─────────────────────────────────────────────── */}
@@ -2611,7 +2715,14 @@ export default function RecipePickerModal({
               <OptionChevron>›</OptionChevron>
             </OptionCard>
 
-            <OptionCard onClick={() => { setSurpriseResult(null); setMode('surprise'); handleSurpriseMe() }} style={{ borderColor: '#F0997B', background: '#FFF7F5' }}>
+            <OptionCard
+              onClick={() => {
+                setSurpriseResult(null);
+                setMode('surprise');
+                handleSurpriseMe();
+              }}
+              style={{ borderColor: '#F0997B', background: '#FFF7F5' }}
+            >
               <OptionIconWrap $bg="#FFF0EB">{'\uD83C\uDF89'}</OptionIconWrap>
               <OptionText>
                 <OptionTitle style={{ color: '#D85A30' }}>Surprise Me!</OptionTitle>
@@ -2635,14 +2746,29 @@ export default function RecipePickerModal({
                 <SurpriseCardWrap>
                   <SurpriseCardName>{surpriseResult.name}</SurpriseCardName>
                   <SurpriseCardTrending>{surpriseResult.trending_reason}</SurpriseCardTrending>
-                  {surpriseResult.description && <SurpriseCardDesc>{surpriseResult.description}</SurpriseCardDesc>}
+                  {surpriseResult.description && (
+                    <SurpriseCardDesc>{surpriseResult.description}</SurpriseCardDesc>
+                  )}
                   <SurpriseCardMeta>
-                    {surpriseResult.cook_time_minutes && <span>{(surpriseResult.prep_time_minutes || 0) + surpriseResult.cook_time_minutes} min</span>}
+                    {surpriseResult.cook_time_minutes && (
+                      <span>
+                        {(surpriseResult.prep_time_minutes || 0) + surpriseResult.cook_time_minutes}{' '}
+                        min
+                      </span>
+                    )}
                     {surpriseResult.servings && <span>{surpriseResult.servings} servings</span>}
-                    {surpriseResult.rating && <span>{'\u2605'} {surpriseResult.rating}</span>}
+                    {surpriseResult.rating && (
+                      <span>
+                        {'\u2605'} {surpriseResult.rating}
+                      </span>
+                    )}
                   </SurpriseCardMeta>
                   {surpriseResult.source_url && (
-                    <SurpriseCardLink href={surpriseResult.source_url} target="_blank" rel="noopener noreferrer">
+                    <SurpriseCardLink
+                      href={surpriseResult.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       View original source
                     </SurpriseCardLink>
                   )}
@@ -2679,7 +2805,7 @@ export default function RecipePickerModal({
                 >
                   All
                 </PickerChip>
-                {collections.map(col => (
+                {collections.map((col) => (
                   <PickerChip
                     key={col.id}
                     type="button"
@@ -2712,9 +2838,9 @@ export default function RecipePickerModal({
                 <EmptyState>No recipes match your search.</EmptyState>
               ) : (
                 filtered.map((recipe) => {
-                  const isCurrent = recipe.id === currentRecipeId
-                  const isAssigning = assigningId === recipe.id
-                  const timeLabel = formatTime(recipe.prep_time_minutes, recipe.cook_time_minutes)
+                  const isCurrent = recipe.id === currentRecipeId;
+                  const isAssigning = assigningId === recipe.id;
+                  const timeLabel = formatTime(recipe.prep_time_minutes, recipe.cook_time_minutes);
 
                   return (
                     <RecipeCard key={recipe.id} $isCurrent={isCurrent}>
@@ -2750,7 +2876,7 @@ export default function RecipePickerModal({
                         {isAssigning ? '...' : isCurrent ? 'Re-assign' : 'Assign'}
                       </AssignButton>
                     </RecipeCard>
-                  )
+                  );
                 })
               )}
             </RecipeList>
@@ -2839,5 +2965,5 @@ export default function RecipePickerModal({
         )}
       </Modal>
     </Overlay>
-  )
+  );
 }

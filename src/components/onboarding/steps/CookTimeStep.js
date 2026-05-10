@@ -1,10 +1,18 @@
-'use client'
+'use client';
 
-import StepShell from '../shared/StepShell'
-import SingleSelectCards from '../shared/SingleSelectCards'
-import { COOK_TIME_OPTIONS } from '@/data/onboarding-options'
+import StepShell from '../shared/StepShell';
+import SingleSelectCards from '../shared/SingleSelectCards';
+import { COOK_TIME_OPTIONS } from '@/data/onboarding-options';
 
-export default function CookTimeStep({ value, onChange, onNext, onBack, isPending, voiceMode = false, voiceAnimatingValue = null }) {
+export default function CookTimeStep({
+  value,
+  onChange,
+  onNext,
+  onBack,
+  isPending,
+  voiceMode = false,
+  voiceAnimatingValue = null,
+}) {
   return (
     <StepShell
       title="How much time do you have to cook on weeknights?"
@@ -21,5 +29,5 @@ export default function CookTimeStep({ value, onChange, onNext, onBack, isPendin
         voiceAnimatingValue={voiceAnimatingValue}
       />
     </StepShell>
-  )
+  );
 }

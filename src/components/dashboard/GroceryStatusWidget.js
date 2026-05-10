@@ -1,39 +1,39 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import Link from 'next/link'
-import SectionHeader from '@/components/common/SectionHeader'
+import styled from 'styled-components';
+import Link from 'next/link';
+import SectionHeader from '@/components/common/SectionHeader';
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 0.5px solid ${({ theme }) => theme.colors.borderLight};
   border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const StatsRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.xl};
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Stat = styled.div`
   text-align: center;
-`
+`;
 
 const StatNumber = styled.div`
   font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 500;
   color: ${({ $color, theme }) => theme.colors[$color] || theme.colors.textPrimary};
-`
+`;
 
 const StatLabel = styled.div`
   font-size: ${({ theme }) => theme.fontSizes.xs};
   color: ${({ theme }) => theme.colors.textSecondary};
   text-transform: uppercase;
   letter-spacing: 0.5px;
-`
+`;
 
 const SendButton = styled(Link)`
   display: inline-flex;
@@ -52,13 +52,13 @@ const SendButton = styled(Link)`
   &:hover {
     opacity: 0.9;
   }
-`
+`;
 
 export default function GroceryStatusWidget({ groceryItems }) {
-  const items = groceryItems || []
-  const needCount = items.filter(i => i.status === 'need').length
-  const lowCount = items.filter(i => i.status === 'low').length
-  const totalPending = needCount + lowCount
+  const items = groceryItems || [];
+  const needCount = items.filter((i) => i.status === 'need').length;
+  const lowCount = items.filter((i) => i.status === 'low').length;
+  const totalPending = needCount + lowCount;
 
   return (
     <Card>
@@ -79,5 +79,5 @@ export default function GroceryStatusWidget({ groceryItems }) {
       </StatsRow>
       <SendButton href="/grocery">Send list</SendButton>
     </Card>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { createGlobalStyle } from 'styled-components'
+import { createGlobalStyle } from 'styled-components';
 
 const GlobalStyles = createGlobalStyle`
   *, *::before, *::after {
@@ -46,6 +46,6 @@ const GlobalStyles = createGlobalStyle`
   ul, ol {
     list-style: none;
   }
-`
+`;
 
-export default GlobalStyles
+export default GlobalStyles;

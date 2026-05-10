@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import styled from 'styled-components'
-import StepShell from '../shared/StepShell'
-import NumberStepper from '../shared/NumberStepper'
-import HouseholdMembersStep from './HouseholdMembersStep'
-import ConversationalHouseholdSetup from '../ConversationalHouseholdSetup'
+import { useState } from 'react';
+import styled from 'styled-components';
+import StepShell from '../shared/StepShell';
+import NumberStepper from '../shared/NumberStepper';
+import HouseholdMembersStep from './HouseholdMembersStep';
+import ConversationalHouseholdSetup from '../ConversationalHouseholdSetup';
 
 // ── Styled ─────────────────────────────────────────────
 
@@ -15,56 +15,56 @@ const ModeToggle = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   overflow: hidden;
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const ModeBtn = styled.button`
   flex: 1;
   padding: ${({ theme }) => theme.spacing.md};
   border: none;
-  background: ${({ $active, theme }) => $active ? theme.colors.teal : theme.colors.surface};
-  color: ${({ $active }) => $active ? 'white' : 'inherit'};
+  background: ${({ $active, theme }) => ($active ? theme.colors.teal : theme.colors.surface)};
+  color: ${({ $active }) => ($active ? 'white' : 'inherit')};
   font-size: 14px;
-  font-weight: ${({ $active }) => $active ? 600 : 400};
+  font-weight: ${({ $active }) => ($active ? 600 : 400)};
   cursor: pointer;
   transition: all 0.15s;
 
   &:not(:last-child) {
     border-right: 1px solid ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
 const CountSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.xxl};
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const CountRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const CountLabel = styled.div`
   width: 80px;
   font-size: 15px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const TotalRow = styled.div`
   text-align: center;
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const Hint = styled.p`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.5;
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const InfoBox = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
@@ -75,7 +75,7 @@ const InfoBox = styled.div`
   color: #92400E;
   line-height: 1.5;
   margin-top: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const ChatSetupBtn = styled.button`
   display: flex;
@@ -97,21 +97,27 @@ const ChatSetupBtn = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.tealLight}40;
   }
-`
+`;
 
 export default function HouseholdSizeStep({
-  numAdults, numChildren, members, userName,
-  onChangeAdults, onChangeChildren, onChangeMembers,
-  faithPractices, onChangeFaith,
-  onNext, onBack, isPending,
+  numAdults,
+  numChildren,
+  members,
+  userName,
+  onChangeAdults,
+  onChangeChildren,
+  onChangeMembers,
+  faithPractices,
+  onChangeFaith,
+  onNext,
+  onBack,
+  isPending,
   voiceMode = false,
 }) {
   // 'profiles' = add individual members, 'counts' = just adult/child numbers, 'conversational' = Koda chat setup
-  const [mode, setMode] = useState(members.length > 0 ? 'profiles' : 'profiles')
+  const [mode, setMode] = useState(members.length > 0 ? 'profiles' : 'profiles');
 
-  const total = mode === 'profiles'
-    ? Math.max(members.length, 1)
-    : numAdults + numChildren
+  const total = mode === 'profiles' ? Math.max(members.length, 1) : numAdults + numChildren;
 
   // Conversational mode renders full-screen
   if (mode === 'conversational') {
@@ -120,13 +126,13 @@ export default function HouseholdSizeStep({
         initialMembers={members}
         faithPractices={faithPractices}
         onComplete={(updatedMembers, updatedFaith) => {
-          onChangeMembers(updatedMembers)
-          if (onChangeFaith) onChangeFaith(updatedFaith)
-          onNext()
+          onChangeMembers(updatedMembers);
+          if (onChangeFaith) onChangeFaith(updatedFaith);
+          onNext();
         }}
         onBack={() => setMode('profiles')}
       />
-    )
+    );
   }
 
   return (
@@ -136,7 +142,7 @@ export default function HouseholdSizeStep({
       onNext={onNext}
       onBack={onBack}
       isPending={isPending}
-      nextDisabled={mode === 'counts' ? (numAdults + numChildren) < 1 : false}
+      nextDisabled={mode === 'counts' ? numAdults + numChildren < 1 : false}
       showBack={false}
       voiceMode={voiceMode}
     >
@@ -147,25 +153,17 @@ export default function HouseholdSizeStep({
       )}
 
       <ModeToggle>
-        <ModeBtn
-          type="button"
-          $active={mode === 'profiles'}
-          onClick={() => setMode('profiles')}
-        >
+        <ModeBtn type="button" $active={mode === 'profiles'} onClick={() => setMode('profiles')}>
           Add family members
         </ModeBtn>
-        <ModeBtn
-          type="button"
-          $active={mode === 'counts'}
-          onClick={() => setMode('counts')}
-        >
+        <ModeBtn type="button" $active={mode === 'counts'} onClick={() => setMode('counts')}>
           Family numbers
         </ModeBtn>
       </ModeToggle>
 
       <Hint>
-        You don't have to use real names, but when Koda knows about dietary restrictions
-        or picky eaters, it can accommodate everyone — so it's worth adding each person individually!
+        You don't have to use real names, but when Koda knows about dietary restrictions or picky
+        eaters, it can accommodate everyone — so it's worth adding each person individually!
       </Hint>
 
       {mode === 'profiles' ? (
@@ -189,17 +187,18 @@ export default function HouseholdSizeStep({
               <NumberStepper value={numChildren} onChange={onChangeChildren} min={0} max={10} />
             </CountRow>
             <TotalRow>
-              Cooking for {numAdults + numChildren} {(numAdults + numChildren) === 1 ? 'person' : 'people'}
+              Cooking for {numAdults + numChildren}{' '}
+              {numAdults + numChildren === 1 ? 'person' : 'people'}
             </TotalRow>
           </CountSection>
 
           <InfoBox>
-            Without individual profiles, Koda won't be able to account for picky eaters,
-            allergies, or personal preferences for each family member. You can always add
-            profiles later in Settings.
+            Without individual profiles, Koda won't be able to account for picky eaters, allergies,
+            or personal preferences for each family member. You can always add profiles later in
+            Settings.
           </InfoBox>
         </>
       )}
     </StepShell>
-  )
+  );
 }

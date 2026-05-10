@@ -1,10 +1,20 @@
-'use client'
+'use client';
 
-import StepShell from '../shared/StepShell'
-import ChipSelector from '../shared/ChipSelector'
-import { DIETARY_RESTRICTION_OPTIONS } from '@/data/onboarding-options'
+import StepShell from '../shared/StepShell';
+import ChipSelector from '../shared/ChipSelector';
+import { DIETARY_RESTRICTION_OPTIONS } from '@/data/onboarding-options';
 
-export default function DietaryRestrictionsStep({ selected, onChange, onNext, onBack, onSkip, isPending, voiceMode = false, voiceAnimatingItems = [], ambiguousItems = [] }) {
+export default function DietaryRestrictionsStep({
+  selected,
+  onChange,
+  onNext,
+  onBack,
+  onSkip,
+  isPending,
+  voiceMode = false,
+  voiceAnimatingItems = [],
+  ambiguousItems = [],
+}) {
   return (
     <StepShell
       title="Any dietary restrictions or allergies?"
@@ -25,5 +35,5 @@ export default function DietaryRestrictionsStep({ selected, onChange, onNext, on
         ambiguousItems={ambiguousItems}
       />
     </StepShell>
-  )
+  );
 }

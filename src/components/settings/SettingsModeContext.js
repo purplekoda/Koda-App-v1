@@ -1,17 +1,13 @@
-'use client'
+'use client';
 
-import { createContext, useContext } from 'react'
+import { createContext, useContext } from 'react';
 
-const SettingsModeContext = createContext(false)
+const SettingsModeContext = createContext(false);
 
 export function useSettingsMode() {
-  return useContext(SettingsModeContext)
+  return useContext(SettingsModeContext);
 }
 
 export function SettingsModeProvider({ children }) {
-  return (
-    <SettingsModeContext.Provider value={true}>
-      {children}
-    </SettingsModeContext.Provider>
-  )
+  return <SettingsModeContext.Provider value={true}>{children}</SettingsModeContext.Provider>;
 }

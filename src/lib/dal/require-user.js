@@ -1,8 +1,8 @@
-import 'server-only'
+import 'server-only';
 
-import { getCurrentUser } from '@/lib/dal/auth'
+import { getCurrentUser } from '@/lib/dal/auth';
 
-const USE_MOCK = !process.env.NEXT_PUBLIC_SUPABASE_URL
+const USE_MOCK = !process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 const MOCK_USER = Object.freeze({
   id: 'mock-user-id',
@@ -11,7 +11,7 @@ const MOCK_USER = Object.freeze({
     display_name: 'Jessica',
     initials: 'JM',
   },
-})
+});
 
 /**
  * Get the current user, or return a mock user in development mode.
@@ -19,21 +19,21 @@ const MOCK_USER = Object.freeze({
  */
 export async function requireUser() {
   if (USE_MOCK) {
-    return MOCK_USER
+    return MOCK_USER;
   }
 
   // In production, this calls requireAuth() which redirects if not authenticated
-  const user = await getCurrentUser()
+  const user = await getCurrentUser();
   if (!user) {
-    const { redirect } = await import('next/navigation')
-    redirect('/login')
+    const { redirect } = await import('next/navigation');
+    redirect('/login');
   }
-  return user
+  return user;
 }
 
 /**
  * Check if we're running in mock mode (no Supabase configured).
  */
 export function isMockMode() {
-  return USE_MOCK
+  return USE_MOCK;
 }

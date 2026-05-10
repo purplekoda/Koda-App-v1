@@ -1,10 +1,18 @@
-'use client'
+'use client';
 
-import StepShell from '../shared/StepShell'
-import SingleSelectCards from '../shared/SingleSelectCards'
-import { MEAL_PREP_STYLE_OPTIONS } from '@/data/onboarding-options'
+import StepShell from '../shared/StepShell';
+import SingleSelectCards from '../shared/SingleSelectCards';
+import { MEAL_PREP_STYLE_OPTIONS } from '@/data/onboarding-options';
 
-export default function MealPrepStyleStep({ value, onChange, onNext, onBack, isPending, voiceMode = false, voiceAnimatingValue = null }) {
+export default function MealPrepStyleStep({
+  value,
+  onChange,
+  onNext,
+  onBack,
+  isPending,
+  voiceMode = false,
+  voiceAnimatingValue = null,
+}) {
   return (
     <StepShell
       title="Do you meal prep or cook fresh each day?"
@@ -21,5 +29,5 @@ export default function MealPrepStyleStep({ value, onChange, onNext, onBack, isP
         voiceAnimatingValue={voiceAnimatingValue}
       />
     </StepShell>
-  )
+  );
 }

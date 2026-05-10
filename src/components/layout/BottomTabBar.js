@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { bottomTabs } from '@/data/navigation'
-import { useChat } from '@/components/ai/ChatProvider'
+import styled from 'styled-components';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { bottomTabs } from '@/data/navigation';
+import { useChat } from '@/components/ai/ChatProvider';
 
 const TabBarContainer = styled.nav`
   display: none;
@@ -22,7 +22,7 @@ const TabBarContainer = styled.nav`
     align-items: center;
     justify-content: space-around;
   }
-`
+`;
 
 const tabStyles = `
   display: flex;
@@ -34,7 +34,7 @@ const tabStyles = `
   border: none;
   background: transparent;
   cursor: pointer;
-`
+`;
 
 const Tab = styled(Link)`
   ${tabStyles}
@@ -42,7 +42,7 @@ const Tab = styled(Link)`
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ $active, theme }) => ($active ? theme.colors.tealLight : 'transparent')};
   transition: background 0.15s ease;
-`
+`;
 
 const TabButton = styled.button`
   ${tabStyles}
@@ -50,7 +50,7 @@ const TabButton = styled.button`
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ $active, theme }) => ($active ? theme.colors.purpleLight : 'transparent')};
   transition: background 0.15s ease;
-`
+`;
 
 const TabDot = styled.span`
   width: 20px;
@@ -58,28 +58,28 @@ const TabDot = styled.span`
   border-radius: 50%;
   background: ${({ $color, $active, theme }) => ($active ? $color : theme.colors.textMuted)};
   opacity: ${({ $active }) => ($active ? 1 : 0.5)};
-`
+`;
 
 const TabLabel = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.xs};
   color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textMuted)};
   font-weight: ${({ $active }) => ($active ? 500 : 400)};
-`
+`;
 
 export default function BottomTabBar() {
-  const pathname = usePathname()
-  const { isOpen, setIsOpen } = useChat()
+  const pathname = usePathname();
+  const { isOpen, setIsOpen } = useChat();
 
   return (
     <TabBarContainer>
       {bottomTabs.map((tab) => {
-        const active = pathname === tab.href || pathname.startsWith(tab.href + '/')
+        const active = pathname === tab.href || pathname.startsWith(tab.href + '/');
         return (
           <Tab key={tab.id} href={tab.href} $active={active}>
             <TabDot $color={tab.color} $active={active} />
             <TabLabel $active={active}>{tab.name}</TabLabel>
           </Tab>
-        )
+        );
       })}
       <TabButton
         type="button"
@@ -92,5 +92,5 @@ export default function BottomTabBar() {
         <TabLabel $active={isOpen}>Chat</TabLabel>
       </TabButton>
     </TabBarContainer>
-  )
+  );
 }

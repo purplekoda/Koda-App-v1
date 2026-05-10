@@ -1,18 +1,35 @@
-import { requireUser } from '@/lib/dal/require-user'
-import { getWeeklyMeals, getSwapSuggestions, getUserRecipesForPicker, buildWeekScaffold } from '@/lib/dal/meals'
-import { getUserCollections, getRecipeCollectionLinks } from '@/lib/dal/collections'
-import { getCookingPreferences } from '@/lib/dal/cooking-preferences'
-import { getGroceryPreferences } from '@/lib/dal/profile'
-import MealsPageClient from './MealsPageClient'
+import { requireUser } from '@/lib/dal/require-user';
+import {
+  getWeeklyMeals,
+  getSwapSuggestions,
+  getUserRecipesForPicker,
+  buildWeekScaffold,
+} from '@/lib/dal/meals';
+import { getUserCollections, getRecipeCollectionLinks } from '@/lib/dal/collections';
+import { getCookingPreferences } from '@/lib/dal/cooking-preferences';
+import { getGroceryPreferences } from '@/lib/dal/profile';
+import MealsPageClient from './MealsPageClient';
 
 export default async function MealsPage() {
-  const user = await requireUser()
+  const user = await requireUser();
 
-  let meals = buildWeekScaffold(), swapSuggestions = [], recipes = []
-  let cookingPreferences = null, groceryPreferences = {}
-  let collections = [], collectionLinks = []
+  let meals = buildWeekScaffold(),
+    swapSuggestions = [],
+    recipes = [];
+  let cookingPreferences = null,
+    groceryPreferences = {};
+  let collections = [],
+    collectionLinks = [];
   try {
-    ;[meals, swapSuggestions, recipes, cookingPreferences, groceryPreferences, collections, collectionLinks] = await Promise.all([
+    [
+      meals,
+      swapSuggestions,
+      recipes,
+      cookingPreferences,
+      groceryPreferences,
+      collections,
+      collectionLinks,
+    ] = await Promise.all([
       getWeeklyMeals(user.id),
       getSwapSuggestions(user.id),
       getUserRecipesForPicker(user.id),
@@ -20,9 +37,9 @@ export default async function MealsPage() {
       getGroceryPreferences(user.id).catch(() => ({})),
       getUserCollections(user.id).catch(() => []),
       getRecipeCollectionLinks(user.id).catch(() => []),
-    ])
+    ]);
   } catch (err) {
-    console.error('[MealsPage] Failed to load data:', err?.message)
+    console.error('[MealsPage] Failed to load data:', err?.message);
   }
 
   return (
@@ -35,5 +52,5 @@ export default async function MealsPage() {
       collections={collections}
       collectionLinks={collectionLinks}
     />
-  )
+  );
 }

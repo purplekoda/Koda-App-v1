@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import DailyWeeklyToggle from './DailyWeeklyToggle'
+import styled from 'styled-components';
+import DailyWeeklyToggle from './DailyWeeklyToggle';
 
 const TopBar = styled.div`
   display: none;
@@ -14,7 +14,7 @@ const TopBar = styled.div`
     margin-bottom: ${({ theme }) => theme.spacing.md};
     border-bottom: 0.5px solid ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const LogoSection = styled.div`
   display: flex;
@@ -23,14 +23,14 @@ const LogoSection = styled.div`
   font-size: 22px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.teal};
-`
+`;
 
 const LogoDot = styled.span`
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.teal};
-`
+`;
 
 const Avatar = styled.div`
   width: 36px;
@@ -44,7 +44,7 @@ const Avatar = styled.div`
   font-weight: 500;
   color: ${({ theme }) => theme.colors.purple};
   border: 1.5px solid ${({ theme }) => theme.colors.purpleMid};
-`
+`;
 
 export default function MobileTopBar({ view, onToggle, initials }) {
   return (
@@ -55,5 +55,5 @@ export default function MobileTopBar({ view, onToggle, initials }) {
       <DailyWeeklyToggle view={view} onToggle={onToggle} />
       <Avatar>{initials || 'JM'}</Avatar>
     </TopBar>
-  )
+  );
 }

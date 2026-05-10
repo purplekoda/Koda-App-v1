@@ -3,7 +3,7 @@
  * Each household member has daily targets and projected daily totals for the week.
  */
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export const mockMacroMembers = [
   {
@@ -17,13 +17,62 @@ export const mockMacroMembers = [
     allowPhotoMacroLogging: true,
     targets: { calories: 1900, protein: 130, carbs: 200, fat: 65 },
     weeklyActuals: [
-      { day: 'Mon', calories: 1850, protein: 125, carbs: 195, fat: 62, meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'] },
-      { day: 'Tue', calories: 1920, protein: 135, carbs: 210, fat: 68, meals: ['Avocado toast', 'Chicken salad', 'Taco night'] },
-      { day: 'Wed', calories: 1780, protein: 118, carbs: 185, fat: 60, meals: ['Smoothie bowl', 'Soup & bread', 'Grilled salmon'] },
-      { day: 'Thu', calories: 1950, protein: 140, carbs: 205, fat: 70, meals: ['Egg muffins', 'Quinoa bowl', 'Chicken stir-fry'] },
-      { day: 'Fri', calories: 1870, protein: 128, carbs: 198, fat: 64, meals: ['French toast', 'BLT sandwich', 'Pizza night'] },
-      { day: 'Sat', calories: 2100, protein: 110, carbs: 250, fat: 78, meals: ['Pancakes', 'Burger', 'Thai curry'] },
-      { day: 'Sun', calories: 1800, protein: 132, carbs: 190, fat: 61, meals: ['Granola', 'Leftover curry', 'Roast chicken'] },
+      {
+        day: 'Mon',
+        calories: 1850,
+        protein: 125,
+        carbs: 195,
+        fat: 62,
+        meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'],
+      },
+      {
+        day: 'Tue',
+        calories: 1920,
+        protein: 135,
+        carbs: 210,
+        fat: 68,
+        meals: ['Avocado toast', 'Chicken salad', 'Taco night'],
+      },
+      {
+        day: 'Wed',
+        calories: 1780,
+        protein: 118,
+        carbs: 185,
+        fat: 60,
+        meals: ['Smoothie bowl', 'Soup & bread', 'Grilled salmon'],
+      },
+      {
+        day: 'Thu',
+        calories: 1950,
+        protein: 140,
+        carbs: 205,
+        fat: 70,
+        meals: ['Egg muffins', 'Quinoa bowl', 'Chicken stir-fry'],
+      },
+      {
+        day: 'Fri',
+        calories: 1870,
+        protein: 128,
+        carbs: 198,
+        fat: 64,
+        meals: ['French toast', 'BLT sandwich', 'Pizza night'],
+      },
+      {
+        day: 'Sat',
+        calories: 2100,
+        protein: 110,
+        carbs: 250,
+        fat: 78,
+        meals: ['Pancakes', 'Burger', 'Thai curry'],
+      },
+      {
+        day: 'Sun',
+        calories: 1800,
+        protein: 132,
+        carbs: 190,
+        fat: 61,
+        meals: ['Granola', 'Leftover curry', 'Roast chicken'],
+      },
     ],
   },
   {
@@ -37,13 +86,62 @@ export const mockMacroMembers = [
     allowPhotoMacroLogging: true,
     targets: { calories: 2200, protein: 160, carbs: 240, fat: 75 },
     weeklyActuals: [
-      { day: 'Mon', calories: 2150, protein: 155, carbs: 235, fat: 72, meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'] },
-      { day: 'Tue', calories: 2280, protein: 165, carbs: 248, fat: 78, meals: ['Avocado toast', 'Chicken salad', 'Taco night'] },
-      { day: 'Wed', calories: 2050, protein: 148, carbs: 220, fat: 70, meals: ['Smoothie bowl', 'Soup & bread', 'Grilled salmon'] },
-      { day: 'Thu', calories: 2300, protein: 170, carbs: 250, fat: 80, meals: ['Egg muffins', 'Quinoa bowl', 'Chicken stir-fry'] },
-      { day: 'Fri', calories: 2180, protein: 158, carbs: 238, fat: 74, meals: ['French toast', 'BLT sandwich', 'Pizza night'] },
-      { day: 'Sat', calories: 2500, protein: 140, carbs: 290, fat: 90, meals: ['Pancakes', 'Burger', 'Thai curry'] },
-      { day: 'Sun', calories: 2100, protein: 162, carbs: 228, fat: 71, meals: ['Granola', 'Leftover curry', 'Roast chicken'] },
+      {
+        day: 'Mon',
+        calories: 2150,
+        protein: 155,
+        carbs: 235,
+        fat: 72,
+        meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'],
+      },
+      {
+        day: 'Tue',
+        calories: 2280,
+        protein: 165,
+        carbs: 248,
+        fat: 78,
+        meals: ['Avocado toast', 'Chicken salad', 'Taco night'],
+      },
+      {
+        day: 'Wed',
+        calories: 2050,
+        protein: 148,
+        carbs: 220,
+        fat: 70,
+        meals: ['Smoothie bowl', 'Soup & bread', 'Grilled salmon'],
+      },
+      {
+        day: 'Thu',
+        calories: 2300,
+        protein: 170,
+        carbs: 250,
+        fat: 80,
+        meals: ['Egg muffins', 'Quinoa bowl', 'Chicken stir-fry'],
+      },
+      {
+        day: 'Fri',
+        calories: 2180,
+        protein: 158,
+        carbs: 238,
+        fat: 74,
+        meals: ['French toast', 'BLT sandwich', 'Pizza night'],
+      },
+      {
+        day: 'Sat',
+        calories: 2500,
+        protein: 140,
+        carbs: 290,
+        fat: 90,
+        meals: ['Pancakes', 'Burger', 'Thai curry'],
+      },
+      {
+        day: 'Sun',
+        calories: 2100,
+        protein: 162,
+        carbs: 228,
+        fat: 71,
+        meals: ['Granola', 'Leftover curry', 'Roast chicken'],
+      },
     ],
   },
   {
@@ -57,16 +155,65 @@ export const mockMacroMembers = [
     allowPhotoMacroLogging: true,
     targets: { calories: 1400, protein: 70, carbs: 180, fat: 50 },
     weeklyActuals: [
-      { day: 'Mon', calories: 1350, protein: 65, carbs: 175, fat: 48, meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'] },
-      { day: 'Tue', calories: 1420, protein: 72, carbs: 185, fat: 52, meals: ['Avocado toast', 'Chicken salad', 'Taco night'] },
-      { day: 'Wed', calories: 1280, protein: 58, carbs: 165, fat: 45, meals: ['Smoothie bowl', 'Soup & bread', 'Grilled salmon'] },
-      { day: 'Thu', calories: 1450, protein: 75, carbs: 190, fat: 53, meals: ['Egg muffins', 'Quinoa bowl', 'Chicken stir-fry'] },
-      { day: 'Fri', calories: 1380, protein: 68, carbs: 178, fat: 49, meals: ['French toast', 'BLT sandwich', 'Pizza night'] },
-      { day: 'Sat', calories: 1600, protein: 60, carbs: 210, fat: 58, meals: ['Pancakes', 'Burger', 'Thai curry'] },
-      { day: 'Sun', calories: 1350, protein: 70, carbs: 172, fat: 47, meals: ['Granola', 'Leftover curry', 'Roast chicken'] },
+      {
+        day: 'Mon',
+        calories: 1350,
+        protein: 65,
+        carbs: 175,
+        fat: 48,
+        meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'],
+      },
+      {
+        day: 'Tue',
+        calories: 1420,
+        protein: 72,
+        carbs: 185,
+        fat: 52,
+        meals: ['Avocado toast', 'Chicken salad', 'Taco night'],
+      },
+      {
+        day: 'Wed',
+        calories: 1280,
+        protein: 58,
+        carbs: 165,
+        fat: 45,
+        meals: ['Smoothie bowl', 'Soup & bread', 'Grilled salmon'],
+      },
+      {
+        day: 'Thu',
+        calories: 1450,
+        protein: 75,
+        carbs: 190,
+        fat: 53,
+        meals: ['Egg muffins', 'Quinoa bowl', 'Chicken stir-fry'],
+      },
+      {
+        day: 'Fri',
+        calories: 1380,
+        protein: 68,
+        carbs: 178,
+        fat: 49,
+        meals: ['French toast', 'BLT sandwich', 'Pizza night'],
+      },
+      {
+        day: 'Sat',
+        calories: 1600,
+        protein: 60,
+        carbs: 210,
+        fat: 58,
+        meals: ['Pancakes', 'Burger', 'Thai curry'],
+      },
+      {
+        day: 'Sun',
+        calories: 1350,
+        protein: 70,
+        carbs: 172,
+        fat: 47,
+        meals: ['Granola', 'Leftover curry', 'Roast chicken'],
+      },
     ],
   },
-]
+];
 
 /**
  * Mock macro extras — logged food items outside the meal plan.
@@ -144,4 +291,4 @@ export const mockMacroExtras = [
     is_locked: false,
     created_at: new Date().toISOString(),
   },
-]
+];

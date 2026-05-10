@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import styled from 'styled-components'
+import { useState } from 'react';
+import styled from 'styled-components';
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -9,7 +9,7 @@ const Card = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.xl};
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const SectionTitle = styled.h4`
   font-size: 14px;
@@ -21,7 +21,7 @@ const SectionTitle = styled.h4`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const CountBadge = styled.span`
   font-size: 11px;
@@ -30,13 +30,13 @@ const CountBadge = styled.span`
   background: ${({ $color, theme }) => theme.colors[$color] || theme.colors.grayLight};
   color: ${({ $textColor, theme }) => theme.colors[$textColor] || theme.colors.textSecondary};
   font-weight: 600;
-`
+`;
 
 const ItemList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2px;
-`
+`;
 
 const ItemRow = styled.div`
   display: flex;
@@ -51,7 +51,7 @@ const ItemRow = styled.div`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const Checkbox = styled.div`
   width: 20px;
@@ -68,14 +68,14 @@ const Checkbox = styled.div`
   color: white;
   font-size: 12px;
   transition: all 0.15s ease;
-`
+`;
 
 const ItemName = styled.span`
   flex: 1;
   font-size: 14px;
-  color: ${({ $checked, theme }) => $checked ? theme.colors.textMuted : theme.colors.textPrimary};
-  text-decoration: ${({ $checked }) => $checked ? 'line-through' : 'none'};
-`
+  color: ${({ $checked, theme }) => ($checked ? theme.colors.textMuted : theme.colors.textPrimary)};
+  text-decoration: ${({ $checked }) => ($checked ? 'line-through' : 'none')};
+`;
 
 const ItemCategory = styled.span`
   font-size: 11px;
@@ -84,7 +84,7 @@ const ItemCategory = styled.span`
   background: ${({ theme }) => theme.colors.grayLight};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-weight: 500;
-`
+`;
 
 const ItemMeal = styled.span`
   font-size: 11px;
@@ -94,13 +94,13 @@ const ItemMeal = styled.span`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     display: none;
   }
-`
+`;
 
 const StorePill = styled.button`
   font-size: 11px;
   padding: 2px 8px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ $color }) => $color ? $color + '20' : 'transparent'};
+  background: ${({ $color }) => ($color ? $color + '20' : 'transparent')};
   color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
   border: 1px solid ${({ $color, theme }) => $color || theme.colors.border};
   font-weight: 500;
@@ -111,7 +111,7 @@ const StorePill = styled.button`
   &:hover {
     opacity: 0.8;
   }
-`
+`;
 
 const StoreDropdown = styled.div`
   display: flex;
@@ -125,14 +125,13 @@ const StoreDropdown = styled.div`
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: translateY(0); }
   }
-`
+`;
 
 const StoreOption = styled.button`
   font-size: 12px;
   padding: 4px 12px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ $selected, $color }) =>
-    $selected ? ($color || '#ccc') + '25' : 'transparent'};
+  background: ${({ $selected, $color }) => ($selected ? ($color || '#ccc') + '25' : 'transparent')};
   color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
   border: 1.5px solid ${({ $selected, $color, theme }) =>
     $selected ? $color || theme.colors.teal : theme.colors.border};
@@ -143,7 +142,7 @@ const StoreOption = styled.button`
   &:hover {
     border-color: ${({ $color, theme }) => $color || theme.colors.teal};
   }
-`
+`;
 
 const RescanButton = styled.button`
   display: flex;
@@ -163,54 +162,58 @@ const RescanButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
 export default function StepPantryCheck({ items, onUpdateItems, stores = [] }) {
-  const [localItems, setLocalItems] = useState(items)
-  const [expandedItem, setExpandedItem] = useState(null)
+  const [localItems, setLocalItems] = useState(items);
+  const [expandedItem, setExpandedItem] = useState(null);
 
-  const needItems = localItems.filter(i => i.status === 'need')
-  const lowItems = localItems.filter(i => i.status === 'low')
-  const haveItems = localItems.filter(i => i.status === 'have')
+  const needItems = localItems.filter((i) => i.status === 'need');
+  const lowItems = localItems.filter((i) => i.status === 'low');
+  const haveItems = localItems.filter((i) => i.status === 'have');
 
   function toggleItem(id) {
-    setLocalItems(prev => prev.map(item => {
-      if (item.id !== id) return item
-      if (item.status === 'need') return { ...item, status: 'have' }
-      if (item.status === 'have') return { ...item, status: 'need' }
-      if (item.status === 'low') return { ...item, status: 'have' }
-      return item
-    }))
+    setLocalItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        if (item.status === 'need') return { ...item, status: 'have' };
+        if (item.status === 'have') return { ...item, status: 'need' };
+        if (item.status === 'low') return { ...item, status: 'have' };
+        return item;
+      }),
+    );
   }
 
   function assignStore(itemId, storeId) {
-    setLocalItems(prev => prev.map(item =>
-      item.id === itemId ? { ...item, assignedStore: storeId } : item
-    ))
-    setExpandedItem(null)
+    setLocalItems((prev) =>
+      prev.map((item) => (item.id === itemId ? { ...item, assignedStore: storeId } : item)),
+    );
+    setExpandedItem(null);
     if (onUpdateItems) {
-      onUpdateItems(localItems.map(item =>
-        item.id === itemId ? { ...item, assignedStore: storeId } : item
-      ))
+      onUpdateItems(
+        localItems.map((item) => (item.id === itemId ? { ...item, assignedStore: storeId } : item)),
+      );
     }
   }
 
   function getStoreForItem(item) {
-    if (!item.assignedStore || stores.length === 0) return null
-    return stores.find(s => s.id === item.assignedStore) || null
+    if (!item.assignedStore || stores.length === 0) return null;
+    return stores.find((s) => s.id === item.assignedStore) || null;
   }
 
   function renderSection(title, sectionItems, color, textColor, checkColor) {
-    if (sectionItems.length === 0) return null
+    if (sectionItems.length === 0) return null;
     return (
       <>
         <SectionTitle $color={textColor}>
           {title}
-          <CountBadge $color={color} $textColor={textColor}>{sectionItems.length}</CountBadge>
+          <CountBadge $color={color} $textColor={textColor}>
+            {sectionItems.length}
+          </CountBadge>
         </SectionTitle>
         <ItemList>
-          {sectionItems.map(item => {
-            const assignedStore = getStoreForItem(item)
+          {sectionItems.map((item) => {
+            const assignedStore = getStoreForItem(item);
             return (
               <div key={item.id}>
                 <ItemRow>
@@ -221,10 +224,7 @@ export default function StepPantryCheck({ items, onUpdateItems, stores = [] }) {
                   >
                     {item.status === 'have' && '\u2713'}
                   </Checkbox>
-                  <ItemName
-                    $checked={item.status === 'have'}
-                    onClick={() => toggleItem(item.id)}
-                  >
+                  <ItemName $checked={item.status === 'have'} onClick={() => toggleItem(item.id)}>
                     {item.name}
                   </ItemName>
                   <ItemCategory>{item.category}</ItemCategory>
@@ -232,8 +232,8 @@ export default function StepPantryCheck({ items, onUpdateItems, stores = [] }) {
                     <StorePill
                       $color={assignedStore?.color}
                       onClick={(e) => {
-                        e.stopPropagation()
-                        setExpandedItem(expandedItem === item.id ? null : item.id)
+                        e.stopPropagation();
+                        setExpandedItem(expandedItem === item.id ? null : item.id);
                       }}
                     >
                       {assignedStore?.name || 'Assign store'}
@@ -243,7 +243,7 @@ export default function StepPantryCheck({ items, onUpdateItems, stores = [] }) {
                 </ItemRow>
                 {expandedItem === item.id && stores.length > 0 && (
                   <StoreDropdown>
-                    {stores.map(store => (
+                    {stores.map((store) => (
                       <StoreOption
                         key={store.id}
                         $selected={item.assignedStore === store.id}
@@ -256,28 +256,24 @@ export default function StepPantryCheck({ items, onUpdateItems, stores = [] }) {
                   </StoreDropdown>
                 )}
               </div>
-            )
+            );
           })}
         </ItemList>
       </>
-    )
+    );
   }
 
   return (
     <Card>
       {renderSection('Need to buy', needItems, 'coralLight', 'coral', 'coral')}
-      {needItems.length > 0 && lowItems.length > 0 && (
-        <div style={{ height: 16 }} />
-      )}
+      {needItems.length > 0 && lowItems.length > 0 && <div style={{ height: 16 }} />}
       {renderSection('Running low', lowItems, 'amberLight', 'amber', 'amber')}
       {(needItems.length > 0 || lowItems.length > 0) && haveItems.length > 0 && (
         <div style={{ height: 16 }} />
       )}
       {renderSection('Already have', haveItems, 'tealLight', 'teal', 'teal')}
 
-      <RescanButton>
-        {'\uD83D\uDCF7'} Rescan pantry
-      </RescanButton>
+      <RescanButton>{'\uD83D\uDCF7'} Rescan pantry</RescanButton>
     </Card>
-  )
+  );
 }

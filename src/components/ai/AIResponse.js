@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
-import styled, { keyframes } from 'styled-components'
+import styled, { keyframes } from 'styled-components';
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-`
+`;
 
 const Wrapper = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -14,21 +14,21 @@ const Wrapper = styled.div`
   padding: ${({ theme }) => theme.spacing.lg};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
   animation: ${fadeIn} 0.3s ease-out;
-`
+`;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const PurpleDot = styled.span`
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.purple};
-`
+`;
 
 const Label = styled.span`
   font-size: 12px;
@@ -36,7 +36,7 @@ const Label = styled.span`
   color: ${({ theme }) => theme.colors.purple};
   text-transform: uppercase;
   letter-spacing: 0.05em;
-`
+`;
 
 const CloseButton = styled.button`
   margin-left: auto;
@@ -54,20 +54,20 @@ const CloseButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
 const Text = styled.p`
   font-size: 14px;
-  color: ${({ $error, theme }) => $error ? theme.colors.coral : theme.colors.textPrimary};
+  color: ${({ $error, theme }) => ($error ? theme.colors.coral : theme.colors.textPrimary)};
   line-height: 1.5;
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const ChipRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   flex-wrap: wrap;
-`
+`;
 
 const Chip = styled.button`
   display: flex;
@@ -87,10 +87,10 @@ const Chip = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.purpleMid};
   }
-`
+`;
 
 export default function AIResponse({ response, onClose, onChipClick }) {
-  if (!response) return null
+  if (!response) return null;
 
   return (
     <Wrapper>
@@ -110,5 +110,5 @@ export default function AIResponse({ response, onClose, onChipClick }) {
         </ChipRow>
       )}
     </Wrapper>
-  )
+  );
 }

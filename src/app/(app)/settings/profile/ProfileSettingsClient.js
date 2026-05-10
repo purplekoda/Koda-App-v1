@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import styled from 'styled-components'
-import { saveProfileAction } from '../actions'
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import styled from 'styled-components';
+import { saveProfileAction } from '../actions';
 
 const PageWrapper = styled.div`
   max-width: 560px;
@@ -15,7 +15,7 @@ const PageWrapper = styled.div`
     padding: ${({ theme }) => theme.spacing.lg};
     padding-bottom: calc(${({ theme }) => theme.bottomNavHeight} + ${({ theme }) => theme.spacing.xl});
   }
-`
+`;
 
 const BackLink = styled.button`
   background: none;
@@ -30,18 +30,18 @@ const BackLink = styled.button`
   gap: ${({ theme }) => theme.spacing.xs};
 
   &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
-`
+`;
 
 const Title = styled.h1`
   font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const Field = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Label = styled.label`
   display: block;
@@ -49,7 +49,7 @@ const Label = styled.label`
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: ${({ theme }) => theme.spacing.xs};
-`
+`;
 
 const Input = styled.input`
   width: 100%;
@@ -71,13 +71,13 @@ const Input = styled.input`
     background: ${({ theme }) => theme.colors.borderLight};
     color: ${({ theme }) => theme.colors.textMuted};
   }
-`
+`;
 
 const ButtonRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.md};
   margin-top: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const SaveBtn = styled.button`
   flex: 1;
@@ -92,7 +92,7 @@ const SaveBtn = styled.button`
 
   &:disabled { opacity: 0.4; cursor: not-allowed; }
   &:hover:not(:disabled) { opacity: 0.9; }
-`
+`;
 
 const CancelBtn = styled.button`
   height: 44px;
@@ -106,36 +106,36 @@ const CancelBtn = styled.button`
   cursor: pointer;
 
   &:hover { background: ${({ theme }) => theme.colors.background}; }
-`
+`;
 
 const StatusText = styled.span`
   display: block;
   margin-top: ${({ theme }) => theme.spacing.md};
   font-size: ${({ theme }) => theme.fontSizes.sm};
-  color: ${({ $error, theme }) => $error ? theme.colors.error : theme.colors.success};
-`
+  color: ${({ $error, theme }) => ($error ? theme.colors.error : theme.colors.success)};
+`;
 
 export default function ProfileSettingsClient({ user, profile }) {
-  const router = useRouter()
-  const [displayName, setDisplayName] = useState(profile?.display_name || '')
-  const [familyName, setFamilyName] = useState(profile?.family_name || '')
-  const [status, setStatus] = useState(null)
-  const [isPending, startTransition] = useTransition()
+  const router = useRouter();
+  const [displayName, setDisplayName] = useState(profile?.display_name || '');
+  const [familyName, setFamilyName] = useState(profile?.family_name || '');
+  const [status, setStatus] = useState(null);
+  const [isPending, startTransition] = useTransition();
 
   function handleSave() {
-    setStatus(null)
+    setStatus(null);
     startTransition(async () => {
       const result = await saveProfileAction({
         display_name: displayName,
         family_name: familyName,
-      })
+      });
       if (result.success) {
-        setStatus({ ok: true, msg: 'Saved' })
-        setTimeout(() => router.push('/settings'), 1500)
+        setStatus({ ok: true, msg: 'Saved' });
+        setTimeout(() => router.push('/settings'), 1500);
       } else {
-        setStatus({ ok: false, msg: result.error })
+        setStatus({ ok: false, msg: result.error });
       }
-    })
+    });
   }
 
   return (
@@ -150,7 +150,7 @@ export default function ProfileSettingsClient({ user, profile }) {
         <Input
           id="display_name"
           value={displayName}
-          onChange={e => setDisplayName(e.target.value)}
+          onChange={(e) => setDisplayName(e.target.value)}
           placeholder="First name"
           maxLength={100}
         />
@@ -161,7 +161,7 @@ export default function ProfileSettingsClient({ user, profile }) {
         <Input
           id="family_name"
           value={familyName}
-          onChange={e => setFamilyName(e.target.value)}
+          onChange={(e) => setFamilyName(e.target.value)}
           placeholder="e.g. The Johnsons"
           maxLength={100}
         />
@@ -175,11 +175,13 @@ export default function ProfileSettingsClient({ user, profile }) {
       {status && <StatusText $error={!status.ok}>{status.msg}</StatusText>}
 
       <ButtonRow>
-        <CancelBtn type="button" onClick={() => router.push('/settings')}>Back</CancelBtn>
+        <CancelBtn type="button" onClick={() => router.push('/settings')}>
+          Back
+        </CancelBtn>
         <SaveBtn type="button" onClick={handleSave} disabled={isPending}>
           {isPending ? 'Saving...' : 'Save'}
         </SaveBtn>
       </ButtonRow>
     </PageWrapper>
-  )
+  );
 }

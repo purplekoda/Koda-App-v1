@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import styled from 'styled-components'
+import { useState } from 'react';
+import styled from 'styled-components';
 
 const Overlay = styled.div`
   position: fixed;
@@ -12,7 +12,7 @@ const Overlay = styled.div`
   justify-content: center;
   z-index: 1000;
   padding: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Modal = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -22,20 +22,20 @@ const Modal = styled.div`
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
-`
+`;
 
 const ModalHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const ModalTitle = styled.h3`
   font-size: 20px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const CloseButton = styled.button`
   width: 32px;
@@ -52,14 +52,14 @@ const CloseButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
 const StepIndicator = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const StepDot = styled.div`
   width: 8px;
@@ -68,19 +68,19 @@ const StepDot = styled.div`
   background: ${({ $active, $done, theme }) =>
     $active || $done ? theme.colors.teal : theme.colors.border};
   transition: all 0.2s ease;
-`
+`;
 
 const StepLabel = styled.span`
   font-size: 12px;
-  color: ${({ $active, theme }) => $active ? theme.colors.teal : theme.colors.textMuted};
-  font-weight: ${({ $active }) => $active ? 500 : 400};
-`
+  color: ${({ $active, theme }) => ($active ? theme.colors.teal : theme.colors.textMuted)};
+  font-weight: ${({ $active }) => ($active ? 500 : 400)};
+`;
 
 const StepLine = styled.div`
   flex: 1;
   height: 1px;
-  background: ${({ $done, theme }) => $done ? theme.colors.teal : theme.colors.border};
-`
+  background: ${({ $done, theme }) => ($done ? theme.colors.teal : theme.colors.border)};
+`;
 
 const CurrentMeal = styled.div`
   font-size: 14px;
@@ -90,14 +90,14 @@ const CurrentMeal = styled.div`
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 const SuggestionList = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const SuggestionCard = styled.div`
   display: flex;
@@ -116,7 +116,7 @@ const SuggestionCard = styled.div`
   &:hover {
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const RadioDot = styled.div`
   width: 18px;
@@ -134,32 +134,31 @@ const RadioDot = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: ${({ $selected, theme }) =>
-      $selected ? theme.colors.teal : 'transparent'};
+    background: ${({ $selected, theme }) => ($selected ? theme.colors.teal : 'transparent')};
   }
-`
+`;
 
 const SuggestionInfo = styled.div`
   flex: 1;
-`
+`;
 
 const SuggestionName = styled.div`
   font-size: 15px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const SuggestionReason = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 2px;
-`
+`;
 
 const TagRow = styled.div`
   display: flex;
   gap: 4px;
   margin-top: 4px;
-`
+`;
 
 const Tag = styled.span`
   font-size: 11px;
@@ -168,18 +167,18 @@ const Tag = styled.span`
   background: ${({ theme }) => theme.colors.grayLight};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-weight: 500;
-`
+`;
 
 const CookTime = styled.span`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textMuted};
   white-space: nowrap;
-`
+`;
 
 /* Step 2: Review */
 const ReviewSection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const ReviewLabel = styled.div`
   font-size: 12px;
@@ -188,7 +187,7 @@ const ReviewLabel = styled.div`
   letter-spacing: 0.05em;
   color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const ReviewCard = styled.div`
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
@@ -196,13 +195,13 @@ const ReviewCard = styled.div`
   background: ${({ $variant, theme }) =>
     $variant === 'old' ? theme.colors.coralLight : theme.colors.tealLight};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const ReviewMealName = styled.div`
   font-size: 15px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const ReviewNote = styled.div`
   font-size: 13px;
@@ -211,36 +210,36 @@ const ReviewNote = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
   background: ${({ theme }) => theme.colors.grayLight};
   border-radius: ${({ theme }) => theme.radii.md};
-`
+`;
 
 /* Step 3: Confirm */
 const ConfirmMessage = styled.div`
   text-align: center;
   padding: ${({ theme }) => theme.spacing.xl} 0;
-`
+`;
 
 const ConfirmIcon = styled.div`
   font-size: 48px;
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const ConfirmText = styled.div`
   font-size: 16px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const ConfirmSubtext = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const ButtonRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   justify-content: flex-end;
-`
+`;
 
 const Button = styled.button`
   padding: 10px 20px;
@@ -261,28 +260,28 @@ const Button = styled.button`
   &:hover {
     opacity: 0.9;
   }
-`
+`;
 
-const steps = ['Choose', 'Review', 'Done']
+const steps = ['Choose', 'Review', 'Done'];
 
 export default function MealSwapModal({ meal, suggestions, onClose, onConfirm }) {
-  const [step, setStep] = useState(0)
-  const [selected, setSelected] = useState(null)
+  const [step, setStep] = useState(0);
+  const [selected, setSelected] = useState(null);
 
   function handleNext() {
     if (step === 0 && selected !== null) {
-      setStep(1)
+      setStep(1);
     } else if (step === 1) {
-      setStep(2)
+      setStep(2);
       if (onConfirm && selected !== null) {
-        onConfirm(suggestions[selected])
+        onConfirm(suggestions[selected]);
       }
     } else if (step === 2) {
-      onClose()
+      onClose();
     }
   }
 
-  const selectedMeal = selected !== null ? suggestions[selected] : null
+  const selectedMeal = selected !== null ? suggestions[selected] : null;
 
   return (
     <Overlay onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -319,7 +318,9 @@ export default function MealSwapModal({ meal, suggestions, onClose, onConfirm })
                     <SuggestionName>{s.name}</SuggestionName>
                     <SuggestionReason>{s.reason}</SuggestionReason>
                     <TagRow>
-                      {s.tags.map(t => <Tag key={t}>{t}</Tag>)}
+                      {s.tags.map((t) => (
+                        <Tag key={t}>{t}</Tag>
+                      ))}
                     </TagRow>
                   </SuggestionInfo>
                   <CookTime>{s.cookTime}</CookTime>
@@ -360,9 +361,7 @@ export default function MealSwapModal({ meal, suggestions, onClose, onConfirm })
         )}
 
         <ButtonRow>
-          {step < 2 && (
-            <Button onClick={onClose}>Cancel</Button>
-          )}
+          {step < 2 && <Button onClick={onClose}>Cancel</Button>}
           <Button
             $variant="primary"
             onClick={handleNext}
@@ -373,5 +372,5 @@ export default function MealSwapModal({ meal, suggestions, onClose, onConfirm })
         </ButtonRow>
       </Modal>
     </Overlay>
-  )
+  );
 }

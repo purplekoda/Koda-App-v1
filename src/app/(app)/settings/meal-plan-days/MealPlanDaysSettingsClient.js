@@ -1,21 +1,23 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import SettingsStepLayout from '@/components/settings/SettingsStepLayout'
-import { useSettingsSave } from '@/components/settings/useSettingsSave'
-import MealPlanDaysStep from '@/components/onboarding/steps/MealPlanDaysStep'
-import { saveMealPlanDaysSettingsAction } from '../step-actions'
+import { useState } from 'react';
+import SettingsStepLayout from '@/components/settings/SettingsStepLayout';
+import { useSettingsSave } from '@/components/settings/useSettingsSave';
+import MealPlanDaysStep from '@/components/onboarding/steps/MealPlanDaysStep';
+import { saveMealPlanDaysSettingsAction } from '../step-actions';
 
 export default function MealPlanDaysSettingsClient({ planDays: initPlan, prepDays: initPrep }) {
-  const { save, isPending, error, toast, goBack } = useSettingsSave()
-  const [planDays, setPlanDays] = useState(initPlan)
-  const [prepDays, setPrepDays] = useState(initPrep)
+  const { save, isPending, error, toast, goBack } = useSettingsSave();
+  const [planDays, setPlanDays] = useState(initPlan);
+  const [prepDays, setPrepDays] = useState(initPrep);
 
   function handleSave() {
-    save(() => saveMealPlanDaysSettingsAction({
-      meal_plan_days: planDays,
-      meal_prep_days: prepDays,
-    }))
+    save(() =>
+      saveMealPlanDaysSettingsAction({
+        meal_plan_days: planDays,
+        meal_prep_days: prepDays,
+      }),
+    );
   }
 
   return (
@@ -30,5 +32,5 @@ export default function MealPlanDaysSettingsClient({ planDays: initPlan, prepDay
         isPending={isPending}
       />
     </SettingsStepLayout>
-  )
+  );
 }

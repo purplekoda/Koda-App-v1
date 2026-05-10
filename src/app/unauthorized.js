@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import Link from 'next/link'
+import styled from 'styled-components';
+import Link from 'next/link';
 
 const Container = styled.div`
   display: flex;
@@ -11,20 +11,20 @@ const Container = styled.div`
   min-height: 100vh;
   padding: ${({ theme }) => theme.spacing.xl};
   text-align: center;
-`
+`;
 
 const Code = styled.h1`
   font-size: 72px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.coral};
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const Message = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.lg};
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const LoginLink = styled(Link)`
   padding: 12px 32px;
@@ -36,7 +36,7 @@ const LoginLink = styled(Link)`
   &:hover {
     opacity: 0.9;
   }
-`
+`;
 
 export default function Unauthorized() {
   return (
@@ -45,5 +45,5 @@ export default function Unauthorized() {
       <Message>You need to sign in to access this page.</Message>
       <LoginLink href="/login">Go to Login</LoginLink>
     </Container>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import styled from 'styled-components'
+import { useRouter } from 'next/navigation';
+import styled from 'styled-components';
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -9,20 +9,20 @@ const Card = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.xl};
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Title = styled.h3`
   font-size: 18px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const Subtitle = styled.p`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const StoreGrid = styled.div`
   display: grid;
@@ -32,7 +32,7 @@ const StoreGrid = styled.div`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
   }
-`
+`;
 
 const StoreCard = styled.div`
   display: flex;
@@ -43,15 +43,14 @@ const StoreCard = styled.div`
     $selected ? $color : theme.colors.borderLight};
   border-radius: ${({ theme }) => theme.radii.lg};
   cursor: pointer;
-  background: ${({ $selected, $color }) =>
-    $selected ? $color + '10' : 'transparent'};
+  background: ${({ $selected, $color }) => ($selected ? $color + '10' : 'transparent')};
   transition: all 0.15s ease;
   min-height: ${({ theme }) => theme.touchTarget};
 
   &:hover {
     border-color: ${({ $color }) => $color};
   }
-`
+`;
 
 const StoreIcon = styled.span`
   font-size: 28px;
@@ -62,30 +61,29 @@ const StoreIcon = styled.span`
   justify-content: center;
   background: ${({ $color }) => $color + '15'};
   border-radius: ${({ theme }) => theme.radii.md};
-`
+`;
 
 const StoreInfo = styled.div`
   flex: 1;
-`
+`;
 
 const StoreName = styled.div`
   font-size: 16px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const StoreDesc = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 2px;
-`
+`;
 
 const RadioDot = styled.div`
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid ${({ $selected, $color, theme }) =>
-    $selected ? $color : theme.colors.border};
+  border: 2px solid ${({ $selected, $color, theme }) => ($selected ? $color : theme.colors.border)};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,10 +94,9 @@ const RadioDot = styled.div`
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: ${({ $selected, $color }) =>
-      $selected ? $color : 'transparent'};
+    background: ${({ $selected, $color }) => ($selected ? $color : 'transparent')};
   }
-`
+`;
 
 const PreferredBadge = styled.span`
   font-size: 10px;
@@ -109,7 +106,7 @@ const PreferredBadge = styled.span`
   color: ${({ theme }) => theme.colors.teal};
   font-weight: 600;
   margin-left: 6px;
-`
+`;
 
 const AddStoreButton = styled.div`
   display: flex;
@@ -128,7 +125,7 @@ const AddStoreButton = styled.div`
     border-color: ${({ theme }) => theme.colors.textSecondary};
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 const storeDescriptions = {
   target: 'Same-day delivery & pickup',
@@ -136,14 +133,22 @@ const storeDescriptions = {
   walmart: 'Pickup & delivery',
   kroger: 'Pickup & delivery',
   amazon: 'Online grocery & pantry delivery',
-}
+};
 
-export default function StepChooseStore({ stores, needCount, selectedStore, onSelectStore, preferredStore }) {
-  const router = useRouter()
+export default function StepChooseStore({
+  stores,
+  needCount,
+  selectedStore,
+  onSelectStore,
+  preferredStore,
+}) {
+  const router = useRouter();
   return (
     <Card>
       <Title>Where should we send your list?</Title>
-      <Subtitle>Your {needCount} item{needCount !== 1 ? 's' : ''} will be added to your cart.</Subtitle>
+      <Subtitle>
+        Your {needCount} item{needCount !== 1 ? 's' : ''} will be added to your cart.
+      </Subtitle>
 
       <StoreGrid>
         {stores.map((store) => (
@@ -169,5 +174,5 @@ export default function StepChooseStore({ stores, needCount, selectedStore, onSe
         </AddStoreButton>
       </StoreGrid>
     </Card>
-  )
+  );
 }

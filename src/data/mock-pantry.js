@@ -17,7 +17,7 @@ export const mockPantryItems = [
   { id: 11, name: 'Butter', freshness: 'low', daysLeft: null, category: 'Dairy' },
   { id: 12, name: 'Sourdough bread', freshness: 'low', daysLeft: null, category: 'Bakery' },
   { id: 13, name: 'Bananas', freshness: 'low', daysLeft: 0, category: 'Produce' },
-]
+];
 
 export const mockDinnerIdeas = [
   {
@@ -60,10 +60,10 @@ export const mockDinnerIdeas = [
     tags: ['pantry-ready', 'no-cook', 'quick'],
     priority: 4,
   },
-]
+];
 
 export const mockLastScan = {
   date: 'March 27, 2026',
   time: '2:15 PM',
   itemsDetected: 13,
-}
+};

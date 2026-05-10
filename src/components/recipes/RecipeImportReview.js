@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useState, useRef } from 'react'
-import styled from 'styled-components'
+import { useState, useRef } from 'react';
+import styled from 'styled-components';
 
 // ── Layout ──────────────────────────────────────────────────────────────────────
 
@@ -9,7 +9,7 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const PhotoSection = styled.div`
   position: relative;
@@ -17,14 +17,14 @@ const PhotoSection = styled.div`
   overflow: hidden;
   background: ${({ theme }) => theme.colors.borderLight};
   min-height: 180px;
-`
+`;
 
 const PhotoImage = styled.img`
   width: 100%;
   max-height: 260px;
   object-fit: cover;
   display: block;
-`
+`;
 
 const PhotoPlaceholder = styled.div`
   display: flex;
@@ -36,7 +36,7 @@ const PhotoPlaceholder = styled.div`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 13px;
   text-align: center;
-`
+`;
 
 const PhotoEditBtn = styled.button`
   position: absolute;
@@ -57,13 +57,13 @@ const PhotoEditBtn = styled.button`
   &:hover {
     background: rgba(0, 0, 0, 0.75);
   }
-`
+`;
 
 const PhotoOptions = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   flex-wrap: wrap;
-`
+`;
 
 const PhotoOptionBtn = styled.button`
   flex: 1;
@@ -86,7 +86,7 @@ const PhotoOptionBtn = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 // ── Editable fields ─────────────────────────────────────────────────────────────
 
@@ -94,7 +94,7 @@ const NameRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const NameText = styled.h2`
   font-size: 20px;
@@ -102,7 +102,7 @@ const NameText = styled.h2`
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0;
   flex: 1;
-`
+`;
 
 const NameInput = styled.input`
   font-size: 20px;
@@ -117,7 +117,7 @@ const NameInput = styled.input`
   &:focus {
     outline: none;
   }
-`
+`;
 
 const EditIcon = styled.button`
   width: 28px;
@@ -136,13 +136,13 @@ const EditIcon = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
 const MetaChips = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   flex-wrap: wrap;
-`
+`;
 
 const MetaChip = styled.button`
   padding: 6px 12px;
@@ -158,7 +158,7 @@ const MetaChip = styled.button`
     border-color: ${({ theme }) => theme.colors.teal};
     color: ${({ theme }) => theme.colors.tealDark};
   }
-`
+`;
 
 const MetaChipInput = styled.input`
   padding: 6px 12px;
@@ -172,7 +172,7 @@ const MetaChipInput = styled.input`
   &:focus {
     outline: none;
   }
-`
+`;
 
 // ── Sections ────────────────────────────────────────────────────────────────────
 
@@ -181,20 +181,20 @@ const SectionTitle = styled.h3`
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0 0 ${({ theme }) => theme.spacing.sm} 0;
-`
+`;
 
 const IngredientList = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.xs};
-`
+`;
 
 const IngredientRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 100px 28px;
   gap: ${({ theme }) => theme.spacing.sm};
   align-items: center;
-`
+`;
 
 const IngInput = styled.input`
   padding: 7px 10px;
@@ -208,7 +208,7 @@ const IngInput = styled.input`
     outline: none;
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const RemoveBtn = styled.button`
   width: 28px;
@@ -227,7 +227,7 @@ const RemoveBtn = styled.button`
     background: ${({ theme }) => theme.colors.coralLight};
     color: ${({ theme }) => theme.colors.coral};
   }
-`
+`;
 
 const AddBtn = styled.button`
   padding: 6px 12px;
@@ -243,7 +243,7 @@ const AddBtn = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.tealMid};
   }
-`
+`;
 
 const StepList = styled.ol`
   margin: 0;
@@ -251,7 +251,7 @@ const StepList = styled.ol`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const StepItem = styled.li`
   display: flex;
@@ -260,7 +260,7 @@ const StepItem = styled.li`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textPrimary};
   line-height: 1.5;
-`
+`;
 
 const StepTextArea = styled.textarea`
   flex: 1;
@@ -278,7 +278,7 @@ const StepTextArea = styled.textarea`
     outline: none;
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const SourceRow = styled.div`
   display: flex;
@@ -286,7 +286,7 @@ const SourceRow = styled.div`
   gap: ${({ theme }) => theme.spacing.xs};
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const PartialBanner = styled.div`
   padding: 10px 14px;
@@ -295,13 +295,13 @@ const PartialBanner = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.amberMid || theme.colors.amber};
   color: ${({ theme }) => theme.colors.amberDark};
   font-size: 13px;
-`
+`;
 
 const ErrorText = styled.p`
   color: ${({ theme }) => theme.colors.coral};
   font-size: 13px;
   margin: 0;
-`
+`;
 
 // ── Actions ─────────────────────────────────────────────────────────────────────
 
@@ -311,7 +311,7 @@ const Actions = styled.div`
   justify-content: flex-end;
   padding-top: ${({ theme }) => theme.spacing.md};
   border-top: 0.5px solid ${({ theme }) => theme.colors.border};
-`
+`;
 
 const PrimaryBtn = styled.button`
   padding: 10px 20px;
@@ -331,7 +331,7 @@ const PrimaryBtn = styled.button`
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.tealDark};
   }
-`
+`;
 
 const SecondaryBtn = styled.button`
   padding: 10px 20px;
@@ -347,20 +347,20 @@ const SecondaryBtn = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
 function parseSteps(instructions) {
-  if (!instructions) return []
+  if (!instructions) return [];
   return instructions
     .split(/\n/)
-    .map(s => s.replace(/^\d+[\.\)\-]\s*/, '').trim())
-    .filter(Boolean)
+    .map((s) => s.replace(/^\d+[\.\)\-]\s*/, '').trim())
+    .filter(Boolean);
 }
 
 function joinSteps(steps) {
-  return steps.map((s, i) => `${i + 1}. ${s}`).join('\n')
+  return steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
 }
 
 // ── Component ───────────────────────────────────────────────────────────────────
@@ -374,127 +374,129 @@ export default function RecipeImportReview({
   isGeneratingImage,
 }) {
   // Editable state derived from the extracted recipe
-  const [name, setName] = useState(recipe.name || '')
-  const [editingName, setEditingName] = useState(false)
-  const [imageUrl, setImageUrl] = useState(recipe.image_url || null)
-  const [showPhotoOptions, setShowPhotoOptions] = useState(!recipe.image_url)
-  const [prepTime, setPrepTime] = useState(recipe.prep_time_minutes ?? '')
-  const [editingPrep, setEditingPrep] = useState(false)
-  const [cookTime, setCookTime] = useState(recipe.cook_time_minutes ?? '')
-  const [editingCook, setEditingCook] = useState(false)
-  const [servings, setServings] = useState(recipe.servings ?? '')
-  const [editingServings, setEditingServings] = useState(false)
+  const [name, setName] = useState(recipe.name || '');
+  const [editingName, setEditingName] = useState(false);
+  const [imageUrl, setImageUrl] = useState(recipe.image_url || null);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(!recipe.image_url);
+  const [prepTime, setPrepTime] = useState(recipe.prep_time_minutes ?? '');
+  const [editingPrep, setEditingPrep] = useState(false);
+  const [cookTime, setCookTime] = useState(recipe.cook_time_minutes ?? '');
+  const [editingCook, setEditingCook] = useState(false);
+  const [servings, setServings] = useState(recipe.servings ?? '');
+  const [editingServings, setEditingServings] = useState(false);
   const [ingredients, setIngredients] = useState(
-    (recipe.ingredients || []).map((ing, i) => ({ ...ing, _key: i }))
-  )
-  const [steps, setSteps] = useState(parseSteps(recipe.instructions))
-  const [error, setError] = useState(null)
+    (recipe.ingredients || []).map((ing, i) => ({ ...ing, _key: i })),
+  );
+  const [steps, setSteps] = useState(parseSteps(recipe.instructions));
+  const [error, setError] = useState(null);
 
-  const fileInputRef = useRef(null)
-  const cameraInputRef = useRef(null)
-  const nextKey = useRef(ingredients.length)
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const nextKey = useRef(ingredients.length);
 
-  const isPartial = recipe._isPartial
-  const sourceUrl = recipe.source
+  const isPartial = recipe._isPartial;
+  const sourceUrl = recipe.source;
 
   // ── Photo handling ──────────────────────────────────────────────────────────
 
   function handleFileUpload(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
 
-    const img = new Image()
+    const img = new Image();
     img.onload = () => {
-      const MAX = 800
-      const QUALITY = 0.72
-      let { width, height } = img
+      const MAX = 800;
+      const QUALITY = 0.72;
+      let { width, height } = img;
       if (width > MAX || height > MAX) {
-        const ratio = Math.min(MAX / width, MAX / height)
-        width = Math.round(width * ratio)
-        height = Math.round(height * ratio)
+        const ratio = Math.min(MAX / width, MAX / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
       }
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, width, height)
-      const dataUrl = canvas.toDataURL('image/jpeg', QUALITY)
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
       if (dataUrl.length > 300_000) {
-        const c2 = document.createElement('canvas')
-        c2.width = Math.round(width * 0.6)
-        c2.height = Math.round(height * 0.6)
-        c2.getContext('2d').drawImage(img, 0, 0, c2.width, c2.height)
-        setImageUrl(c2.toDataURL('image/jpeg', 0.65))
+        const c2 = document.createElement('canvas');
+        c2.width = Math.round(width * 0.6);
+        c2.height = Math.round(height * 0.6);
+        c2.getContext('2d').drawImage(img, 0, 0, c2.width, c2.height);
+        setImageUrl(c2.toDataURL('image/jpeg', 0.65));
       } else {
-        setImageUrl(dataUrl)
+        setImageUrl(dataUrl);
       }
-      setShowPhotoOptions(false)
-      URL.revokeObjectURL(img.src)
-    }
-    img.src = URL.createObjectURL(file)
+      setShowPhotoOptions(false);
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
   }
 
   async function handleGenerateAiPhoto() {
-    if (!onGenerateImage || !name.trim()) return
-    setError(null)
+    if (!onGenerateImage || !name.trim()) return;
+    setError(null);
     try {
-      const result = await onGenerateImage(name.trim(), recipe.description || '')
+      const result = await onGenerateImage(name.trim(), recipe.description || '');
       if (result.success && result.data?.image_url) {
-        setImageUrl(result.data.image_url)
-        setShowPhotoOptions(false)
+        setImageUrl(result.data.image_url);
+        setShowPhotoOptions(false);
       } else {
-        setError(result.error || 'Could not generate photo.')
+        setError(result.error || 'Could not generate photo.');
       }
     } catch {
-      setError('Could not generate photo. Please try again.')
+      setError('Could not generate photo. Please try again.');
     }
   }
 
   // ── Ingredient editing ────────────────────────────────────────────────────
 
   function updateIngredient(key, field, value) {
-    setIngredients(prev => prev.map(ing => ing._key === key ? { ...ing, [field]: value } : ing))
+    setIngredients((prev) =>
+      prev.map((ing) => (ing._key === key ? { ...ing, [field]: value } : ing)),
+    );
   }
 
   function removeIngredient(key) {
-    setIngredients(prev => prev.filter(ing => ing._key !== key))
+    setIngredients((prev) => prev.filter((ing) => ing._key !== key));
   }
 
   function addIngredient() {
-    nextKey.current += 1
-    setIngredients(prev => [...prev, { name: '', quantity: '', _key: nextKey.current }])
+    nextKey.current += 1;
+    setIngredients((prev) => [...prev, { name: '', quantity: '', _key: nextKey.current }]);
   }
 
   // ── Step editing ──────────────────────────────────────────────────────────
 
   function updateStep(idx, value) {
-    setSteps(prev => prev.map((s, i) => i === idx ? value : s))
+    setSteps((prev) => prev.map((s, i) => (i === idx ? value : s)));
   }
 
   function removeStep(idx) {
-    setSteps(prev => prev.filter((_, i) => i !== idx))
+    setSteps((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function addStep() {
-    setSteps(prev => [...prev, ''])
+    setSteps((prev) => [...prev, '']);
   }
 
   // ── Save ──────────────────────────────────────────────────────────────────
 
   function handleSave() {
-    setError(null)
-    const trimmedName = name.trim()
+    setError(null);
+    const trimmedName = name.trim();
     if (!trimmedName) {
-      setError('Recipe name is required.')
-      return
+      setError('Recipe name is required.');
+      return;
     }
 
     const payload = {
       name: trimmedName,
       description: recipe.description || '',
       ingredients: ingredients
-        .filter(i => i.name.trim())
+        .filter((i) => i.name.trim())
         .map(({ name: n, quantity: q }) => ({ name: n.trim(), quantity: q?.trim() || '' })),
       instructions: joinSteps(steps.filter(Boolean)),
       prep_time_minutes: prepTime === '' ? null : Number(prepTime),
@@ -505,9 +507,9 @@ export default function RecipeImportReview({
       source: recipe.source || null,
       imported_from: recipe.imported_from || null,
       imported_at: recipe.imported_at || null,
-    }
+    };
 
-    onSave(payload)
+    onSave(payload);
   }
 
   return (
@@ -582,9 +584,9 @@ export default function RecipeImportReview({
         {editingName ? (
           <NameInput
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             onBlur={() => setEditingName(false)}
-            onKeyDown={e => e.key === 'Enter' && setEditingName(false)}
+            onKeyDown={(e) => e.key === 'Enter' && setEditingName(false)}
             maxLength={200}
             autoFocus
           />
@@ -606,9 +608,9 @@ export default function RecipeImportReview({
             min={0}
             max={1440}
             value={prepTime}
-            onChange={e => setPrepTime(e.target.value)}
+            onChange={(e) => setPrepTime(e.target.value)}
             onBlur={() => setEditingPrep(false)}
-            onKeyDown={e => e.key === 'Enter' && setEditingPrep(false)}
+            onKeyDown={(e) => e.key === 'Enter' && setEditingPrep(false)}
             placeholder="min"
             autoFocus
           />
@@ -624,9 +626,9 @@ export default function RecipeImportReview({
             min={0}
             max={1440}
             value={cookTime}
-            onChange={e => setCookTime(e.target.value)}
+            onChange={(e) => setCookTime(e.target.value)}
             onBlur={() => setEditingCook(false)}
-            onKeyDown={e => e.key === 'Enter' && setEditingCook(false)}
+            onKeyDown={(e) => e.key === 'Enter' && setEditingCook(false)}
             placeholder="min"
             autoFocus
           />
@@ -642,9 +644,9 @@ export default function RecipeImportReview({
             min={1}
             max={100}
             value={servings}
-            onChange={e => setServings(e.target.value)}
+            onChange={(e) => setServings(e.target.value)}
             onBlur={() => setEditingServings(false)}
-            onKeyDown={e => e.key === 'Enter' && setEditingServings(false)}
+            onKeyDown={(e) => e.key === 'Enter' && setEditingServings(false)}
             placeholder="#"
             autoFocus
           />
@@ -655,7 +657,15 @@ export default function RecipeImportReview({
         )}
 
         {recipe.imported_from && (
-          <MetaChip as="span" style={{ cursor: 'default', background: '#EEEDFE', borderColor: '#CECBF6', color: '#3C3489' }}>
+          <MetaChip
+            as="span"
+            style={{
+              cursor: 'default',
+              background: '#EEEDFE',
+              borderColor: '#CECBF6',
+              color: '#3C3489',
+            }}
+          >
             {recipe.imported_from}
           </MetaChip>
         )}
@@ -665,23 +675,27 @@ export default function RecipeImportReview({
       <div>
         <SectionTitle>Ingredients</SectionTitle>
         <IngredientList>
-          {ingredients.map(ing => (
+          {ingredients.map((ing) => (
             <IngredientRow key={ing._key}>
               <IngInput
                 type="text"
                 value={ing.name}
-                onChange={e => updateIngredient(ing._key, 'name', e.target.value)}
+                onChange={(e) => updateIngredient(ing._key, 'name', e.target.value)}
                 placeholder="Ingredient"
                 maxLength={200}
               />
               <IngInput
                 type="text"
                 value={ing.quantity}
-                onChange={e => updateIngredient(ing._key, 'quantity', e.target.value)}
+                onChange={(e) => updateIngredient(ing._key, 'quantity', e.target.value)}
                 placeholder="Qty"
                 maxLength={50}
               />
-              <RemoveBtn type="button" onClick={() => removeIngredient(ing._key)} aria-label="Remove ingredient">
+              <RemoveBtn
+                type="button"
+                onClick={() => removeIngredient(ing._key)}
+                aria-label="Remove ingredient"
+              >
                 {'\u2715'}
               </RemoveBtn>
             </IngredientRow>
@@ -700,7 +714,7 @@ export default function RecipeImportReview({
             <StepItem key={i}>
               <StepTextArea
                 value={step}
-                onChange={e => updateStep(i, e.target.value)}
+                onChange={(e) => updateStep(i, e.target.value)}
                 rows={2}
                 maxLength={2000}
               />
@@ -737,5 +751,5 @@ export default function RecipeImportReview({
         </PrimaryBtn>
       </Actions>
     </Wrapper>
-  )
+  );
 }

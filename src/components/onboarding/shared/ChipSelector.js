@@ -1,24 +1,24 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import styled, { keyframes, css } from 'styled-components'
+import { useState } from 'react';
+import styled, { keyframes, css } from 'styled-components';
 
 const voiceSelectAnim = keyframes`
   0% { transform: scale(1); }
   40% { transform: scale(1.15); }
   100% { transform: scale(1); }
-`
+`;
 
 const voiceAmberPulse = keyframes`
   0%, 100% { border-color: #BA7517; }
   50% { border-color: transparent; }
-`
+`;
 
 const Grid = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const Chip = styled.button`
   display: inline-flex;
@@ -27,12 +27,11 @@ const Chip = styled.button`
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
   border-radius: ${({ theme }) => theme.radii.pill};
   border: 1.5px solid ${({ $selected, $ambiguous, theme }) =>
-    $ambiguous ? theme.colors.amber
-    : $selected ? theme.colors.teal : theme.colors.border};
-  background: ${({ $selected, theme }) => $selected ? theme.colors.tealLight + '30' : theme.colors.surface};
-  color: ${({ $selected, theme }) => $selected ? theme.colors.teal : theme.colors.textPrimary};
+    $ambiguous ? theme.colors.amber : $selected ? theme.colors.teal : theme.colors.border};
+  background: ${({ $selected, theme }) => ($selected ? theme.colors.tealLight + '30' : theme.colors.surface)};
+  color: ${({ $selected, theme }) => ($selected ? theme.colors.teal : theme.colors.textPrimary)};
   font-size: 14px;
-  font-weight: ${({ $selected }) => $selected ? 600 : 400};
+  font-weight: ${({ $selected }) => ($selected ? 600 : 400)};
   cursor: pointer;
   transition: all 0.15s ease;
   min-height: 36px;
@@ -42,13 +41,13 @@ const Chip = styled.button`
   &:hover {
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const CustomRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   margin-top: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const CustomInput = styled.input`
   flex: 1;
@@ -65,7 +64,7 @@ const CustomInput = styled.input`
     border-color: ${({ theme }) => theme.colors.teal};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.tealLight}40;
   }
-`
+`;
 
 const AddBtn = styled.button`
   height: 36px;
@@ -79,19 +78,19 @@ const AddBtn = styled.button`
   cursor: pointer;
 
   &:disabled { opacity: 0.4; cursor: not-allowed; }
-`
+`;
 
 const HeaderRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const CountText = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.sm};
   color: ${({ theme }) => theme.colors.textTertiary};
-`
+`;
 
 const SelectAllLink = styled.button`
   background: none;
@@ -100,7 +99,7 @@ const SelectAllLink = styled.button`
   color: ${({ theme }) => theme.colors.teal};
   cursor: pointer;
   font-weight: 500;
-`
+`;
 
 export default function ChipSelector({
   options,
@@ -113,34 +112,34 @@ export default function ChipSelector({
   voiceAnimatingItems = [],
   ambiguousItems = [],
 }) {
-  const [customValue, setCustomValue] = useState('')
+  const [customValue, setCustomValue] = useState('');
 
   const toggle = (value) => {
     if (selected.includes(value)) {
-      onChange(selected.filter(v => v !== value))
+      onChange(selected.filter((v) => v !== value));
     } else {
-      onChange([...selected, value])
+      onChange([...selected, value]);
     }
-  }
+  };
 
   const addCustom = () => {
-    const trimmed = customValue.trim()
+    const trimmed = customValue.trim();
     if (trimmed && !selected.includes(trimmed)) {
-      onChange([...selected, trimmed])
-      setCustomValue('')
+      onChange([...selected, trimmed]);
+      setCustomValue('');
     }
-  }
+  };
 
-  const allValues = options.map(o => typeof o === 'string' ? o : o.value)
-  const allSelected = allValues.length > 0 && allValues.every(v => selected.includes(v))
+  const allValues = options.map((o) => (typeof o === 'string' ? o : o.value));
+  const allSelected = allValues.length > 0 && allValues.every((v) => selected.includes(v));
 
   const toggleSelectAll = () => {
     if (allSelected) {
-      onChange(selected.filter(v => !allValues.includes(v)))
+      onChange(selected.filter((v) => !allValues.includes(v)));
     } else {
-      onChange([...new Set([...selected, ...allValues])])
+      onChange([...new Set([...selected, ...allValues])]);
     }
-  }
+  };
 
   return (
     <div>
@@ -156,8 +155,8 @@ export default function ChipSelector({
       )}
       <Grid>
         {options.map((option) => {
-          const value = typeof option === 'string' ? option : option.value
-          const label = typeof option === 'string' ? option : option.label
+          const value = typeof option === 'string' ? option : option.value;
+          const label = typeof option === 'string' ? option : option.label;
           return (
             <Chip
               key={value}
@@ -169,7 +168,7 @@ export default function ChipSelector({
             >
               {renderLabel ? renderLabel(option, selected.includes(value)) : label}
             </Chip>
-          )
+          );
         })}
       </Grid>
       {allowCustom && (
@@ -178,8 +177,8 @@ export default function ChipSelector({
             type="text"
             placeholder="Add custom..."
             value={customValue}
-            onChange={e => setCustomValue(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addCustom()}
+            onChange={(e) => setCustomValue(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addCustom()}
             maxLength={100}
           />
           <AddBtn type="button" onClick={addCustom} disabled={!customValue.trim()}>
@@ -188,5 +187,5 @@ export default function ChipSelector({
         </CustomRow>
       )}
     </div>
-  )
+  );
 }

@@ -1,20 +1,23 @@
-import 'server-only'
+import 'server-only';
 
-import { getSupabaseServerClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
 /**
  * Get the currently authenticated user. Returns null if not authenticated.
  */
 export async function getCurrentUser() {
-  const supabase = await getSupabaseServerClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const supabase = await getSupabaseServerClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
   if (error || !user) {
-    return null
+    return null;
   }
 
-  return user
+  return user;
 }
 
 /**
@@ -22,13 +25,13 @@ export async function getCurrentUser() {
  * Use this in Server Components and DAL functions.
  */
 export async function requireAuth() {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser();
 
   if (!user) {
-    redirect('/login')
+    redirect('/login');
   }
 
-  return user
+  return user;
 }
 
 /**
@@ -43,12 +46,15 @@ export async function requireAuth() {
  * you need session metadata (e.g. token expiry) rather than user identity.
  */
 export async function getSession() {
-  const supabase = await getSupabaseServerClient()
-  const { data: { session }, error } = await supabase.auth.getSession()
+  const supabase = await getSupabaseServerClient();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
 
   if (error || !session) {
-    return null
+    return null;
   }
 
-  return session
+  return session;
 }
