@@ -34,6 +34,22 @@ tasks:
     cmds:
       - npx eslint . --fix
 
+  test:
+    desc: Run vitest in watch mode
+    cmds:
+      - npx vitest
+
+  test:run:
+    desc: Run vitest once
+    cmds:
+      - npx vitest run
+
+  test:coverage:
+    desc: Run vitest with coverage and enforce ratchet
+    cmds:
+      - npx vitest run --coverage
+      - node scripts/coverage-ratchet.js
+
   clean:
     desc: Remove build artifacts
     cmds:
@@ -45,7 +61,8 @@ tasks:
       - npm install
 
   check:
-    desc: Run lint and build to verify the project
+    desc: Run lint, tests with coverage, and build
     cmds:
       - task: lint
+      - task: test:coverage
       - task: build
