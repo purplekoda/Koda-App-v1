@@ -79,3 +79,43 @@ Handles CSP (nonce-based script-src via `x-nonce` request header), CORS enforcem
 - The app runs in mock-data mode when Supabase env vars are missing
 - Server-only secrets (`SUPABASE_SERVICE_ROLE_KEY`, deep-link bases) must never be exposed to the client
 - Required Netlify env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL`
+
+# Testing & Tooling
+
+## Vitest
+
+- `npm run test` — watch mode
+- `npm run test:run` — single run
+- `npm run test:coverage` — full run + coverage + ratchet enforcement
+- Tests are colocated next to source as `*.test.{js,jsx}`. Test utilities live under `src/test/`.
+- Use `renderWithTheme()` from `src/test/render.js` for any component using styled-components.
+- Use `createSupabaseMock()` from `src/test/supabase-mock.js` for DAL/server-action tests.
+- `next/navigation` and `next/headers` are auto-mocked globally in `vitest.setup.js`.
+- The Vite config uses `@vitejs/plugin-react-swc` (not the default `@vitejs/plugin-react`) because Vite 8's oxc transformer does not parse JSX in `.js` files, and source code uses `.js` for React components.
+
+## Coverage ratchet
+
+- `.coverage-baseline.json` stores the line and branch coverage floor (`{lines, branches}`).
+- The baseline only goes up. Drops fail the build.
+- When coverage improves, `scripts/coverage-ratchet.js` updates the baseline and exits 1, asking you to commit `.coverage-baseline.json` and push again.
+- Manual baseline edits downward should be rare and reviewed.
+
+## Biome (formatter only)
+
+- `npm run format` — write changes in place
+- `npm run format:check` — verify only (used in pre-push and CI)
+- Biome's linter is disabled. ESLint + `eslint-config-next` remains the sole linter.
+
+## Pre-push hook
+
+- `.husky/pre-push` runs `format:check` + `lint`. Tests are NOT in the hook — they run in CI.
+- Bypass with `git push --no-verify` only for emergencies.
+
+## CI
+
+- `.github/workflows/ci.yml` runs on every push and PR: format:check, lint, test:coverage.
+- Coverage HTML report is uploaded as a workflow artifact.
+
+## Lint debt
+
+- See `TODO.md` for the list of lint rules currently downgraded to warnings (pre-existing React 19 / hooks issues from `eslint-config-next` 16). Re-promote each rule to `error` once cleaned up.
