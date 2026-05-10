@@ -26,5 +26,22 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.js'],
     include: ['src/**/*.{test,spec}.{js,jsx}', 'scripts/**/*.{test,spec}.js'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{js,jsx}'],
+      exclude: [
+        'src/**/*.test.{js,jsx}',
+        'src/**/*.spec.{js,jsx}',
+        'src/test/**',
+        'src/**/*.stories.{js,jsx}',
+        'src/proxy.js',
+        'src/app/**/layout.js',
+        'src/app/**/loading.js',
+        'src/app/**/error.js',
+        'src/app/**/not-found.js',
+      ],
+    },
   },
 });
