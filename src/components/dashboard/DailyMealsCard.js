@@ -1,19 +1,19 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import SectionHeader from '@/components/common/SectionHeader'
+import styled from 'styled-components';
+import SectionHeader from '@/components/common/SectionHeader';
 
 const mealColors = {
   breakfast: 'amberLight',
   lunch: 'tealLight',
   dinner: 'purpleLight',
-}
+};
 
 const mealTextColors = {
   breakfast: 'amberDark',
   lunch: 'tealDark',
   dinner: 'purpleDark',
-}
+};
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -21,7 +21,7 @@ const Card = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.lg};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const MealRow = styled.div`
   display: flex;
@@ -36,26 +36,26 @@ const MealRow = styled.div`
   & + & {
     margin-top: ${({ theme }) => theme.spacing.sm};
   }
-`
+`;
 
 const MealType = styled.span`
   font-size: 14px;
   font-weight: 400;
   color: ${({ $type, theme }) => theme.colors[mealTextColors[$type]] || theme.colors.textSecondary};
   min-width: 70px;
-`
+`;
 
 const MealName = styled.span`
   flex: 1;
   font-size: 15px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const MealTime = styled.span`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 export default function DailyMealsCard({ meals }) {
   return (
@@ -71,5 +71,5 @@ export default function DailyMealsCard({ meals }) {
         </MealRow>
       ))}
     </Card>
-  )
+  );
 }

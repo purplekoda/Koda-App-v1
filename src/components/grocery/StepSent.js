@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import styled, { keyframes } from 'styled-components'
+import styled, { keyframes } from 'styled-components';
 
 const popIn = keyframes`
   from {
@@ -11,7 +11,7 @@ const popIn = keyframes`
     opacity: 1;
     transform: scale(1);
   }
-`
+`;
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -20,19 +20,19 @@ const Card = styled.div`
   padding: ${({ theme }) => theme.spacing.xxxl} ${({ theme }) => theme.spacing.xl};
   text-align: center;
   animation: ${popIn} 0.3s ease-out;
-`
+`;
 
 const Icon = styled.div`
   font-size: 56px;
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Title = styled.h3`
   font-size: 22px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const Subtitle = styled.p`
   font-size: 15px;
@@ -41,7 +41,7 @@ const Subtitle = styled.p`
   max-width: 360px;
   margin-left: auto;
   margin-right: auto;
-`
+`;
 
 const DeepLinkButton = styled.a`
   display: inline-flex;
@@ -62,18 +62,18 @@ const DeepLinkButton = styled.a`
     opacity: 0.9;
     transform: translateY(-1px);
   }
-`
+`;
 
 const StoreIcon = styled.span`
   font-size: 20px;
-`
+`;
 
 const SecondaryActions = styled.div`
   display: flex;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.md};
   flex-wrap: wrap;
-`
+`;
 
 const SecondaryButton = styled.button`
   display: flex;
@@ -92,11 +92,11 @@ const SecondaryButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
 const DeepLinkWrapper = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const ItemCount = styled.div`
   display: inline-flex;
@@ -109,10 +109,10 @@ const ItemCount = styled.div`
   font-size: 14px;
   font-weight: 500;
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 export default function StepSent({ store, itemCount, onStartOver }) {
-  if (!store) return null
+  if (!store) return null;
 
   return (
     <Card>
@@ -139,10 +139,8 @@ export default function StepSent({ store, itemCount, onStartOver }) {
       </DeepLinkWrapper>
 
       <SecondaryActions>
-        <SecondaryButton onClick={onStartOver}>
-          {'\u21BA'} Start over
-        </SecondaryButton>
+        <SecondaryButton onClick={onStartOver}>{'\u21BA'} Start over</SecondaryButton>
       </SecondaryActions>
     </Card>
-  )
+  );
 }

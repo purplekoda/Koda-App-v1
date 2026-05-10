@@ -1,8 +1,8 @@
-import 'server-only'
+import 'server-only';
 
-import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 
-const MAX_HISTORY = 5
+const MAX_HISTORY = 5;
 
 /**
  * Fetch the last N conversation messages for a user+context pair.
@@ -12,22 +12,22 @@ const MAX_HISTORY = 5
  * @returns {Promise<Array<{ role: 'user'|'model', parts: [{ text: string }] }>>}
  */
 export async function getHistory(userId, context) {
-  const supabase = await getSupabaseServerClient()
+  const supabase = await getSupabaseServerClient();
 
   const { data, error } = await supabase
     .from('ai_conversations')
     .select('messages')
     .eq('user_id', userId)
     .eq('context', context)
-    .maybeSingle()
+    .maybeSingle();
 
   if (error) {
     // Non-fatal: start a fresh history if the read fails
-    console.error('[ai-history] getHistory error:', error.message)
-    return []
+    console.error('[ai-history] getHistory error:', error.message);
+    return [];
   }
 
-  return data?.messages ?? []
+  return data?.messages ?? [];
 }
 
 /**
@@ -38,9 +38,9 @@ export async function getHistory(userId, context) {
  * @param {Array<{ role: 'user'|'model', parts: [{ text: string }] }>} messages
  */
 export async function saveHistory(userId, context, messages) {
-  const supabase = await getSupabaseServerClient()
+  const supabase = await getSupabaseServerClient();
 
-  const trimmed = messages.slice(-MAX_HISTORY)
+  const trimmed = messages.slice(-MAX_HISTORY);
 
   const { error } = await supabase.from('ai_conversations').upsert(
     {
@@ -49,11 +49,11 @@ export async function saveHistory(userId, context, messages) {
       messages: trimmed,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: 'user_id,context' }
-  )
+    { onConflict: 'user_id,context' },
+  );
 
   if (error) {
     // Non-fatal: log but don't block the response
-    console.error('[ai-history] saveHistory error:', error.message)
+    console.error('[ai-history] saveHistory error:', error.message);
   }
 }

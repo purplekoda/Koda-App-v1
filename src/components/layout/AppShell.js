@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import Sidebar from './Sidebar'
-import BottomTabBar from './BottomTabBar'
-import FloatingChat from '@/components/ai/FloatingChat'
-import { ChatProvider } from '@/components/ai/ChatProvider'
+import styled from 'styled-components';
+import Sidebar from './Sidebar';
+import BottomTabBar from './BottomTabBar';
+import FloatingChat from '@/components/ai/FloatingChat';
+import { ChatProvider } from '@/components/ai/ChatProvider';
 
 const Shell = styled.div`
   display: flex;
   min-height: 100vh;
-`
+`;
 
 const MainContent = styled.main`
   flex: 1;
@@ -22,7 +22,7 @@ const MainContent = styled.main`
     padding: ${({ theme }) => theme.spacing.xl} ${({ theme }) => theme.spacing.lg};
     padding-bottom: calc(${({ theme }) => theme.bottomNavHeight} + ${({ theme }) => theme.spacing.xl});
   }
-`
+`;
 
 export default function AppShell({ children, user, trackMacros, voiceSettings }) {
   return (
@@ -34,5 +34,5 @@ export default function AppShell({ children, user, trackMacros, voiceSettings })
         <FloatingChat />
       </Shell>
     </ChatProvider>
-  )
+  );
 }

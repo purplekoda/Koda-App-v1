@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useCallback, useRef, useState } from 'react'
-import { speakResponse, stopSpeaking, isTTSSupported } from './tts'
+import { useCallback, useRef, useState } from 'react';
+import { speakResponse, stopSpeaking, isTTSSupported } from './tts';
 
 /**
  * React hook for text-to-speech voice output.
@@ -17,28 +17,28 @@ import { speakResponse, stopSpeaking, isTTSSupported } from './tts'
  * }}
  */
 export function useVoiceOutput() {
-  const [isSpeakingState, setIsSpeaking] = useState(false)
-  const [speakingMessageIndex, setSpeakingMessageIndex] = useState(null)
-  const supported = typeof window !== 'undefined' ? isTTSSupported() : true
+  const [isSpeakingState, setIsSpeaking] = useState(false);
+  const [speakingMessageIndex, setSpeakingMessageIndex] = useState(null);
+  const supported = typeof window !== 'undefined' ? isTTSSupported() : true;
 
   const speak = useCallback((text, messageIndex = null) => {
     speakResponse(text, {
       onStart: () => {
-        setIsSpeaking(true)
-        setSpeakingMessageIndex(messageIndex)
+        setIsSpeaking(true);
+        setSpeakingMessageIndex(messageIndex);
       },
       onEnd: () => {
-        setIsSpeaking(false)
-        setSpeakingMessageIndex(null)
+        setIsSpeaking(false);
+        setSpeakingMessageIndex(null);
       },
-    })
-  }, [])
+    });
+  }, []);
 
   const stop = useCallback(() => {
-    stopSpeaking()
-    setIsSpeaking(false)
-    setSpeakingMessageIndex(null)
-  }, [])
+    stopSpeaking();
+    setIsSpeaking(false);
+    setSpeakingMessageIndex(null);
+  }, []);
 
   return {
     isSpeaking: isSpeakingState,
@@ -46,5 +46,5 @@ export function useVoiceOutput() {
     supported,
     speak,
     stop,
-  }
+  };
 }

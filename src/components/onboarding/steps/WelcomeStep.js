@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
+import styled from 'styled-components';
 
 const Wrapper = styled.div`
   display: flex;
@@ -11,7 +11,7 @@ const Wrapper = styled.div`
   flex: 1;
   gap: ${({ theme }) => theme.spacing.xxl};
   padding: ${({ theme }) => theme.spacing.xxxl} 0;
-`
+`;
 
 const Logo = styled.div`
   width: 80px;
@@ -25,14 +25,14 @@ const Logo = styled.div`
   font-weight: 800;
   color: white;
   letter-spacing: -1px;
-`
+`;
 
 const Title = styled.h1`
   font-size: ${({ theme }) => theme.fontSizes.xxl};
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0;
-`
+`;
 
 const Tagline = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.body};
@@ -40,7 +40,7 @@ const Tagline = styled.p`
   margin: 0;
   max-width: 360px;
   line-height: 1.5;
-`
+`;
 
 const BtnStack = styled.div`
   display: flex;
@@ -48,7 +48,7 @@ const BtnStack = styled.div`
   gap: ${({ theme }) => theme.spacing.md};
   width: 100%;
   max-width: 320px;
-`
+`;
 
 const PrimaryBtn = styled.button`
   width: 100%;
@@ -63,7 +63,7 @@ const PrimaryBtn = styled.button`
   transition: opacity 0.15s;
 
   &:hover { opacity: 0.9; }
-`
+`;
 
 const SkipBtn = styled.button`
   background: none;
@@ -74,7 +74,7 @@ const SkipBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm};
 
   &:hover { color: ${({ theme }) => theme.colors.textSecondary}; }
-`
+`;
 
 export default function WelcomeStep({ onStart, onSkip }) {
   return (
@@ -87,11 +87,13 @@ export default function WelcomeStep({ onStart, onSkip }) {
         </Tagline>
       </div>
       <BtnStack>
-        <PrimaryBtn type="button" onClick={onStart}>Get started</PrimaryBtn>
+        <PrimaryBtn type="button" onClick={onStart}>
+          Get started
+        </PrimaryBtn>
         <SkipBtn type="button" onClick={onSkip}>
           Skip &mdash; I'll set this up later
         </SkipBtn>
       </BtnStack>
     </Wrapper>
-  )
+  );
 }

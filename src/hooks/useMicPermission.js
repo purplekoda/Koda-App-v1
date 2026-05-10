@@ -1,16 +1,16 @@
-'use client'
+'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import styled, { keyframes } from 'styled-components'
+import { useState, useCallback, useRef, useEffect } from 'react';
+import styled, { keyframes } from 'styled-components';
 
 // ── Permission check ──────────────────────────────────
 
 async function checkMicPermission() {
   try {
-    const result = await navigator.permissions.query({ name: 'microphone' })
-    return result.state // 'granted', 'prompt', or 'denied'
+    const result = await navigator.permissions.query({ name: 'microphone' });
+    return result.state; // 'granted', 'prompt', or 'denied'
   } catch {
-    return 'prompt' // default if API not supported
+    return 'prompt'; // default if API not supported
   }
 }
 
@@ -19,17 +19,17 @@ async function checkMicPermission() {
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-`
+`;
 
 const scaleIn = keyframes`
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
-`
+`;
 
 const gentlePulse = keyframes`
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
-`
+`;
 
 // ── Shared modal styles ───────────────────────────────
 
@@ -43,7 +43,7 @@ const Overlay = styled.div`
   padding: ${({ theme }) => theme.spacing.lg};
   z-index: 1100;
   animation: ${fadeIn} 0.2s ease;
-`
+`;
 
 const ModalPanel = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -59,7 +59,7 @@ const ModalPanel = styled.div`
     padding: ${({ theme }) => theme.spacing.xl};
     max-width: 100%;
   }
-`
+`;
 
 const MicIconCircle = styled.div`
   width: 80px;
@@ -73,21 +73,21 @@ const MicIconCircle = styled.div`
   font-size: 36px;
   margin: 0 auto ${({ theme }) => theme.spacing.xl};
   animation: ${gentlePulse} 2.5s ease-in-out infinite;
-`
+`;
 
 const ModalTitle = styled.h2`
   font-size: 20px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const ModalBody = styled.p`
   font-size: 15px;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0 0 ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 // ── Chrome hint illustration ──────────────────────────
 
@@ -101,12 +101,12 @@ const ChromeHint = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const HintDomain = styled.span`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
-`
+`;
 
 const HintAllow = styled.span`
   padding: 4px 12px;
@@ -115,7 +115,7 @@ const HintAllow = styled.span`
   color: white;
   font-size: 12px;
   font-weight: 600;
-`
+`;
 
 const HintBlock = styled.span`
   padding: 4px 12px;
@@ -123,7 +123,7 @@ const HintBlock = styled.span`
   background: ${({ theme }) => theme.colors.borderLight};
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
-`
+`;
 
 // ── Buttons ───────────────────────────────────────────
 
@@ -141,7 +141,7 @@ const PrimaryButton = styled.button`
 
   &:hover { opacity: 0.9; }
   &:active { opacity: 0.8; }
-`
+`;
 
 const SecondaryLink = styled.button`
   background: none;
@@ -155,7 +155,7 @@ const SecondaryLink = styled.button`
   transition: text-decoration-color 0.15s;
 
   &:hover { text-decoration-color: currentColor; }
-`
+`;
 
 // ── Denied modal steps ────────────────────────────────
 
@@ -167,13 +167,13 @@ const StepsList = styled.ol`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const StepItem = styled.li`
   display: flex;
   align-items: flex-start;
   gap: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const StepNumber = styled.div`
   width: 28px;
@@ -187,11 +187,11 @@ const StepNumber = styled.div`
   font-size: 13px;
   font-weight: 700;
   flex-shrink: 0;
-`
+`;
 
 const StepContent = styled.div`
   flex: 1;
-`
+`;
 
 const StepLabel = styled.p`
   font-size: 14px;
@@ -199,7 +199,7 @@ const StepLabel = styled.p`
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 ${({ theme }) => theme.spacing.xs};
   font-weight: 500;
-`
+`;
 
 const StepIllustration = styled.div`
   display: inline-flex;
@@ -210,7 +210,7 @@ const StepIllustration = styled.div`
   border-radius: ${({ theme }) => theme.radii.md};
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const ToggleTrack = styled.span`
   display: inline-flex;
@@ -230,14 +230,14 @@ const ToggleTrack = styled.span`
     position: absolute;
     right: 2px;
   }
-`
+`;
 
 const StatusMessage = styled.p`
   font-size: 13px;
-  color: ${({ $error, theme }) => $error ? theme.colors.coral : theme.colors.teal};
+  color: ${({ $error, theme }) => ($error ? theme.colors.coral : theme.colors.teal)};
   margin: ${({ theme }) => theme.spacing.md} 0 0;
   font-weight: 500;
-`
+`;
 
 const BlockedIcon = styled.div`
   width: 80px;
@@ -250,29 +250,39 @@ const BlockedIcon = styled.div`
   justify-content: center;
   font-size: 36px;
   margin: 0 auto ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 // ── Pre-prompt modal ──────────────────────────────────
 
 function PrePromptModal({ onConfirm, onClose }) {
   useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
+    function onKey(e) {
+      if (e.key === 'Escape') onClose();
     }
-  }, [onClose])
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
 
   return (
-    <Overlay onClick={e => { if (e.target === e.currentTarget) onClose() }} role="dialog" aria-modal="true" aria-label="Microphone permission">
+    <Overlay
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Microphone permission"
+    >
       <ModalPanel>
         <MicIconCircle aria-hidden="true">{'\uD83C\uDFA4'}</MicIconCircle>
         <ModalTitle>Koda needs your microphone</ModalTitle>
         <ModalBody>
-          To guide you through setup with voice, Koda needs access to your microphone. Your browser will ask for permission in just a second — simply tap <strong>Allow</strong> to continue.
+          To guide you through setup with voice, Koda needs access to your microphone. Your browser
+          will ask for permission in just a second — simply tap <strong>Allow</strong> to continue.
         </ModalBody>
         <ChromeHint aria-label="Browser permission preview">
           <HintDomain>Use your microphone?</HintDomain>
@@ -284,48 +294,58 @@ function PrePromptModal({ onConfirm, onClose }) {
         </PrimaryButton>
       </ModalPanel>
     </Overlay>
-  )
+  );
 }
 
 // ── Denied help modal ─────────────────────────────────
 
 function DeniedHelpModal({ onRetry, onSkip, retrying }) {
-  const [retryMessage, setRetryMessage] = useState(null)
+  const [retryMessage, setRetryMessage] = useState(null);
 
   useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape' && onSkip) onSkip() }
-    window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
+    function onKey(e) {
+      if (e.key === 'Escape' && onSkip) onSkip();
     }
-  }, [onSkip])
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onSkip]);
 
-  const [checking, setChecking] = useState(false)
+  const [checking, setChecking] = useState(false);
 
   async function handleRetry() {
-    setRetryMessage(null)
-    setChecking(true)
+    setRetryMessage(null);
+    setChecking(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      stream.getTracks().forEach(t => t.stop())
-      onRetry()
-      return
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      onRetry();
+      return;
     } catch {
-      setRetryMessage('still_blocked')
+      setRetryMessage('still_blocked');
     }
-    setChecking(false)
+    setChecking(false);
   }
 
   return (
-    <Overlay onClick={e => { if (e.target === e.currentTarget && onSkip) onSkip() }} role="dialog" aria-modal="true" aria-label="Microphone blocked">
+    <Overlay
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onSkip) onSkip();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Microphone blocked"
+    >
       <ModalPanel>
         <BlockedIcon aria-hidden="true">{'\uD83D\uDD07'}</BlockedIcon>
         <ModalTitle>Microphone access is blocked</ModalTitle>
         <ModalBody>
-          It looks like microphone access was previously blocked for Koda. Here&apos;s how to turn it back on in 3 quick steps:
+          It looks like microphone access was previously blocked for Koda. Here&apos;s how to turn
+          it back on in 3 quick steps:
         </ModalBody>
 
         <StepsList>
@@ -381,7 +401,7 @@ function DeniedHelpModal({ onRetry, onSkip, retrying }) {
         )}
       </ModalPanel>
     </Overlay>
-  )
+  );
 }
 
 // ── Hook ──────────────────────────────────────────────
@@ -399,161 +419,159 @@ function DeniedHelpModal({ onRetry, onSkip, retrying }) {
  * }}
  */
 export function useMicPermission() {
-  const [permissionState, setPermissionState] = useState(null)
-  const [modalType, setModalType] = useState(null) // 'preprompt' | 'denied' | null
-  const resolveRef = useRef(null)
-  const skipCallbackRef = useRef(null)
+  const [permissionState, setPermissionState] = useState(null);
+  const [modalType, setModalType] = useState(null); // 'preprompt' | 'denied' | null
+  const resolveRef = useRef(null);
+  const skipCallbackRef = useRef(null);
 
   // Listen for permission changes
   useEffect(() => {
-    let permStatus = null
+    let permStatus = null;
 
     async function watchPermission() {
       try {
-        permStatus = await navigator.permissions.query({ name: 'microphone' })
-        setPermissionState(permStatus.state)
+        permStatus = await navigator.permissions.query({ name: 'microphone' });
+        setPermissionState(permStatus.state);
         permStatus.addEventListener('change', () => {
-          setPermissionState(permStatus.state)
-        })
+          setPermissionState(permStatus.state);
+        });
       } catch {
         // API not supported
       }
     }
 
-    watchPermission()
+    watchPermission();
     return () => {
       if (permStatus) {
-        try { permStatus.removeEventListener('change', () => {}) } catch {}
+        try {
+          permStatus.removeEventListener('change', () => {});
+        } catch {}
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const requestMic = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       // Stop tracks immediately — we only needed permission
-      stream.getTracks().forEach(t => t.stop())
-      setPermissionState('granted')
-      setModalType(null)
-      return true
+      stream.getTracks().forEach((t) => t.stop());
+      setPermissionState('granted');
+      setModalType(null);
+      return true;
     } catch {
       // User blocked or error
-      const newState = await checkMicPermission()
-      setPermissionState(newState)
+      const newState = await checkMicPermission();
+      setPermissionState(newState);
       if (newState === 'denied') {
-        setModalType('denied')
+        setModalType('denied');
       }
-      return false
+      return false;
     }
-  }, [])
+  }, []);
 
   const checkAndRequest = useCallback(async (options = {}) => {
-    skipCallbackRef.current = options.onSkip || null
+    skipCallbackRef.current = options.onSkip || null;
 
     // The Permissions API can report stale state (e.g. 'denied' when the
     // user has since re-enabled the mic). Use it only as a hint, then
     // verify with a real getUserMedia call when it says 'denied'.
-    const hintState = await checkMicPermission()
+    const hintState = await checkMicPermission();
 
     if (hintState === 'granted') {
-      setPermissionState('granted')
-      return true
+      setPermissionState('granted');
+      return true;
     }
 
     if (hintState === 'denied') {
       // Don't trust it — try getUserMedia to see if it actually works
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        stream.getTracks().forEach(t => t.stop())
-        setPermissionState('granted')
-        return true
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((t) => t.stop());
+        setPermissionState('granted');
+        return true;
       } catch {
         // Truly denied — show the help modal
-        setPermissionState('denied')
+        setPermissionState('denied');
         return new Promise((resolve) => {
-          resolveRef.current = resolve
-          setModalType('denied')
-        })
+          resolveRef.current = resolve;
+          setModalType('denied');
+        });
       }
     }
 
     // state === 'prompt' — show pre-prompt modal and wait
-    setPermissionState('prompt')
+    setPermissionState('prompt');
     return new Promise((resolve) => {
-      resolveRef.current = resolve
-      setModalType('preprompt')
-    })
-  }, [])
+      resolveRef.current = resolve;
+      setModalType('preprompt');
+    });
+  }, []);
 
   const handlePrePromptConfirm = useCallback(async () => {
-    setModalType(null)
-    const granted = await requestMic()
+    setModalType(null);
+    const granted = await requestMic();
     if (resolveRef.current) {
-      resolveRef.current(granted)
-      resolveRef.current = null
+      resolveRef.current(granted);
+      resolveRef.current = null;
     }
-  }, [requestMic])
+  }, [requestMic]);
 
   const handlePrePromptClose = useCallback(() => {
-    setModalType(null)
+    setModalType(null);
     if (resolveRef.current) {
-      resolveRef.current(false)
-      resolveRef.current = null
+      resolveRef.current(false);
+      resolveRef.current = null;
     }
-  }, [])
+  }, []);
 
   const handleDeniedRetry = useCallback(async () => {
     // Try getUserMedia — if it works, great. If not, the DeniedHelpModal
     // will show a "Refresh now" button (Chrome requires a reload).
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      stream.getTracks().forEach(t => t.stop())
-      setPermissionState('granted')
-      setModalType(null)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      setPermissionState('granted');
+      setModalType(null);
       if (resolveRef.current) {
-        resolveRef.current(true)
-        resolveRef.current = null
+        resolveRef.current(true);
+        resolveRef.current = null;
       }
     } catch {
       // DeniedHelpModal handles showing the reload prompt
     }
-  }, [])
+  }, []);
 
   const handleDeniedSkip = useCallback(() => {
-    setModalType(null)
+    setModalType(null);
     if (resolveRef.current) {
-      resolveRef.current(false)
-      resolveRef.current = null
+      resolveRef.current(false);
+      resolveRef.current = null;
     }
     if (skipCallbackRef.current) {
-      skipCallbackRef.current()
+      skipCallbackRef.current();
     }
-  }, [])
+  }, []);
 
   // The modal component to render — just drop <PermissionModal /> in your JSX
   const PermissionModal = useCallback(() => {
     if (modalType === 'preprompt') {
-      return (
-        <PrePromptModal
-          onConfirm={handlePrePromptConfirm}
-          onClose={handlePrePromptClose}
-        />
-      )
+      return <PrePromptModal onConfirm={handlePrePromptConfirm} onClose={handlePrePromptClose} />;
     }
     if (modalType === 'denied') {
-      return (
-        <DeniedHelpModal
-          onRetry={handleDeniedRetry}
-          onSkip={handleDeniedSkip}
-        />
-      )
+      return <DeniedHelpModal onRetry={handleDeniedRetry} onSkip={handleDeniedSkip} />;
     }
-    return null
-  }, [modalType, handlePrePromptConfirm, handlePrePromptClose, handleDeniedRetry, handleDeniedSkip])
+    return null;
+  }, [
+    modalType,
+    handlePrePromptConfirm,
+    handlePrePromptClose,
+    handleDeniedRetry,
+    handleDeniedSkip,
+  ]);
 
   return {
     checkAndRequest,
     permissionState,
     PermissionModal,
-  }
+  };
 }

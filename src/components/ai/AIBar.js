@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
-import { useState, useCallback, useTransition } from 'react'
-import styled from 'styled-components'
-import AIResponse from './AIResponse'
-import { askAI } from '@/lib/actions/ai'
+import { useState, useCallback, useTransition } from 'react';
+import styled from 'styled-components';
+import AIResponse from './AIResponse';
+import { askAI } from '@/lib/actions/ai';
 
 const BarWrapper = styled.div`
   display: flex;
@@ -20,7 +20,7 @@ const BarWrapper = styled.div`
     padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
     border-radius: ${({ theme }) => theme.radii.pill};
   }
-`
+`;
 
 const PurpleDot = styled.span`
   width: 8px;
@@ -28,7 +28,7 @@ const PurpleDot = styled.span`
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.purple};
   flex-shrink: 0;
-`
+`;
 
 const Input = styled.input`
   flex: 1;
@@ -43,7 +43,7 @@ const Input = styled.input`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     font-size: 14px;
   }
-`
+`;
 
 const AskButton = styled.button`
   display: flex;
@@ -72,49 +72,58 @@ const AskButton = styled.button`
     background: ${({ theme }) => theme.colors.borderLight};
     justify-content: center;
   }
-`
+`;
 
 const AskText = styled.span`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     display: none;
   }
-`
+`;
 
 const ArrowIcon = styled.span`
   font-size: 16px;
-`
+`;
 
 export default function AIBar({ placeholder, context, onSubmit }) {
-  const [query, setQuery] = useState('')
-  const [response, setResponse] = useState(null)
-  const [isPending, startTransition] = useTransition()
+  const [query, setQuery] = useState('');
+  const [response, setResponse] = useState(null);
+  const [isPending, startTransition] = useTransition();
 
-  const handleSubmit = useCallback((e) => {
-    e.preventDefault()
-    const trimmed = query.trim()
-    if (!trimmed) return
+  const handleSubmit = useCallback(
+    (e) => {
+      e.preventDefault();
+      const trimmed = query.trim();
+      if (!trimmed) return;
 
-    startTransition(async () => {
-      const result = await askAI(trimmed, context || 'general')
-      if (result.success && result.data) {
-        setResponse(result.data)
-        setQuery('')
-        if (onSubmit) onSubmit(trimmed)
-      } else {
-        setResponse({ text: result.error || 'Koda couldn\u2019t respond. Please try again.', isError: true })
-      }
-    })
-  }, [query, context, onSubmit, startTransition])
+      startTransition(async () => {
+        const result = await askAI(trimmed, context || 'general');
+        if (result.success && result.data) {
+          setResponse(result.data);
+          setQuery('');
+          if (onSubmit) onSubmit(trimmed);
+        } else {
+          setResponse({
+            text: result.error || 'Koda couldn\u2019t respond. Please try again.',
+            isError: true,
+          });
+        }
+      });
+    },
+    [query, context, onSubmit, startTransition],
+  );
 
   function handleChipClick(chip) {
     startTransition(async () => {
-      const result = await askAI(chip, context || 'general')
+      const result = await askAI(chip, context || 'general');
       if (result.success && result.data) {
-        setResponse(result.data)
+        setResponse(result.data);
       } else {
-        setResponse({ text: result.error || 'Koda couldn\u2019t respond. Please try again.', isError: true })
+        setResponse({
+          text: result.error || 'Koda couldn\u2019t respond. Please try again.',
+          isError: true,
+        });
       }
-    })
+    });
   }
 
   return (
@@ -125,7 +134,9 @@ export default function AIBar({ placeholder, context, onSubmit }) {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={isPending ? 'Koda is thinking\u2026' : (placeholder || 'Ask Koda anything\u2026')}
+            placeholder={
+              isPending ? 'Koda is thinking\u2026' : placeholder || 'Ask Koda anything\u2026'
+            }
             type="text"
             maxLength={500}
             disabled={isPending}
@@ -143,5 +154,5 @@ export default function AIBar({ placeholder, context, onSubmit }) {
         onChipClick={handleChipClick}
       />
     </>
-  )
+  );
 }

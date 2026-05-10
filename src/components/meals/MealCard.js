@@ -1,18 +1,18 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
+import styled from 'styled-components';
 
 const mealColors = {
   breakfast: { bg: 'amberLight', bgToday: 'amberMid', text: 'amberDark' },
   lunch: { bg: 'tealLight', bgToday: 'tealMid', text: 'tealDark' },
   dinner: { bg: 'purpleLight', bgToday: 'purpleMid', text: 'purpleDark' },
   sides: { bg: 'coralLight', bgToday: 'coralMid', text: 'coral' },
-}
+};
 
 const Card = styled.div`
   background: ${({ $type, $isToday, theme }) => {
-    const colors = mealColors[$type] || mealColors.lunch
-    return theme.colors[$isToday ? colors.bgToday : colors.bg]
+    const colors = mealColors[$type] || mealColors.lunch;
+    return theme.colors[$isToday ? colors.bgToday : colors.bg];
   }};
   border-radius: ${({ theme }) => theme.radii.md};
   padding: 10px 12px;
@@ -20,38 +20,38 @@ const Card = styled.div`
   cursor: pointer;
   transition: all 0.15s ease;
   border: 2px solid ${({ $isSelected, $type, theme }) => {
-    if (!$isSelected) return 'transparent'
-    const colors = mealColors[$type] || mealColors.lunch
-    return theme.colors[colors.text]
+    if (!$isSelected) return 'transparent';
+    const colors = mealColors[$type] || mealColors.lunch;
+    return theme.colors[colors.text];
   }};
 
   &:hover {
     transform: scale(1.02);
   }
-`
+`;
 
 const CardInner = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 8px;
-`
+`;
 
 const CardText = styled.div`
   flex: 1;
   min-width: 0;
-`
+`;
 
 const MealType = styled.span`
   display: block;
   font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 500;
   color: ${({ $type, theme }) => {
-    const colors = mealColors[$type] || mealColors.lunch
-    return theme.colors[colors.text]
+    const colors = mealColors[$type] || mealColors.lunch;
+    return theme.colors[colors.text];
   }};
   margin-bottom: 2px;
   opacity: 0.8;
-`
+`;
 
 const MealName = styled.span`
   display: block;
@@ -61,7 +61,7 @@ const MealName = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`
+`;
 
 const RecipeBadge = styled.span`
   display: inline-flex;
@@ -76,7 +76,7 @@ const RecipeBadge = styled.span`
   margin-top: 4px;
   line-height: 1;
   white-space: nowrap;
-`
+`;
 
 const Thumbnail = styled.div`
   width: 36px;
@@ -92,7 +92,7 @@ const Thumbnail = styled.div`
     object-fit: cover;
     display: block;
   }
-`
+`;
 
 const EmptySlot = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -106,7 +106,7 @@ const EmptySlot = styled.div`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const EmptyMealType = styled.span`
   display: block;
@@ -115,14 +115,14 @@ const EmptyMealType = styled.span`
   color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: 2px;
   opacity: 0.6;
-`
+`;
 
 const EmptyLabel = styled.span`
   display: block;
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textMuted};
   opacity: 0.4;
-`
+`;
 
 export default function MealCard({
   type,
@@ -139,9 +139,9 @@ export default function MealCard({
 }) {
   function handleClick() {
     if (onSlotClick) {
-      onSlotClick(day, type, recipeId ?? null)
+      onSlotClick(day, type, recipeId ?? null);
     } else if (onClick) {
-      onClick()
+      onClick();
     }
   }
 
@@ -151,7 +151,7 @@ export default function MealCard({
         <EmptyMealType>{type}</EmptyMealType>
         <EmptyLabel>—</EmptyLabel>
       </EmptySlot>
-    )
+    );
   }
 
   return (
@@ -160,9 +160,7 @@ export default function MealCard({
         <CardText>
           <MealType $type={type}>{type}</MealType>
           <MealName>{name}</MealName>
-          {recipeId && (
-            <RecipeBadge>recipe linked</RecipeBadge>
-          )}
+          {recipeId && <RecipeBadge>recipe linked</RecipeBadge>}
         </CardText>
         {recipeId && imageUrl && (
           <Thumbnail>
@@ -171,5 +169,5 @@ export default function MealCard({
         )}
       </CardInner>
     </Card>
-  )
+  );
 }

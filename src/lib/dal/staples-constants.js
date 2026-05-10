@@ -12,7 +12,7 @@ export const STAPLE_CATEGORIES = [
   'Fresh Produce Staples',
   'Dairy & Refrigerator Staples',
   'Other',
-]
+];
 
 export const SUGGESTED_STAPLES = {
   'Baking Staples': [
@@ -106,11 +106,11 @@ export const SUGGESTED_STAPLES = {
     'Parmesan cheese',
     'Shredded cheddar',
   ],
-}
+};
 
 /** Flat list of all suggested staple names (lowercase) for quick lookup */
 export const ALL_SUGGESTED_NAMES = new Set(
   Object.values(SUGGESTED_STAPLES)
     .flat()
-    .map(n => n.toLowerCase())
-)
+    .map((n) => n.toLowerCase()),
+);

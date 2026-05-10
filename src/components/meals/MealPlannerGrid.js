@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import MealCard from './MealCard'
-import MealDetailInline from './MealDetailInline'
+import styled from 'styled-components';
+import MealCard from './MealCard';
+import MealDetailInline from './MealDetailInline';
 
 const Wrapper = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const Grid = styled.div`
   display: grid;
@@ -17,7 +17,7 @@ const Grid = styled.div`
     grid-template-columns: 1fr;
     gap: ${({ theme }) => theme.spacing.sm};
   }
-`
+`;
 
 const DayColumn = styled.div`
   display: flex;
@@ -30,12 +30,12 @@ const DayColumn = styled.div`
     border-radius: ${({ theme }) => theme.radii.lg};
     padding: ${({ theme }) => theme.spacing.md};
   }
-`
+`;
 
 const DayHeader = styled.div`
   font-size: 14px;
-  font-weight: ${({ $isToday }) => $isToday ? 600 : 500};
-  color: ${({ $isToday, theme }) => $isToday ? theme.colors.teal : theme.colors.textPrimary};
+  font-weight: ${({ $isToday }) => ($isToday ? 600 : 500)};
+  color: ${({ $isToday, theme }) => ($isToday ? theme.colors.teal : theme.colors.textPrimary)};
   padding-bottom: ${({ theme }) => theme.spacing.sm};
   display: flex;
   align-items: center;
@@ -43,23 +43,23 @@ const DayHeader = styled.div`
   border-bottom: 2px solid ${({ $isToday, theme }) =>
     $isToday ? theme.colors.teal : theme.colors.borderLight};
   margin-bottom: ${({ theme }) => theme.spacing.xs};
-`
+`;
 
 const TodayDot = styled.span`
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.teal};
-`
+`;
 
 const DayDate = styled.span`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-weight: 400;
   margin-left: auto;
-`
+`;
 
-const SIDES_TYPES = ['sides', 'sides2', 'sides3', 'sides4']
+const SIDES_TYPES = ['sides', 'sides2', 'sides3', 'sides4'];
 
 // Small pill shown below breakfast/lunch when an optional side has been added
 const MealSidePill = styled.button`
@@ -80,7 +80,7 @@ const MealSidePill = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const SidePillLabel = styled.span`
   font-size: 11px;
@@ -89,7 +89,7 @@ const SidePillLabel = styled.span`
   text-transform: uppercase;
   letter-spacing: 0.04em;
   flex-shrink: 0;
-`
+`;
 
 const SidePillName = styled.span`
   font-size: 12px;
@@ -98,7 +98,7 @@ const SidePillName = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`
+`;
 
 // --- Combined dinner + sides card ---
 
@@ -107,16 +107,16 @@ const CombinedCard = styled.div`
   overflow: hidden;
   cursor: pointer;
   border: ${({ $anySelected, $anyFilled, $accentColor, $accentLight, theme }) => {
-    if ($anySelected) return `2px solid ${theme.colors[$accentColor || 'purpleDark']}`
-    if ($anyFilled) return `1.5px solid ${theme.colors[$accentLight || 'purpleLight']}`
-    return `1.5px dashed ${theme.colors.border}`
+    if ($anySelected) return `2px solid ${theme.colors[$accentColor || 'purpleDark']}`;
+    if ($anyFilled) return `1.5px solid ${theme.colors[$accentLight || 'purpleLight']}`;
+    return `1.5px dashed ${theme.colors.border}`;
   }};
   transition: box-shadow 0.15s ease;
 
   &:hover {
     box-shadow: ${({ theme }) => theme.shadows.card};
   }
-`
+`;
 
 const CombinedHalf = styled.div`
   padding: 10px 12px;
@@ -125,24 +125,24 @@ const CombinedHalf = styled.div`
   align-items: flex-start;
   gap: 8px;
   background: ${({ $fillBg, $fillBgToday, $isToday, $isEmpty, theme }) => {
-    if ($isEmpty) return theme.colors.surface
-    return theme.colors[$isToday ? ($fillBgToday || 'purpleMid') : ($fillBg || 'purpleLight')]
+    if ($isEmpty) return theme.colors.surface;
+    return theme.colors[$isToday ? $fillBgToday || 'purpleMid' : $fillBg || 'purpleLight'];
   }};
 
   &:hover {
     filter: brightness(0.97);
   }
-`
+`;
 
 const HalfDivider = styled.div`
   height: 1px;
   background: ${({ theme }) => theme.colors.borderLight};
-`
+`;
 
 const HalfText = styled.div`
   flex: 1;
   min-width: 0;
-`
+`;
 
 const HalfLabel = styled.span`
   display: block;
@@ -151,21 +151,21 @@ const HalfLabel = styled.span`
   opacity: 0.8;
   margin-bottom: 2px;
   color: ${({ $fillText, $isEmpty, theme }) => {
-    if ($isEmpty) return theme.colors.textMuted
-    return theme.colors[$fillText || 'purpleDark']
+    if ($isEmpty) return theme.colors.textMuted;
+    return theme.colors[$fillText || 'purpleDark'];
   }};
-`
+`;
 
 const HalfName = styled.span`
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: ${({ $isEmpty, theme }) => $isEmpty ? theme.colors.textMuted : theme.colors.textPrimary};
-  opacity: ${({ $isEmpty }) => $isEmpty ? 0.4 : 1};
+  color: ${({ $isEmpty, theme }) => ($isEmpty ? theme.colors.textMuted : theme.colors.textPrimary)};
+  opacity: ${({ $isEmpty }) => ($isEmpty ? 0.4 : 1)};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`
+`;
 
 const HalfRecipeBadge = styled.span`
   display: inline-flex;
@@ -180,7 +180,7 @@ const HalfRecipeBadge = styled.span`
   margin-top: 4px;
   line-height: 1;
   white-space: nowrap;
-`
+`;
 
 const HalfThumbnail = styled.div`
   width: 32px;
@@ -196,14 +196,24 @@ const HalfThumbnail = styled.div`
     object-fit: cover;
     display: block;
   }
-`
+`;
 
-function DinnerSidesCard({ dinner, sidesSlots, dessertSlot, day, isToday, selectedMeal, onHalfClick }) {
-  const dinnerSelected    = selectedMeal && selectedMeal.day === day && selectedMeal.type === 'dinner'
-  const anySidesSelected  = selectedMeal && selectedMeal.day === day && SIDES_TYPES.includes(selectedMeal.type)
-  const dessertSelected   = selectedMeal && selectedMeal.day === day && selectedMeal.type === 'dinner_dessert'
-  const anySelected       = dinnerSelected || anySidesSelected || dessertSelected
-  const anyFilled         = !!(dinner.name || sidesSlots.some(s => s.name) || dessertSlot?.name)
+function DinnerSidesCard({
+  dinner,
+  sidesSlots,
+  dessertSlot,
+  day,
+  isToday,
+  selectedMeal,
+  onHalfClick,
+}) {
+  const dinnerSelected = selectedMeal && selectedMeal.day === day && selectedMeal.type === 'dinner';
+  const anySidesSelected =
+    selectedMeal && selectedMeal.day === day && SIDES_TYPES.includes(selectedMeal.type);
+  const dessertSelected =
+    selectedMeal && selectedMeal.day === day && selectedMeal.type === 'dinner_dessert';
+  const anySelected = dinnerSelected || anySidesSelected || dessertSelected;
+  const anyFilled = !!(dinner.name || sidesSlots.some((s) => s.name) || dessertSlot?.name);
 
   return (
     <CombinedCard $anySelected={anySelected} $anyFilled={anyFilled}>
@@ -216,7 +226,9 @@ function DinnerSidesCard({ dinner, sidesSlots, dessertSlot, day, isToday, select
         onClick={() => onHalfClick(dinner, day)}
       >
         <HalfText>
-          <HalfLabel $fillText="purpleDark" $isEmpty={!dinner.name}>dinner</HalfLabel>
+          <HalfLabel $fillText="purpleDark" $isEmpty={!dinner.name}>
+            dinner
+          </HalfLabel>
           <HalfName $isEmpty={!dinner.name}>{dinner.name || '—'}</HalfName>
           {dinner.recipeId && <HalfRecipeBadge>recipe linked</HalfRecipeBadge>}
         </HalfText>
@@ -240,7 +252,9 @@ function DinnerSidesCard({ dinner, sidesSlots, dessertSlot, day, isToday, select
             onClick={() => onHalfClick(sides, day)}
           >
             <HalfText>
-              <HalfLabel $fillText="purpleDark" $isEmpty={!sides.name}>sides</HalfLabel>
+              <HalfLabel $fillText="purpleDark" $isEmpty={!sides.name}>
+                sides
+              </HalfLabel>
               <HalfName $isEmpty={!sides.name}>{sides.name || '—'}</HalfName>
               {sides.recipeId && <HalfRecipeBadge>recipe linked</HalfRecipeBadge>}
             </HalfText>
@@ -266,7 +280,9 @@ function DinnerSidesCard({ dinner, sidesSlots, dessertSlot, day, isToday, select
             onClick={() => onHalfClick(dessertSlot, day)}
           >
             <HalfText>
-              <HalfLabel $fillText="purpleDark" $isEmpty={!dessertSlot.name}>dessert</HalfLabel>
+              <HalfLabel $fillText="purpleDark" $isEmpty={!dessertSlot.name}>
+                dessert
+              </HalfLabel>
               <HalfName $isEmpty={!dessertSlot.name}>{dessertSlot.name || '—'}</HalfName>
               {dessertSlot.recipeId && <HalfRecipeBadge>recipe linked</HalfRecipeBadge>}
             </HalfText>
@@ -280,22 +296,40 @@ function DinnerSidesCard({ dinner, sidesSlots, dessertSlot, day, isToday, select
         </div>
       )}
     </CombinedCard>
-  )
+  );
 }
 
 // ─── Generic meal + side combined card (breakfast / lunch) ────────────────────
 
 const MEAL_HALF_COLORS = {
-  breakfast: { bg: 'amberLight', bgToday: 'amberMid', text: 'amberDark', accent: 'amber',   accentLight: 'amberMid' },
-  lunch:     { bg: 'tealLight',  bgToday: 'tealMid',  text: 'tealDark',  accent: 'teal',    accentLight: 'tealMid'  },
-}
+  breakfast: {
+    bg: 'amberLight',
+    bgToday: 'amberMid',
+    text: 'amberDark',
+    accent: 'amber',
+    accentLight: 'amberMid',
+  },
+  lunch: {
+    bg: 'tealLight',
+    bgToday: 'tealMid',
+    text: 'tealDark',
+    accent: 'teal',
+    accentLight: 'tealMid',
+  },
+};
 
 function MealWithSideCard({ mainMeal, sideSlot, day, isToday, selectedMeal, onHalfClick }) {
-  const c = MEAL_HALF_COLORS[mainMeal.type] || { bg: 'purpleLight', bgToday: 'purpleMid', text: 'purpleDark', accent: 'purpleDark', accentLight: 'purpleLight' }
-  const mainSelected = selectedMeal?.day === day && selectedMeal?.type === mainMeal.type
-  const sideSelected = selectedMeal?.day === day && selectedMeal?.type === sideSlot.type
-  const anySelected  = mainSelected || sideSelected
-  const anyFilled    = !!(mainMeal.name || sideSlot.name)
+  const c = MEAL_HALF_COLORS[mainMeal.type] || {
+    bg: 'purpleLight',
+    bgToday: 'purpleMid',
+    text: 'purpleDark',
+    accent: 'purpleDark',
+    accentLight: 'purpleLight',
+  };
+  const mainSelected = selectedMeal?.day === day && selectedMeal?.type === mainMeal.type;
+  const sideSelected = selectedMeal?.day === day && selectedMeal?.type === sideSlot.type;
+  const anySelected = mainSelected || sideSelected;
+  const anyFilled = !!(mainMeal.name || sideSlot.name);
 
   return (
     <CombinedCard
@@ -313,7 +347,9 @@ function MealWithSideCard({ mainMeal, sideSlot, day, isToday, selectedMeal, onHa
         onClick={() => onHalfClick(mainMeal, day)}
       >
         <HalfText>
-          <HalfLabel $fillText={c.text} $isEmpty={!mainMeal.name}>{mainMeal.type}</HalfLabel>
+          <HalfLabel $fillText={c.text} $isEmpty={!mainMeal.name}>
+            {mainMeal.type}
+          </HalfLabel>
           <HalfName $isEmpty={!mainMeal.name}>{mainMeal.name || '—'}</HalfName>
           {mainMeal.recipeId && <HalfRecipeBadge>recipe linked</HalfRecipeBadge>}
         </HalfText>
@@ -336,7 +372,9 @@ function MealWithSideCard({ mainMeal, sideSlot, day, isToday, selectedMeal, onHa
         onClick={() => onHalfClick(sideSlot, day)}
       >
         <HalfText>
-          <HalfLabel $fillText={c.text} $isEmpty={!sideSlot.name}>side</HalfLabel>
+          <HalfLabel $fillText={c.text} $isEmpty={!sideSlot.name}>
+            side
+          </HalfLabel>
           <HalfName $isEmpty={!sideSlot.name}>{sideSlot.name || '—'}</HalfName>
           {sideSlot.recipeId && <HalfRecipeBadge>recipe linked</HalfRecipeBadge>}
         </HalfText>
@@ -348,7 +386,7 @@ function MealWithSideCard({ mainMeal, sideSlot, day, isToday, selectedMeal, onHa
         )}
       </CombinedHalf>
     </CombinedCard>
-  )
+  );
 }
 
 export default function MealPlannerGrid({
@@ -366,33 +404,25 @@ export default function MealPlannerGrid({
   function handleCardClick(meal, day) {
     if (meal.name) {
       // Meal exists (linked recipe or manual) — expand inline detail
-      if (
-        selectedMeal &&
-        selectedMeal.day === day &&
-        selectedMeal.type === meal.type
-      ) {
-        onSelectMeal(null)
+      if (selectedMeal && selectedMeal.day === day && selectedMeal.type === meal.type) {
+        onSelectMeal(null);
       } else {
-        onSelectMeal({ ...meal, day })
+        onSelectMeal({ ...meal, day });
       }
-      return
+      return;
     }
 
     // Empty slot — open the picker modal
     if (onSlotClick) {
-      onSlotClick(day, meal.type, null)
-      return
+      onSlotClick(day, meal.type, null);
+      return;
     }
 
     // Fallback: toggle inline detail when no picker is wired
-    if (
-      selectedMeal &&
-      selectedMeal.day === day &&
-      selectedMeal.type === meal.type
-    ) {
-      onSelectMeal(null)
+    if (selectedMeal && selectedMeal.day === day && selectedMeal.type === meal.type) {
+      onSelectMeal(null);
     } else {
-      onSelectMeal({ ...meal, day })
+      onSelectMeal({ ...meal, day });
     }
   }
 
@@ -400,17 +430,21 @@ export default function MealPlannerGrid({
     <Wrapper>
       <Grid>
         {meals.map((day) => {
-          const dinnerMeal = day.meals.find((m) => m.type === 'dinner') ?? { type: 'dinner' }
+          const dinnerMeal = day.meals.find((m) => m.type === 'dinner') ?? { type: 'dinner' };
 
           // Only show filled sides — no blank placeholder slot
-          const allSidesSlots = SIDES_TYPES.map(t => day.meals.find(m => m.type === t) ?? { type: t })
-          const filledSides   = allSidesSlots.filter(s => s.name)
-          const dessertSlot   = day.meals.find(m => m.type === 'dinner_dessert') ?? null
+          const allSidesSlots = SIDES_TYPES.map(
+            (t) => day.meals.find((m) => m.type === t) ?? { type: t },
+          );
+          const filledSides = allSidesSlots.filter((s) => s.name);
+          const dessertSlot = day.meals.find((m) => m.type === 'dinner_dessert') ?? null;
 
           const dinnerOrSidesSelected =
             selectedMeal &&
             selectedMeal.day === day.day &&
-            (selectedMeal.type === 'dinner' || SIDES_TYPES.includes(selectedMeal.type) || selectedMeal.type === 'dinner_dessert')
+            (selectedMeal.type === 'dinner' ||
+              SIDES_TYPES.includes(selectedMeal.type) ||
+              selectedMeal.type === 'dinner_dessert');
 
           return (
             <DayColumn key={day.day}>
@@ -422,33 +456,35 @@ export default function MealPlannerGrid({
 
               {/* Breakfast and lunch render individually */}
               {day.meals
-                .filter((meal) =>
-                  meal.type !== 'dinner' &&
-                  !SIDES_TYPES.includes(meal.type) &&
-                  meal.type !== 'breakfast_side' &&
-                  meal.type !== 'lunch_side' &&
-                  meal.type !== 'dinner_dessert'
+                .filter(
+                  (meal) =>
+                    meal.type !== 'dinner' &&
+                    !SIDES_TYPES.includes(meal.type) &&
+                    meal.type !== 'breakfast_side' &&
+                    meal.type !== 'lunch_side' &&
+                    meal.type !== 'dinner_dessert',
                 )
                 .map((meal) => {
                   const isSelected =
-                    selectedMeal &&
-                    selectedMeal.day === day.day &&
-                    selectedMeal.type === meal.type
+                    selectedMeal && selectedMeal.day === day.day && selectedMeal.type === meal.type;
 
                   // Optional side pill (only for breakfast / lunch)
-                  const sideSlotType = meal.type === 'breakfast' ? 'breakfast_side'
-                    : meal.type === 'lunch' ? 'lunch_side'
-                    : null
+                  const sideSlotType =
+                    meal.type === 'breakfast'
+                      ? 'breakfast_side'
+                      : meal.type === 'lunch'
+                        ? 'lunch_side'
+                        : null;
                   const sideSlot = sideSlotType
-                    ? day.meals.find(m => m.type === sideSlotType)
-                    : null
+                    ? day.meals.find((m) => m.type === sideSlotType)
+                    : null;
                   const sideIsSelected =
                     sideSlot?.name &&
                     selectedMeal &&
                     selectedMeal.day === day.day &&
-                    selectedMeal.type === sideSlotType
+                    selectedMeal.type === sideSlotType;
 
-                  const showCombined = !!(sideSlot?.name)
+                  const showCombined = !!sideSlot?.name;
 
                   return (
                     <div key={meal.type}>
@@ -471,9 +507,11 @@ export default function MealPlannerGrid({
                               onRemove={() => onRemove && onRemove(selectedMeal)}
                               onRepeat={onRepeat}
                               weekOffset={weekOffset}
-                              onSidePickerOpen={sideSlotType && onSidePickerOpen
-                                ? (mode) => onSidePickerOpen(day.day, sideSlotType, mode)
-                                : undefined}
+                              onSidePickerOpen={
+                                sideSlotType && onSidePickerOpen
+                                  ? (mode) => onSidePickerOpen(day.day, sideSlotType, mode)
+                                  : undefined
+                              }
                             />
                           )}
                         </>
@@ -500,26 +538,30 @@ export default function MealPlannerGrid({
                               onRemove={() => onRemove && onRemove(selectedMeal)}
                               onRepeat={onRepeat}
                               weekOffset={weekOffset}
-                              onSidePickerOpen={sideSlotType && onSidePickerOpen
-                                ? (mode) => onSidePickerOpen(day.day, sideSlotType, mode)
-                                : undefined}
+                              onSidePickerOpen={
+                                sideSlotType && onSidePickerOpen
+                                  ? (mode) => onSidePickerOpen(day.day, sideSlotType, mode)
+                                  : undefined
+                              }
                             />
                           )}
                         </>
                       )}
                     </div>
-                  )
+                  );
                 })}
 
               {/* Dinner — plain card when no sides/dessert, combined card otherwise */}
               {(() => {
-                const dinnerIsSelected   = selectedMeal?.day === day.day && selectedMeal?.type === 'dinner'
-                const showCombined       = filledSides.length > 0 || !!(dessertSlot?.name)
-                const nextDinnerSideType = SIDES_TYPES.find(t => {
-                  const s = day.meals.find(m => m.type === t)
-                  return !s || !s.name
-                }) ?? null
-                const dinnerDessertType  = dessertSlot?.name ? null : 'dinner_dessert'
+                const dinnerIsSelected =
+                  selectedMeal?.day === day.day && selectedMeal?.type === 'dinner';
+                const showCombined = filledSides.length > 0 || !!dessertSlot?.name;
+                const nextDinnerSideType =
+                  SIDES_TYPES.find((t) => {
+                    const s = day.meals.find((m) => m.type === t);
+                    return !s || !s.name;
+                  }) ?? null;
+                const dinnerDessertType = dessertSlot?.name ? null : 'dinner_dessert';
 
                 const detailPanel = dinnerOrSidesSelected && (
                   <MealDetailInline
@@ -543,7 +585,7 @@ export default function MealPlannerGrid({
                         : undefined
                     }
                   />
-                )
+                );
 
                 return (
                   <div>
@@ -573,12 +615,12 @@ export default function MealPlannerGrid({
                     )}
                     {detailPanel}
                   </div>
-                )
+                );
               })()}
             </DayColumn>
-          )
+          );
         })}
       </Grid>
     </Wrapper>
-  )
+  );
 }

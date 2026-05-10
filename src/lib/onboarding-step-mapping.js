@@ -17,39 +17,39 @@
  *  11  FaithPractices
  */
 
-export const MANUAL_STEP_COUNT = 12
+export const MANUAL_STEP_COUNT = 12;
 
 /**
  * Inspect partial data and return the first incomplete step index (0–11).
  */
 export function determineManualStep(partialData) {
-  if (!partialData) return 0
-  const d = partialData
+  if (!partialData) return 0;
+  const d = partialData;
 
   // Step 0: Household + Members
-  if (!d.household_size || !d.members?.length) return 0
+  if (!d.household_size || !d.members?.length) return 0;
   // Step 1: CookTime
-  if (!d.cook_time_preference) return 1
+  if (!d.cook_time_preference) return 1;
   // Step 2: MealPlanDays
-  if (!d.meal_plan_days?.length) return 2
+  if (!d.meal_plan_days?.length) return 2;
   // Step 3: DietaryRestrictions (optional — check if cuisines exist to skip)
-  if (!d.cuisines?.length && !d.dietary_restrictions_answered) return 3
+  if (!d.cuisines?.length && !d.dietary_restrictions_answered) return 3;
   // Step 4: Cuisines
-  if (!d.cuisines?.length) return 4
+  if (!d.cuisines?.length) return 4;
   // Step 5: Adventurousness
-  if (!d.adventurousness) return 5
+  if (!d.adventurousness) return 5;
   // Step 6: MealPrepStyle
-  if (!d.meal_prep_style) return 6
+  if (!d.meal_prep_style) return 6;
   // Step 7: Frustrations
-  if (!d.cooking_frustrations?.length) return 7
+  if (!d.cooking_frustrations?.length) return 7;
   // Step 8: Budget
-  if (!d.weekly_budget) return 8
+  if (!d.weekly_budget) return 8;
   // Step 9: FavoriteStores
-  if (!d.preferred_stores?.length) return 9
+  if (!d.preferred_stores?.length) return 9;
   // Step 10: HealthGoals
-  if (!d.health_goals?.length) return 10
+  if (!d.health_goals?.length) return 10;
   // Step 11: FaithPractices — always last
-  return 11
+  return 11;
 }
 
 /**
@@ -57,17 +57,20 @@ export function determineManualStep(partialData) {
  * for ManualStepsFlow. Merges with initialData from the server page component.
  */
 export function partialDataToFormState(partialData, initialData = {}) {
-  const d = partialData || {}
-  const init = initialData || {}
+  const d = partialData || {};
+  const init = initialData || {};
 
   return {
     // Step 0 — HouseholdSize + Members
     numAdults: d.household_size
-      ? Math.max(1, (d.household_size || 2) - (d.members?.filter(m => m.age && m.age < 18).length || 0))
-      : (init.household_size || 2),
-    numChildren: d.members?.filter(m => m.age && m.age < 18).length || 0,
+      ? Math.max(
+          1,
+          (d.household_size || 2) - (d.members?.filter((m) => m.age && m.age < 18).length || 0),
+        )
+      : init.household_size || 2,
+    numChildren: d.members?.filter((m) => m.age && m.age < 18).length || 0,
     members: d.members?.length
-      ? d.members.map(m => ({
+      ? d.members.map((m) => ({
           name: m.name || '',
           age: m.age ?? null,
           age_group: m.age_group || (m.age && m.age < 18 ? 'child' : 'adult'),
@@ -81,7 +84,7 @@ export function partialDataToFormState(partialData, initialData = {}) {
           macro_carbs_g: m.macro_carbs_g ?? null,
           macro_fat_g: m.macro_fat_g ?? null,
         }))
-      : (init.householdMembers || []),
+      : init.householdMembers || [],
 
     // Step 1 — CookTime
     cookTime: d.cook_time_preference || init.cook_time_preference || null,
@@ -122,7 +125,7 @@ export function partialDataToFormState(partialData, initialData = {}) {
 
     // Step 11 — FaithPractices
     faithPractices: d.faith_practices || null,
-  }
+  };
 }
 
 /**
@@ -130,9 +133,10 @@ export function partialDataToFormState(partialData, initialData = {}) {
  */
 export function formStateToPartialData(formState) {
   return {
-    household_size: (formState.members?.length || 0) > 0
-      ? formState.members.length
-      : formState.numAdults + formState.numChildren,
+    household_size:
+      (formState.members?.length || 0) > 0
+        ? formState.members.length
+        : formState.numAdults + formState.numChildren,
     household_type: formState.numChildren > 0 ? 'includes_kids' : 'adults_only',
     members: formState.members,
     cook_time_preference: formState.cookTime,
@@ -152,5 +156,5 @@ export function formStateToPartialData(formState) {
     health_goals: formState.healthGoals,
     daily_carb_limit: formState.dailyCarbLimit,
     faith_practices: formState.faithPractices,
-  }
+  };
 }

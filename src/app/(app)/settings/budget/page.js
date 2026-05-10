@@ -1,14 +1,14 @@
-import { requireUser } from '@/lib/dal/require-user'
-import { getOnboardingProfile } from '@/lib/dal/onboarding'
-import { getCookingPreferences } from '@/lib/dal/cooking-preferences'
-import BudgetSettingsClient from './BudgetSettingsClient'
+import { requireUser } from '@/lib/dal/require-user';
+import { getOnboardingProfile } from '@/lib/dal/onboarding';
+import { getCookingPreferences } from '@/lib/dal/cooking-preferences';
+import BudgetSettingsClient from './BudgetSettingsClient';
 
 export default async function BudgetSettingsPage() {
-  const user = await requireUser()
+  const user = await requireUser();
   const [op, cookingPrefs] = await Promise.all([
     getOnboardingProfile(user.id).catch(() => ({})),
     getCookingPreferences(user.id).catch(() => null),
-  ])
+  ]);
 
   return (
     <BudgetSettingsClient
@@ -17,5 +17,5 @@ export default async function BudgetSettingsPage() {
       shoppingStyle={op.shopping_style || null}
       deliveryService={op.preferred_delivery_service || null}
     />
-  )
+  );
 }

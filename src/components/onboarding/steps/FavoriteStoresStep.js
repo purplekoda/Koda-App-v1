@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import styled from 'styled-components'
-import StepShell from '../shared/StepShell'
-import { GROCERY_STORES, GROCERY_CATEGORIES, storeColor } from '@/data/grocery-stores'
+import { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import StepShell from '../shared/StepShell';
+import { GROCERY_STORES, GROCERY_CATEGORIES, storeColor } from '@/data/grocery-stores';
 
 // ── Styled components ──────────────────────────────────
 
@@ -28,7 +28,7 @@ const SearchInput = styled.input`
   &::placeholder {
     color: ${({ theme }) => theme.colors.textMuted};
   }
-`
+`;
 
 const SectionHeader = styled.div`
   font-size: 12px;
@@ -38,23 +38,23 @@ const SectionHeader = styled.div`
   color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
   margin-top: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const StoreGrid = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const StoreCard = styled.button`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
-  border: 1.5px solid ${({ $selected, theme }) => $selected ? theme.colors.teal : theme.colors.border};
+  border: 1.5px solid ${({ $selected, theme }) => ($selected ? theme.colors.teal : theme.colors.border)};
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ $selected, theme }) => $selected ? theme.colors.tealLight + '20' : theme.colors.surface};
+  background: ${({ $selected, theme }) => ($selected ? theme.colors.tealLight + '20' : theme.colors.surface)};
   cursor: pointer;
   text-align: left;
   transition: all 0.15s;
@@ -63,7 +63,7 @@ const StoreCard = styled.button`
   &:hover {
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const StoreIcon = styled.div`
   width: 36px;
@@ -75,18 +75,18 @@ const StoreIcon = styled.div`
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-`
+`;
 
 const StoreInitial = styled.span`
   font-size: 14px;
   font-weight: 700;
   color: ${({ $color }) => $color};
-`
+`;
 
 const StoreInfo = styled.div`
   flex: 1;
   min-width: 0;
-`
+`;
 
 const StoreName = styled.div`
   font-size: 15px;
@@ -95,13 +95,13 @@ const StoreName = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-`
+`;
 
 const StoreDesc = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 1px;
-`
+`;
 
 const NearYouBadge = styled.span`
   font-size: 11px;
@@ -111,14 +111,14 @@ const NearYouBadge = styled.span`
   background: #DCFCE7;
   color: #166534;
   white-space: nowrap;
-`
+`;
 
 const Checkbox = styled.div`
   width: 22px;
   height: 22px;
   border-radius: ${({ theme }) => theme.radii.sm};
-  border: 2px solid ${({ $checked, theme }) => $checked ? theme.colors.teal : theme.colors.border};
-  background: ${({ $checked, theme }) => $checked ? theme.colors.teal : 'transparent'};
+  border: 2px solid ${({ $checked, theme }) => ($checked ? theme.colors.teal : theme.colors.border)};
+  background: ${({ $checked, theme }) => ($checked ? theme.colors.teal : 'transparent')};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -126,19 +126,19 @@ const Checkbox = styled.div`
   transition: all 0.15s;
 
   &::after {
-    content: '${({ $checked }) => $checked ? '\\2713' : ''}';
+    content: '${({ $checked }) => ($checked ? '\\2713' : '')}';
     color: white;
     font-size: 13px;
     font-weight: 700;
   }
-`
+`;
 
 const SelectedCount = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.teal};
   font-weight: 500;
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const OtherInput = styled.input`
   width: 100%;
@@ -155,7 +155,7 @@ const OtherInput = styled.input`
     outline: none;
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 // ── Category assignment (collapsed) ───────────────────
 
@@ -164,7 +164,7 @@ const ExpandSection = styled.div`
   border: 0.5px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.lg};
   overflow: hidden;
-`
+`;
 
 const ExpandHeader = styled.button`
   display: flex;
@@ -178,56 +178,54 @@ const ExpandHeader = styled.button`
   font-size: 14px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const Chevron = styled.span`
   font-size: 16px;
-  transform: ${({ $open }) => $open ? 'rotate(180deg)' : 'rotate(0)'};
+  transform: ${({ $open }) => ($open ? 'rotate(180deg)' : 'rotate(0)')};
   transition: transform 0.2s;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const ExpandBody = styled.div`
   padding: ${({ theme }) => theme.spacing.lg};
   border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
-`
+`;
 
 const CategoryStoreRow = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.lg};
 
   &:last-child { margin-bottom: 0; }
-`
+`;
 
 const CategoryStoreName = styled.div`
   font-size: 14px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const CatChipRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-`
+`;
 
 const CatChip = styled.button`
   font-size: 12px;
   padding: 3px 10px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  border: 0.5px solid ${({ $active, theme }) =>
-    $active ? '#85B7EB' : theme.colors.border};
+  border: 0.5px solid ${({ $active, theme }) => ($active ? '#85B7EB' : theme.colors.border)};
   background: ${({ $active, theme }) =>
     $active ? theme.colors.blueLight : theme.colors.background};
-  color: ${({ $active, theme }) =>
-    $active ? theme.colors.blue : theme.colors.textSecondary};
+  color: ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.textSecondary)};
   cursor: pointer;
   transition: all 0.15s;
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.blue};
   }
-`
+`;
 
 // ── Component ──────────────────────────────────────────
 
@@ -244,14 +242,14 @@ export default function FavoriteStoresStep({
   isPending,
   voiceMode = false,
 }) {
-  const [search, setSearch] = useState('')
-  const [nearYouStores, setNearYouStores] = useState([])
-  const [locationState, setLocationState] = useState(null)
-  const [expanded, setExpanded] = useState(false)
+  const [search, setSearch] = useState('');
+  const [nearYouStores, setNearYouStores] = useState([]);
+  const [locationState, setLocationState] = useState(null);
+  const [expanded, setExpanded] = useState(false);
 
   // ── Location detection ─────────────────────────────
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function detectLocation() {
       try {
@@ -260,32 +258,32 @@ export default function FavoriteStoresStep({
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             timeout: 8000,
             maximumAge: 300000,
-          })
-        })
+          });
+        });
 
-        if (cancelled) return
+        if (cancelled) return;
 
-        const { latitude, longitude } = position.coords
+        const { latitude, longitude } = position.coords;
 
         // Step 2: Reverse geocode with Nominatim
         const geoRes = await fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-          { headers: { 'User-Agent': 'KodaApp/1.0' } }
-        )
-        if (!geoRes.ok) return
+          { headers: { 'User-Agent': 'KodaApp/1.0' } },
+        );
+        if (!geoRes.ok) return;
 
-        const geoData = await geoRes.json()
-        if (cancelled) return
+        const geoData = await geoRes.json();
+        if (cancelled) return;
 
-        const state = geoData.address?.state || ''
-        const city = geoData.address?.city || geoData.address?.town || ''
-        if (state) setLocationState(state)
+        const state = geoData.address?.state || '';
+        const city = geoData.address?.city || geoData.address?.town || '';
+        if (state) setLocationState(state);
 
         // Step 3: Ask Gemini for regional store recommendations
-        const region = city ? `${city}, ${state}` : state
-        if (!region) return
+        const region = city ? `${city}, ${state}` : state;
+        if (!region) return;
 
-        const storeNames = GROCERY_STORES.filter(s => s.value !== 'other').map(s => s.label)
+        const storeNames = GROCERY_STORES.filter((s) => s.value !== 'other').map((s) => s.label);
         const res = await fetch('/api/ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -293,75 +291,77 @@ export default function FavoriteStoresStep({
             prompt: `List the top grocery store chains most commonly available in ${region}. Only include stores from this list: ${storeNames.join(', ')}. Return ONLY a JSON array of store names, ordered by prevalence. Example: ["Walmart","Kroger","Target"]`,
             context: 'grocery',
           }),
-        })
+        });
 
-        if (!res.ok || cancelled) return
-        const aiData = await res.json()
-        if (cancelled) return
+        if (!res.ok || cancelled) return;
+        const aiData = await res.json();
+        if (cancelled) return;
 
         // Parse the AI response — it should be a JSON array
-        let recommended = []
+        let recommended = [];
         try {
-          const text = aiData.message || aiData.response || ''
-          const match = text.match(/\[[\s\S]*\]/)
-          if (match) recommended = JSON.parse(match[0])
+          const text = aiData.message || aiData.response || '';
+          const match = text.match(/\[[\s\S]*\]/);
+          if (match) recommended = JSON.parse(match[0]);
         } catch {
           // AI response wasn't parseable, skip
         }
 
-        if (cancelled || !Array.isArray(recommended)) return
+        if (cancelled || !Array.isArray(recommended)) return;
 
         // Map store names to values
         const nearValues = recommended
-          .map(name => GROCERY_STORES.find(
-            s => s.label.toLowerCase() === name.toLowerCase() || s.value === name.toLowerCase()
-          ))
+          .map((name) =>
+            GROCERY_STORES.find(
+              (s) => s.label.toLowerCase() === name.toLowerCase() || s.value === name.toLowerCase(),
+            ),
+          )
           .filter(Boolean)
-          .map(s => s.value)
+          .map((s) => s.value);
 
-        setNearYouStores(nearValues)
+        setNearYouStores(nearValues);
       } catch {
         // Location denied or failed — silently fall back to full list
       }
     }
 
-    detectLocation()
-    return () => { cancelled = true }
-  }, [])
+    detectLocation();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // ── Helpers ────────────────────────────────────────
 
-  const allStores = GROCERY_STORES.filter(s => s.value !== 'other')
-  const searchLower = search.toLowerCase()
+  const allStores = GROCERY_STORES.filter((s) => s.value !== 'other');
+  const searchLower = search.toLowerCase();
   const filteredStores = searchLower
-    ? allStores.filter(s => s.label.toLowerCase().includes(searchLower))
-    : allStores
+    ? allStores.filter((s) => s.label.toLowerCase().includes(searchLower))
+    : allStores;
 
-  const nearYouFiltered = filteredStores.filter(s => nearYouStores.includes(s.value))
-  const allOthers = filteredStores.filter(s => !nearYouStores.includes(s.value))
+  const nearYouFiltered = filteredStores.filter((s) => nearYouStores.includes(s.value));
+  const allOthers = filteredStores.filter((s) => !nearYouStores.includes(s.value));
 
   function toggleStore(value) {
-    onChangeStores(prev => {
-      if (prev.includes(value)) return prev.filter(v => v !== value)
-      return [...prev, value]
-    })
+    onChangeStores((prev) => {
+      if (prev.includes(value)) return prev.filter((v) => v !== value);
+      return [...prev, value];
+    });
   }
 
   function toggleCategory(storeValue, cat) {
-    onChangeCategoryAssignments(prev => {
-      const current = prev[storeValue] || []
-      const next = current.includes(cat)
-        ? current.filter(c => c !== cat)
-        : [...current, cat]
-      return { ...prev, [storeValue]: next }
-    })
+    onChangeCategoryAssignments((prev) => {
+      const current = prev[storeValue] || [];
+      const next = current.includes(cat) ? current.filter((c) => c !== cat) : [...current, cat];
+      return { ...prev, [storeValue]: next };
+    });
   }
 
-  const storeLabel = (value) => GROCERY_STORES.find(s => s.value === value)?.label || value
+  const storeLabel = (value) => GROCERY_STORES.find((s) => s.value === value)?.label || value;
 
   function renderStoreCard(store, isNearYou = false) {
-    const color = storeColor(store.value)
-    const checked = selectedStores.includes(store.value)
+    const color = storeColor(store.value);
+    const checked = selectedStores.includes(store.value);
     return (
       <StoreCard
         key={store.value}
@@ -381,7 +381,7 @@ export default function FavoriteStoresStep({
         </StoreInfo>
         <Checkbox $checked={checked} />
       </StoreCard>
-    )
+    );
   }
 
   return (
@@ -400,26 +400,26 @@ export default function FavoriteStoresStep({
         type="text"
         placeholder="Search stores..."
         value={search}
-        onChange={e => setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)}
       />
 
       {selectedStores.length > 0 && (
-        <SelectedCount>{selectedStores.length} store{selectedStores.length !== 1 ? 's' : ''} selected</SelectedCount>
+        <SelectedCount>
+          {selectedStores.length} store{selectedStores.length !== 1 ? 's' : ''} selected
+        </SelectedCount>
       )}
 
       {nearYouFiltered.length > 0 && (
         <>
           <SectionHeader>Near you</SectionHeader>
-          <StoreGrid>
-            {nearYouFiltered.map(s => renderStoreCard(s, true))}
-          </StoreGrid>
+          <StoreGrid>{nearYouFiltered.map((s) => renderStoreCard(s, true))}</StoreGrid>
         </>
       )}
 
-      <SectionHeader>{nearYouFiltered.length > 0 ? 'All stores' : 'Select your stores'}</SectionHeader>
-      <StoreGrid>
-        {allOthers.map(s => renderStoreCard(s))}
-      </StoreGrid>
+      <SectionHeader>
+        {nearYouFiltered.length > 0 ? 'All stores' : 'Select your stores'}
+      </SectionHeader>
+      <StoreGrid>{allOthers.map((s) => renderStoreCard(s))}</StoreGrid>
 
       {/* Other store with custom name */}
       <StoreCard
@@ -436,8 +436,8 @@ export default function FavoriteStoresStep({
           {selectedStores.includes('other') && (
             <OtherInput
               value={otherStoreName}
-              onChange={e => onChangeOtherName(e.target.value)}
-              onClick={e => e.stopPropagation()}
+              onChange={(e) => onChangeOtherName(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
               placeholder="Enter store name"
               maxLength={100}
             />
@@ -449,35 +449,37 @@ export default function FavoriteStoresStep({
       {/* Category assignment (optional, collapsed) */}
       {selectedStores.length > 0 && (
         <ExpandSection>
-          <ExpandHeader type="button" onClick={() => setExpanded(v => !v)}>
+          <ExpandHeader type="button" onClick={() => setExpanded((v) => !v)}>
             Assign food categories to each store
             <Chevron $open={expanded}>{'\u25BE'}</Chevron>
           </ExpandHeader>
           {expanded && (
             <ExpandBody>
-              {selectedStores.filter(v => v !== 'other' || otherStoreName).map(storeValue => (
-                <CategoryStoreRow key={storeValue}>
-                  <CategoryStoreName>
-                    {storeValue === 'other' ? (otherStoreName || 'Other') : storeLabel(storeValue)}
-                  </CategoryStoreName>
-                  <CatChipRow>
-                    {GROCERY_CATEGORIES.map(cat => (
-                      <CatChip
-                        key={cat}
-                        type="button"
-                        $active={(categoryAssignments[storeValue] || []).includes(cat)}
-                        onClick={() => toggleCategory(storeValue, cat)}
-                      >
-                        {cat}
-                      </CatChip>
-                    ))}
-                  </CatChipRow>
-                </CategoryStoreRow>
-              ))}
+              {selectedStores
+                .filter((v) => v !== 'other' || otherStoreName)
+                .map((storeValue) => (
+                  <CategoryStoreRow key={storeValue}>
+                    <CategoryStoreName>
+                      {storeValue === 'other' ? otherStoreName || 'Other' : storeLabel(storeValue)}
+                    </CategoryStoreName>
+                    <CatChipRow>
+                      {GROCERY_CATEGORIES.map((cat) => (
+                        <CatChip
+                          key={cat}
+                          type="button"
+                          $active={(categoryAssignments[storeValue] || []).includes(cat)}
+                          onClick={() => toggleCategory(storeValue, cat)}
+                        >
+                          {cat}
+                        </CatChip>
+                      ))}
+                    </CatChipRow>
+                  </CategoryStoreRow>
+                ))}
             </ExpandBody>
           )}
         </ExpandSection>
       )}
     </StepShell>
-  )
+  );
 }

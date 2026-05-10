@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import { useSettingsMode } from '@/components/settings/SettingsModeContext'
+import styled from 'styled-components';
+import { useSettingsMode } from '@/components/settings/SettingsModeContext';
 
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 0;
   flex: 1;
-`
+`;
 
 const Content = styled.div`
   flex: 1;
   overflow-y: auto;
   padding-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const Title = styled.h1`
   font-size: ${({ theme }) => theme.fontSizes.xl};
@@ -22,14 +22,14 @@ const Title = styled.h1`
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 ${({ theme }) => theme.spacing.sm};
   line-height: 1.2;
-`
+`;
 
 const Subtitle = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.body};
   color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0 0 ${({ theme }) => theme.spacing.xl};
   line-height: 1.5;
-`
+`;
 
 const NavRow = styled.div`
   display: flex;
@@ -37,7 +37,7 @@ const NavRow = styled.div`
   padding-top: ${({ theme }) => theme.spacing.lg};
   border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
   flex-shrink: 0;
-`
+`;
 
 const PrimaryBtn = styled.button`
   flex: 1;
@@ -56,7 +56,7 @@ const PrimaryBtn = styled.button`
     opacity: 0.4;
     cursor: not-allowed;
   }
-`
+`;
 
 const SecondaryBtn = styled.button`
   height: ${({ theme }) => theme.touchTarget};
@@ -71,7 +71,7 @@ const SecondaryBtn = styled.button`
   transition: background 0.15s;
 
   &:hover { background: ${({ theme }) => theme.colors.background}; }
-`
+`;
 
 const SkipLink = styled.button`
   background: none;
@@ -86,7 +86,7 @@ const SkipLink = styled.button`
   transition: text-decoration-color 0.15s;
 
   &:hover { text-decoration-color: currentColor; }
-`
+`;
 
 export default function StepShell({
   title,
@@ -103,15 +103,19 @@ export default function StepShell({
   showSkip = false,
   voiceMode = false,
 }) {
-  const isSettings = useSettingsMode()
+  const isSettings = useSettingsMode();
 
   // In voice mode, render only the form content — no title, subtitle, or nav
   if (voiceMode) {
-    return <Wrapper><Content>{children}</Content></Wrapper>
+    return (
+      <Wrapper>
+        <Content>{children}</Content>
+      </Wrapper>
+    );
   }
 
-  const effectiveNextLabel = isSettings ? 'Save' : nextLabel
-  const effectiveShowSkip = isSettings ? false : showSkip
+  const effectiveNextLabel = isSettings ? 'Save' : nextLabel;
+  const effectiveShowSkip = isSettings ? false : showSkip;
 
   return (
     <Wrapper>
@@ -123,22 +127,22 @@ export default function StepShell({
 
       <NavRow>
         {showBack && onBack && (
-          <SecondaryBtn type="button" onClick={onBack}>Back</SecondaryBtn>
+          <SecondaryBtn type="button" onClick={onBack}>
+            Back
+          </SecondaryBtn>
         )}
         {onNext && (
-          <PrimaryBtn
-            type="button"
-            onClick={onNext}
-            disabled={nextDisabled || isPending}
-          >
+          <PrimaryBtn type="button" onClick={onNext} disabled={nextDisabled || isPending}>
             {isPending ? 'Saving...' : effectiveNextLabel}
           </PrimaryBtn>
         )}
       </NavRow>
 
       {effectiveShowSkip && onSkip && (
-        <SkipLink type="button" onClick={onSkip}>{skipLabel}</SkipLink>
+        <SkipLink type="button" onClick={onSkip}>
+          {skipLabel}
+        </SkipLink>
       )}
     </Wrapper>
-  )
+  );
 }

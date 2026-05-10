@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import { ThemeProvider } from 'styled-components'
-import theme from './theme'
-import GlobalStyles from './GlobalStyles'
+import { ThemeProvider } from 'styled-components';
+import theme from './theme';
+import GlobalStyles from './GlobalStyles';
 
 export default function ThemeWrapper({ children }) {
   return (
@@ -10,5 +10,5 @@ export default function ThemeWrapper({ children }) {
       <GlobalStyles />
       {children}
     </ThemeProvider>
-  )
+  );
 }

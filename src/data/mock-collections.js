@@ -26,7 +26,7 @@ export const mockCollections = [
     created_at: '2026-03-10T10:00:00Z',
     updated_at: '2026-03-10T10:00:00Z',
   },
-]
+];
 
 // Junction table linking recipes to collections (many-to-many)
 export const mockRecipeCollections = [
@@ -35,4 +35,4 @@ export const mockRecipeCollections = [
   { recipe_id: 2, collection_id: 'col-2' }, // Sheet Pan Chicken → Meal Prep
   { recipe_id: 1, collection_id: 'col-3' }, // Overnight Oats → Breakfast Favorites
   { recipe_id: 4, collection_id: 'col-3' }, // Avocado Toast → Breakfast Favorites
-]
+];

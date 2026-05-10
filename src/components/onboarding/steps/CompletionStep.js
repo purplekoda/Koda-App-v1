@@ -1,7 +1,15 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import { COOK_TIME_OPTIONS, ADVENTUROUSNESS_OPTIONS, MEAL_PREP_STYLE_OPTIONS, FRUSTRATION_OPTIONS, HEALTH_GOAL_OPTIONS, DAY_OPTIONS, SHOPPING_STYLE_OPTIONS } from '@/data/onboarding-options'
+import styled from 'styled-components';
+import {
+  COOK_TIME_OPTIONS,
+  ADVENTUROUSNESS_OPTIONS,
+  MEAL_PREP_STYLE_OPTIONS,
+  FRUSTRATION_OPTIONS,
+  HEALTH_GOAL_OPTIONS,
+  DAY_OPTIONS,
+  SHOPPING_STYLE_OPTIONS,
+} from '@/data/onboarding-options';
 
 const Wrapper = styled.div`
   display: flex;
@@ -10,25 +18,25 @@ const Wrapper = styled.div`
   text-align: center;
   flex: 1;
   padding: ${({ theme }) => theme.spacing.xxl} 0;
-`
+`;
 
 const Celebration = styled.div`
   font-size: 56px;
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Title = styled.h1`
   font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const Subtitle = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.body};
   color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0 0 ${({ theme }) => theme.spacing.xxl};
-`
+`;
 
 const SummaryCard = styled.div`
   width: 100%;
@@ -38,7 +46,7 @@ const SummaryCard = styled.div`
   padding: ${({ theme }) => theme.spacing.xl};
   text-align: left;
   margin-bottom: ${({ theme }) => theme.spacing.xxl};
-`
+`;
 
 const SummaryRow = styled.div`
   display: flex;
@@ -49,13 +57,13 @@ const SummaryRow = styled.div`
   & + & {
     border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const SummaryLabel = styled.span`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textTertiary};
   flex-shrink: 0;
-`
+`;
 
 const SummaryValue = styled.span`
   font-size: 13px;
@@ -63,14 +71,14 @@ const SummaryValue = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
   text-align: right;
   margin-left: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const BtnStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
   width: 100%;
-`
+`;
 
 const PrimaryBtn = styled.button`
   width: 100%;
@@ -86,7 +94,7 @@ const PrimaryBtn = styled.button`
 
   &:hover { opacity: 0.9; }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
-`
+`;
 
 const SecondaryBtn = styled.button`
   width: 100%;
@@ -99,15 +107,15 @@ const SecondaryBtn = styled.button`
   cursor: pointer;
 
   &:hover { background: ${({ theme }) => theme.colors.background}; }
-`
+`;
 
 function findLabel(options, value) {
-  const opt = options.find(o => (typeof o === 'string' ? o : o.value) === value)
-  return opt ? (typeof opt === 'string' ? opt : opt.label) : value
+  const opt = options.find((o) => (typeof o === 'string' ? o : o.value) === value);
+  return opt ? (typeof opt === 'string' ? opt : opt.label) : value;
 }
 
 function dayNames(days) {
-  return days.map(d => DAY_OPTIONS.find(o => o.value === d)?.label || d).join(', ')
+  return days.map((d) => DAY_OPTIONS.find((o) => o.value === d)?.label || d).join(', ');
 }
 
 export default function CompletionStep({ data, onStartPlanning, onEditPreferences, isPending }) {
@@ -121,7 +129,9 @@ export default function CompletionStep({ data, onStartPlanning, onEditPreference
         {data.household_size && (
           <SummaryRow>
             <SummaryLabel>Cooking for</SummaryLabel>
-            <SummaryValue>{data.household_size} {data.household_size === 1 ? 'person' : 'people'}</SummaryValue>
+            <SummaryValue>
+              {data.household_size} {data.household_size === 1 ? 'person' : 'people'}
+            </SummaryValue>
           </SummaryRow>
         )}
         {data.cook_time_preference && (
@@ -139,7 +149,10 @@ export default function CompletionStep({ data, onStartPlanning, onEditPreference
         {data.cuisines?.length > 0 && (
           <SummaryRow>
             <SummaryLabel>Favorite cuisines</SummaryLabel>
-            <SummaryValue>{data.cuisines.slice(0, 4).join(', ')}{data.cuisines.length > 4 ? ` +${data.cuisines.length - 4}` : ''}</SummaryValue>
+            <SummaryValue>
+              {data.cuisines.slice(0, 4).join(', ')}
+              {data.cuisines.length > 4 ? ` +${data.cuisines.length - 4}` : ''}
+            </SummaryValue>
           </SummaryRow>
         )}
         {data.adventurousness && (
@@ -157,7 +170,12 @@ export default function CompletionStep({ data, onStartPlanning, onEditPreference
         {data.cooking_frustrations?.length > 0 && (
           <SummaryRow>
             <SummaryLabel>Top frustrations</SummaryLabel>
-            <SummaryValue>{data.cooking_frustrations.slice(0, 3).map(f => findLabel(FRUSTRATION_OPTIONS, f)).join(', ')}</SummaryValue>
+            <SummaryValue>
+              {data.cooking_frustrations
+                .slice(0, 3)
+                .map((f) => findLabel(FRUSTRATION_OPTIONS, f))
+                .join(', ')}
+            </SummaryValue>
           </SummaryRow>
         )}
         {data.weekly_budget > 0 && (
@@ -175,13 +193,20 @@ export default function CompletionStep({ data, onStartPlanning, onEditPreference
         {data.favorite_stores?.length > 0 && (
           <SummaryRow>
             <SummaryLabel>Favorite stores</SummaryLabel>
-            <SummaryValue>{data.favorite_stores.length} store{data.favorite_stores.length !== 1 ? 's' : ''}</SummaryValue>
+            <SummaryValue>
+              {data.favorite_stores.length} store{data.favorite_stores.length !== 1 ? 's' : ''}
+            </SummaryValue>
           </SummaryRow>
         )}
         {data.health_goals?.length > 0 && (
           <SummaryRow>
             <SummaryLabel>Health goals</SummaryLabel>
-            <SummaryValue>{data.health_goals.slice(0, 3).map(g => findLabel(HEALTH_GOAL_OPTIONS, g)).join(', ')}</SummaryValue>
+            <SummaryValue>
+              {data.health_goals
+                .slice(0, 3)
+                .map((g) => findLabel(HEALTH_GOAL_OPTIONS, g))
+                .join(', ')}
+            </SummaryValue>
           </SummaryRow>
         )}
       </SummaryCard>
@@ -195,5 +220,5 @@ export default function CompletionStep({ data, onStartPlanning, onEditPreference
         </SecondaryBtn>
       </BtnStack>
     </Wrapper>
-  )
+  );
 }

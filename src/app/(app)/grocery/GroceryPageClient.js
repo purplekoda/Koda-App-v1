@@ -1,31 +1,31 @@
-'use client'
+'use client';
 
-import { useState, useTransition, useRef, useEffect } from 'react'
-import styled from 'styled-components'
-import AIBar from '@/components/ai/AIBar'
-import GroceryStepBar from '@/components/grocery/GroceryStepBar'
-import GroceryDeliveryHeader from '@/components/grocery/GroceryDeliveryHeader'
-import StepReviewMeals from '@/components/grocery/StepReviewMeals'
-import StepPantryCheck from '@/components/grocery/StepPantryCheck'
-import StepChooseStore from '@/components/grocery/StepChooseStore'
-import StepSent from '@/components/grocery/StepSent'
-import { toggleGroceryItem, sendToStore } from './actions'
+import { useState, useTransition, useRef, useEffect } from 'react';
+import styled from 'styled-components';
+import AIBar from '@/components/ai/AIBar';
+import GroceryStepBar from '@/components/grocery/GroceryStepBar';
+import GroceryDeliveryHeader from '@/components/grocery/GroceryDeliveryHeader';
+import StepReviewMeals from '@/components/grocery/StepReviewMeals';
+import StepPantryCheck from '@/components/grocery/StepPantryCheck';
+import StepChooseStore from '@/components/grocery/StepChooseStore';
+import StepSent from '@/components/grocery/StepSent';
+import { toggleGroceryItem, sendToStore } from './actions';
 
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const Title = styled.h1`
   font-size: ${({ theme }) => theme.fontSizes.xl};
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const Subtitle = styled.p`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 4px;
-`
+`;
 
 const ButtonRow = styled.div`
   display: flex;
@@ -33,7 +33,7 @@ const ButtonRow = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   margin-top: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const NavButton = styled.button`
   display: flex;
@@ -62,7 +62,7 @@ const NavButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 const Toast = styled.div`
   position: fixed;
@@ -77,14 +77,14 @@ const Toast = styled.div`
   font-weight: 500;
   z-index: 999;
   box-shadow: ${({ theme }) => theme.shadows.elevated};
-`
+`;
 
 const stepSubtitles = [
   'Review your meals and see what ingredients you need',
   'Check what you already have at home',
   'Pick your preferred grocery store',
   'Your list is ready!',
-]
+];
 
 export default function GroceryPageClient({
   initialGroceryItems,
@@ -94,55 +94,58 @@ export default function GroceryPageClient({
   groceryPreferences,
   shoppingStyle,
 }) {
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(0);
   // Pre-select from settings: first saved store, fallback to 'target'
-  const defaultStore = groceryPreferences?.stores?.[0] || 'target'
+  const defaultStore = groceryPreferences?.stores?.[0] || 'target';
   // Default fulfillment based on shopping_style preference
-  const styleFulfillment = shoppingStyle === 'pickup_only' ? 'pickup'
-    : shoppingStyle === 'delivery_preferred' ? 'delivery'
-    : ''
-  const defaultFulfillment = groceryPreferences?.fulfillment || styleFulfillment
-  const [selectedStore, setSelectedStore] = useState(defaultStore)
-  const [selectedFulfillment, setSelectedFulfillment] = useState(defaultFulfillment)
-  const [groceryItems, setGroceryItems] = useState(initialGroceryItems)
-  const [isPending, startTransition] = useTransition()
-  const [toast, setToast] = useState(null)
-  const toastTimeoutRef = useRef(null)
+  const styleFulfillment =
+    shoppingStyle === 'pickup_only'
+      ? 'pickup'
+      : shoppingStyle === 'delivery_preferred'
+        ? 'delivery'
+        : '';
+  const defaultFulfillment = groceryPreferences?.fulfillment || styleFulfillment;
+  const [selectedStore, setSelectedStore] = useState(defaultStore);
+  const [selectedFulfillment, setSelectedFulfillment] = useState(defaultFulfillment);
+  const [groceryItems, setGroceryItems] = useState(initialGroceryItems);
+  const [isPending, startTransition] = useTransition();
+  const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
 
-  useEffect(() => () => clearTimeout(toastTimeoutRef.current), [])
+  useEffect(() => () => clearTimeout(toastTimeoutRef.current), []);
 
-  const selectedStoreObj = stores.find(s => s.id === selectedStore)
-  const needCount = groceryItems.filter(i => i.status === 'need').length
+  const selectedStoreObj = stores.find((s) => s.id === selectedStore);
+  const needCount = groceryItems.filter((i) => i.status === 'need').length;
 
   function showToast(message) {
-    clearTimeout(toastTimeoutRef.current)
-    setToast(message)
-    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500)
+    clearTimeout(toastTimeoutRef.current);
+    setToast(message);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
   }
 
   function handleNext() {
     if (step === 2) {
       startTransition(async () => {
-        const result = await sendToStore(selectedStore)
+        const result = await sendToStore(selectedStore);
         if (result.success) {
-          setStep(3)
+          setStep(3);
         } else {
-          showToast('Failed to send list. Please try again.')
+          showToast('Failed to send list. Please try again.');
         }
-      })
-      return
+      });
+      return;
     }
-    if (step < 3) setStep(step + 1)
+    if (step < 3) setStep(step + 1);
   }
 
   function handleBack() {
-    if (step > 0) setStep(step - 1)
+    if (step > 0) setStep(step - 1);
   }
 
   function handleStartOver() {
-    setStep(0)
-    setSelectedStore(defaultStore)
-    setSelectedFulfillment(defaultFulfillment)
+    setStep(0);
+    setSelectedStore(defaultStore);
+    setSelectedFulfillment(defaultFulfillment);
   }
 
   return (
@@ -164,16 +167,10 @@ export default function GroceryPageClient({
 
       <GroceryStepBar currentStep={step} />
 
-      {step === 0 && (
-        <StepReviewMeals meals={weeklyMeals} summary={weekSummary} />
-      )}
+      {step === 0 && <StepReviewMeals meals={weeklyMeals} summary={weekSummary} />}
 
       {step === 1 && (
-        <StepPantryCheck
-          items={groceryItems}
-          stores={stores}
-          onUpdateItems={setGroceryItems}
-        />
+        <StepPantryCheck items={groceryItems} stores={stores} onUpdateItems={setGroceryItems} />
       )}
 
       {step === 2 && (
@@ -187,28 +184,23 @@ export default function GroceryPageClient({
       )}
 
       {step === 3 && (
-        <StepSent
-          store={selectedStoreObj}
-          itemCount={needCount}
-          onStartOver={handleStartOver}
-        />
+        <StepSent store={selectedStoreObj} itemCount={needCount} onStartOver={handleStartOver} />
       )}
 
       {step < 3 && (
         <ButtonRow>
-          {step > 0 ? (
-            <NavButton onClick={handleBack}>
-              {'\u2039'} Back
-            </NavButton>
-          ) : (
-            <div />
-          )}
+          {step > 0 ? <NavButton onClick={handleBack}>{'\u2039'} Back</NavButton> : <div />}
           <NavButton $variant="primary" onClick={handleNext} disabled={isPending}>
-            {isPending ? 'Sending...' : step === 2 ? `Send to ${selectedStoreObj?.name || 'store'}` : 'Continue'} {'\u203A'}
+            {isPending
+              ? 'Sending...'
+              : step === 2
+                ? `Send to ${selectedStoreObj?.name || 'store'}`
+                : 'Continue'}{' '}
+            {'\u203A'}
           </NavButton>
         </ButtonRow>
       )}
       {toast && <Toast>{toast}</Toast>}
     </>
-  )
+  );
 }

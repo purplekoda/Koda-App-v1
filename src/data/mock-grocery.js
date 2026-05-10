@@ -32,15 +32,45 @@ export const mockGroceryItems = [
   { id: 26, name: 'Penne pasta', category: 'Pantry', status: 'have', meal: 'Pasta primavera' },
   { id: 27, name: 'Taco shells', category: 'Pantry', status: 'have', meal: 'Taco night' },
   { id: 28, name: 'Ground beef', category: 'Meat', status: 'have', meal: 'Taco night' },
-]
+];
 
 export const mockStores = [
-  { id: 'target', name: 'Target', color: '#CC0000', icon: '\uD83C\uDFAF', deepLinkBase: 'https://www.target.com/cart' },
-  { id: 'instacart', name: 'Instacart', color: '#43B02A', icon: '\uD83E\uDD55', deepLinkBase: 'https://www.instacart.com' },
-  { id: 'walmart', name: 'Walmart', color: '#0071CE', icon: '\uD83C\uDFEA', deepLinkBase: 'https://www.walmart.com/cart' },
-  { id: 'kroger', name: 'Kroger', color: '#003B73', icon: '\uD83D\uDED2', deepLinkBase: 'https://www.kroger.com/cart' },
-  { id: 'amazon', name: 'Amazon', color: '#FF9900', icon: '\uD83D\uDCE6', deepLinkBase: 'https://www.amazon.com/afx/ingredients/landing' },
-]
+  {
+    id: 'target',
+    name: 'Target',
+    color: '#CC0000',
+    icon: '\uD83C\uDFAF',
+    deepLinkBase: 'https://www.target.com/cart',
+  },
+  {
+    id: 'instacart',
+    name: 'Instacart',
+    color: '#43B02A',
+    icon: '\uD83E\uDD55',
+    deepLinkBase: 'https://www.instacart.com',
+  },
+  {
+    id: 'walmart',
+    name: 'Walmart',
+    color: '#0071CE',
+    icon: '\uD83C\uDFEA',
+    deepLinkBase: 'https://www.walmart.com/cart',
+  },
+  {
+    id: 'kroger',
+    name: 'Kroger',
+    color: '#003B73',
+    icon: '\uD83D\uDED2',
+    deepLinkBase: 'https://www.kroger.com/cart',
+  },
+  {
+    id: 'amazon',
+    name: 'Amazon',
+    color: '#FF9900',
+    icon: '\uD83D\uDCE6',
+    deepLinkBase: 'https://www.amazon.com/afx/ingredients/landing',
+  },
+];
 
 export const mockWeekSummary = {
   totalMeals: 15,
@@ -49,4 +79,4 @@ export const mockWeekSummary = {
   haveCount: 8,
   needCount: 17,
   lowCount: 3,
-}
+};

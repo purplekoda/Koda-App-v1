@@ -4,8 +4,8 @@
  * in favour of a meal-planning-only focus.
  */
 
-export const mockUpcomingEvents = []
+export const mockUpcomingEvents = [];
 
-export const mockTodaySchedule = []
+export const mockTodaySchedule = [];
 
-export const mockTodos = []
+export const mockTodos = [];

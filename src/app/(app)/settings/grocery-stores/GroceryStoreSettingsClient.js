@@ -1,10 +1,15 @@
-'use client'
+'use client';
 
-import { useState, useTransition } from 'react'
-import Link from 'next/link'
-import styled from 'styled-components'
-import { GROCERY_STORES, GROCERY_CATEGORIES, FULFILLMENT_OPTIONS, storeColor } from '@/data/grocery-stores'
-import { saveGroceryPreferencesAction } from '../actions'
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import styled from 'styled-components';
+import {
+  GROCERY_STORES,
+  GROCERY_CATEGORIES,
+  FULFILLMENT_OPTIONS,
+  storeColor,
+} from '@/data/grocery-stores';
+import { saveGroceryPreferencesAction } from '../actions';
 
 // ── Layout ─────────────────────────────────────────────
 
@@ -17,14 +22,14 @@ const PageWrapper = styled.div`
     padding: ${({ theme }) => theme.spacing.xl} ${({ theme }) => theme.spacing.lg};
     padding-bottom: calc(${({ theme }) => theme.bottomNavHeight} + ${({ theme }) => theme.spacing.xl});
   }
-`
+`;
 
 const PageHeader = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   margin-bottom: ${({ theme }) => theme.spacing.xxl};
-`
+`;
 
 const BackButton = styled(Link)`
   width: 32px;
@@ -41,13 +46,13 @@ const BackButton = styled(Link)`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const PageTitle = styled.h1`
   font-size: 18px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const SectionLabel = styled.p`
   font-size: ${({ theme }) => theme.fontSizes.sm};
@@ -56,7 +61,7 @@ const SectionLabel = styled.p`
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 // ── Store cards ────────────────────────────────────────
 
@@ -68,13 +73,13 @@ const StoreCard = styled.div`
   padding: 14px 16px;
   margin-bottom: ${({ theme }) => theme.spacing.sm};
   position: relative;
-`
+`;
 
 const StoreRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const StoreIconCircle = styled.div`
   width: 36px;
@@ -86,31 +91,31 @@ const StoreIconCircle = styled.div`
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-`
+`;
 
 const StoreInitial = styled.span`
   font-size: 14px;
   font-weight: 700;
   color: ${({ $color }) => $color};
-`
+`;
 
 const StoreInfo = styled.div`
   flex: 1;
   min-width: 0;
-`
+`;
 
 const StoreNameRow = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-`
+`;
 
 const StoreName = styled.span`
   font-size: 15px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const Badge = styled.span`
   font-size: 11px;
@@ -121,13 +126,13 @@ const Badge = styled.span`
     $variant === 'default' ? theme.colors.tealLight : theme.colors.purpleLight};
   color: ${({ $variant, theme }) =>
     $variant === 'default' ? theme.colors.tealDark : theme.colors.purpleDark};
-`
+`;
 
 const StoreSub = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 2px;
-`
+`;
 
 const RemoveButton = styled.button`
   position: absolute;
@@ -152,7 +157,7 @@ const RemoveButton = styled.button`
     color: ${({ theme }) => theme.colors.coral};
     border-color: ${({ theme }) => theme.colors.coral};
   }
-`
+`;
 
 const CategoryRow = styled.div`
   display: flex;
@@ -161,18 +166,16 @@ const CategoryRow = styled.div`
   margin-top: ${({ theme }) => theme.spacing.md};
   padding-top: ${({ theme }) => theme.spacing.md};
   border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
-`
+`;
 
 const CatChip = styled.button`
   font-size: 12px;
   padding: 3px 10px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  border: 0.5px solid ${({ $active, theme }) =>
-    $active ? '#85B7EB' : theme.colors.border};
+  border: 0.5px solid ${({ $active, theme }) => ($active ? '#85B7EB' : theme.colors.border)};
   background: ${({ $active, theme }) =>
     $active ? theme.colors.blueLight : theme.colors.background};
-  color: ${({ $active, theme }) =>
-    $active ? theme.colors.blue : theme.colors.textSecondary};
+  color: ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.textSecondary)};
   cursor: pointer;
   transition: all 0.15s ease;
 
@@ -180,7 +183,7 @@ const CatChip = styled.button`
     border-color: ${({ theme }) => theme.colors.blue};
     color: ${({ theme }) => theme.colors.blue};
   }
-`
+`;
 
 // ── Add store ──────────────────────────────────────────
 
@@ -203,7 +206,7 @@ const AddStoreButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const Dropdown = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -212,7 +215,7 @@ const Dropdown = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.elevated};
   overflow: hidden;
   margin-bottom: ${({ theme }) => theme.spacing.xxl};
-`
+`;
 
 const DropdownOption = styled.button`
   display: flex;
@@ -226,13 +229,13 @@ const DropdownOption = styled.button`
     $disabled ? theme.colors.textMuted : theme.colors.textPrimary};
   background: transparent;
   border-bottom: 0.5px solid ${({ theme }) => theme.colors.borderLight};
-  cursor: ${({ $disabled }) => $disabled ? 'default' : 'pointer'};
+  cursor: ${({ $disabled }) => ($disabled ? 'default' : 'pointer')};
   transition: background 0.1s ease;
 
   &:last-child { border-bottom: none; }
   &:hover { background: ${({ $disabled, theme }) =>
     $disabled ? 'transparent' : theme.colors.borderLight}; }
-`
+`;
 
 const DDDot = styled.span`
   width: 10px;
@@ -240,7 +243,7 @@ const DDDot = styled.span`
   border-radius: 50%;
   background: ${({ $color }) => $color};
   flex-shrink: 0;
-`
+`;
 
 // ── Divider ────────────────────────────────────────────
 
@@ -248,7 +251,7 @@ const Divider = styled.hr`
   border: none;
   border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
   margin: ${({ theme }) => theme.spacing.xl} 0;
-`
+`;
 
 // ── Toggle rows ────────────────────────────────────────
 
@@ -260,32 +263,30 @@ const ToggleRow = styled.div`
   border-bottom: 0.5px solid ${({ theme }) => theme.colors.borderLight};
 
   &:last-of-type { border-bottom: none; }
-`
+`;
 
 const ToggleLabel = styled.div`
   flex: 1;
   min-width: 0;
-`
+`;
 
 const ToggleName = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const ToggleSub = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 2px;
-`
+`;
 
 const Toggle = styled.button`
   width: 36px;
   height: 20px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ $on, theme }) =>
-    $on ? theme.colors.teal : theme.colors.borderLight};
-  border: 0.5px solid ${({ $on, theme }) =>
-    $on ? theme.colors.teal : theme.colors.border};
+  background: ${({ $on, theme }) => ($on ? theme.colors.teal : theme.colors.borderLight)};
+  border: 0.5px solid ${({ $on, theme }) => ($on ? theme.colors.teal : theme.colors.border)};
   position: relative;
   cursor: pointer;
   flex-shrink: 0;
@@ -299,11 +300,11 @@ const Toggle = styled.button`
     border-radius: 50%;
     background: white;
     top: 1px;
-    left: ${({ $on }) => $on ? 'calc(100% - 18px)' : '1px'};
+    left: ${({ $on }) => ($on ? 'calc(100% - 18px)' : '1px')};
     transition: left 0.2s ease;
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   }
-`
+`;
 
 // ── Tip box ────────────────────────────────────────────
 
@@ -312,14 +313,14 @@ const TipBox = styled.div`
   border-radius: ${({ theme }) => theme.radii.md};
   padding: 10px 14px;
   margin-top: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const TipText = styled.p`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.tealDark};
   line-height: 1.5;
   margin: 0;
-`
+`;
 
 // ── Save footer ────────────────────────────────────────
 
@@ -329,7 +330,7 @@ const SaveFooter = styled.div`
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing.md};
   margin-top: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const SaveButton = styled.button`
   height: 36px;
@@ -344,13 +345,12 @@ const SaveButton = styled.button`
 
   &:disabled { opacity: 0.5; cursor: not-allowed; }
   &:hover:not(:disabled) { opacity: 0.9; }
-`
+`;
 
 const StatusText = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.sm};
-  color: ${({ $error, theme }) =>
-    $error ? theme.colors.error : theme.colors.success};
-`
+  color: ${({ $error, theme }) => ($error ? theme.colors.error : theme.colors.success)};
+`;
 
 // ── Other-store custom name input ──────────────────────
 
@@ -370,53 +370,49 @@ const OtherInput = styled.input`
     border-color: ${({ theme }) => theme.colors.teal};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.tealLight};
   }
-`
+`;
 
 // ── Component ──────────────────────────────────────────
 
 function initStoreList(groceryPreferences) {
-  const existing = groceryPreferences?.store_list
-  if (Array.isArray(existing) && existing.length > 0) return existing
+  const existing = groceryPreferences?.store_list;
+  if (Array.isArray(existing) && existing.length > 0) return existing;
 
   // Back-compat: migrate flat stores array
-  const flat = groceryPreferences?.stores || []
+  const flat = groceryPreferences?.stores || [];
   return flat.map((v, i) => ({
     value: v,
-    label: GROCERY_STORES.find(s => s.value === v)?.label || v,
+    label: GROCERY_STORES.find((s) => s.value === v)?.label || v,
     is_default: i === 0,
     categories: [],
-  }))
+  }));
 }
 
 export default function GroceryStoreSettingsClient({ groceryPreferences }) {
-  const [storeList, setStoreList] = useState(() => initStoreList(groceryPreferences))
+  const [storeList, setStoreList] = useState(() => initStoreList(groceryPreferences));
   const [otherNames, setOtherNames] = useState(() => {
     // map value→custom name for 'other' entries
-    const map = {}
-    ;(groceryPreferences?.store_list || []).forEach(s => {
-      if (s.value === 'other') map[s.label] = s.label
-    })
-    return map
-  })
-  const [showDropdown, setShowDropdown] = useState(false)
-  const [splitByStore, setSplitByStore] = useState(
-    groceryPreferences?.split_by_store !== false
-  )
-  const [allowOverride, setAllowOverride] = useState(
-    groceryPreferences?.allow_override !== false
-  )
+    const map = {};
+    (groceryPreferences?.store_list || []).forEach((s) => {
+      if (s.value === 'other') map[s.label] = s.label;
+    });
+    return map;
+  });
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [splitByStore, setSplitByStore] = useState(groceryPreferences?.split_by_store !== false);
+  const [allowOverride, setAllowOverride] = useState(groceryPreferences?.allow_override !== false);
   const [smartSuggestions, setSmartSuggestions] = useState(
-    Boolean(groceryPreferences?.smart_suggestions)
-  )
-  const [status, setStatus] = useState(null)
-  const [isPending, startTransition] = useTransition()
+    Boolean(groceryPreferences?.smart_suggestions),
+  );
+  const [status, setStatus] = useState(null);
+  const [isPending, startTransition] = useTransition();
 
-  const addedValues = new Set(storeList.map(s => s.value))
+  const addedValues = new Set(storeList.map((s) => s.value));
 
   function addStore(storeValue) {
-    const storeMeta = GROCERY_STORES.find(s => s.value === storeValue)
-    if (!storeMeta) return
-    setStoreList(prev => [
+    const storeMeta = GROCERY_STORES.find((s) => s.value === storeValue);
+    if (!storeMeta) return;
+    setStoreList((prev) => [
       ...prev,
       {
         value: storeValue,
@@ -424,48 +420,46 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
         is_default: prev.length === 0,
         categories: [],
       },
-    ])
-    setShowDropdown(false)
+    ]);
+    setShowDropdown(false);
   }
 
   function removeStore(idx) {
-    setStoreList(prev => {
-      const next = prev.filter((_, i) => i !== idx)
+    setStoreList((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
       // If we removed the default, promote the first remaining
       if (prev[idx].is_default && next.length > 0) {
-        next[0] = { ...next[0], is_default: true }
+        next[0] = { ...next[0], is_default: true };
       }
-      return next
-    })
+      return next;
+    });
   }
 
   function setDefault(idx) {
-    setStoreList(prev =>
-      prev.map((s, i) => ({ ...s, is_default: i === idx }))
-    )
+    setStoreList((prev) => prev.map((s, i) => ({ ...s, is_default: i === idx })));
   }
 
   function toggleCategory(storeIdx, cat) {
-    setStoreList(prev =>
+    setStoreList((prev) =>
       prev.map((s, i) => {
-        if (i !== storeIdx) return s
+        if (i !== storeIdx) return s;
         const cats = s.categories.includes(cat)
-          ? s.categories.filter(c => c !== cat)
-          : [...s.categories, cat]
-        return { ...s, categories: cats }
-      })
-    )
+          ? s.categories.filter((c) => c !== cat)
+          : [...s.categories, cat];
+        return { ...s, categories: cats };
+      }),
+    );
   }
 
   function handleSave() {
-    setStatus(null)
+    setStatus(null);
     // Merge custom names for 'other' stores
-    const finalList = storeList.map(s => {
+    const finalList = storeList.map((s) => {
       if (s.value === 'other' && otherNames[s.label]) {
-        return { ...s, label: otherNames[s.label] || 'Other' }
+        return { ...s, label: otherNames[s.label] || 'Other' };
       }
-      return s
-    })
+      return s;
+    });
     startTransition(async () => {
       const result = await saveGroceryPreferencesAction({
         store_list: finalList,
@@ -474,11 +468,9 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
         smart_suggestions: smartSuggestions,
         fulfillment: groceryPreferences?.fulfillment || '',
         delivery_address: groceryPreferences?.delivery_address || '',
-      })
-      setStatus(result.success
-        ? { ok: true, msg: 'Saved' }
-        : { ok: false, msg: result.error })
-    })
+      });
+      setStatus(result.success ? { ok: true, msg: 'Saved' } : { ok: false, msg: result.error });
+    });
   }
 
   return (
@@ -486,7 +478,13 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
       <PageHeader>
         <BackButton href="/settings" aria-label="Back to settings">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M9 2L4 7L9 12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </BackButton>
         <PageTitle>Grocery store settings</PageTitle>
@@ -502,8 +500,8 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
       )}
 
       {storeList.map((store, idx) => {
-        const color = storeColor(store.value)
-        const initial = store.label.charAt(0).toUpperCase()
+        const color = storeColor(store.value);
+        const initial = store.label.charAt(0).toUpperCase();
         return (
           <StoreCard key={idx} $isDefault={store.is_default} $color={color}>
             <RemoveButton
@@ -534,15 +532,17 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
                   )}
                 </StoreNameRow>
                 <StoreSub>
-                  {GROCERY_STORES.find(s => s.value === store.value)?.description || ''}
+                  {GROCERY_STORES.find((s) => s.value === store.value)?.description || ''}
                 </StoreSub>
                 {store.value === 'other' && (
                   <OtherInput
                     value={otherNames[store.label] || ''}
-                    onChange={e => setOtherNames(prev => ({
-                      ...prev,
-                      [store.label]: e.target.value,
-                    }))}
+                    onChange={(e) =>
+                      setOtherNames((prev) => ({
+                        ...prev,
+                        [store.label]: e.target.value,
+                      }))
+                    }
                     placeholder="Enter store name"
                     maxLength={100}
                   />
@@ -551,7 +551,7 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
             </StoreRow>
 
             <CategoryRow>
-              {GROCERY_CATEGORIES.map(cat => (
+              {GROCERY_CATEGORIES.map((cat) => (
                 <CatChip
                   key={cat}
                   type="button"
@@ -563,21 +563,26 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
               ))}
             </CategoryRow>
           </StoreCard>
-        )
+        );
       })}
 
       {/* ── Add store dropdown ── */}
       {!showDropdown ? (
         <AddStoreButton type="button" onClick={() => setShowDropdown(true)}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path
+              d="M7 2v10M2 7h10"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
           Add another store
         </AddStoreButton>
       ) : (
         <Dropdown>
-          {GROCERY_STORES.map(s => {
-            const already = addedValues.has(s.value) && s.value !== 'other'
+          {GROCERY_STORES.map((s) => {
+            const already = addedValues.has(s.value) && s.value !== 'other';
             return (
               <DropdownOption
                 key={s.value}
@@ -588,12 +593,10 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
                 <DDDot $color={s.color} />
                 {s.label}
                 {already && (
-                  <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9CA3AF' }}>
-                    Added
-                  </span>
+                  <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9CA3AF' }}>Added</span>
                 )}
               </DropdownOption>
-            )
+            );
           })}
           <DropdownOption
             type="button"
@@ -615,7 +618,7 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
           <ToggleName>Split list by store</ToggleName>
           <ToggleSub>Koda sorts items into separate lists per store</ToggleSub>
         </ToggleLabel>
-        <Toggle type="button" $on={splitByStore} onClick={() => setSplitByStore(v => !v)} />
+        <Toggle type="button" $on={splitByStore} onClick={() => setSplitByStore((v) => !v)} />
       </ToggleRow>
 
       <ToggleRow>
@@ -623,7 +626,7 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
           <ToggleName>Allow list override</ToggleName>
           <ToggleSub>Change store directly on each grocery list</ToggleSub>
         </ToggleLabel>
-        <Toggle type="button" $on={allowOverride} onClick={() => setAllowOverride(v => !v)} />
+        <Toggle type="button" $on={allowOverride} onClick={() => setAllowOverride((v) => !v)} />
       </ToggleRow>
 
       <ToggleRow>
@@ -631,23 +634,26 @@ export default function GroceryStoreSettingsClient({ groceryPreferences }) {
           <ToggleName>Smart store suggestions</ToggleName>
           <ToggleSub>Koda recommends best store based on your week</ToggleSub>
         </ToggleLabel>
-        <Toggle type="button" $on={smartSuggestions} onClick={() => setSmartSuggestions(v => !v)} />
+        <Toggle
+          type="button"
+          $on={smartSuggestions}
+          onClick={() => setSmartSuggestions((v) => !v)}
+        />
       </ToggleRow>
 
       <TipBox>
         <TipText>
-          Tip: assign categories to each store so Koda automatically splits your grocery list — no sorting needed!
+          Tip: assign categories to each store so Koda automatically splits your grocery list — no
+          sorting needed!
         </TipText>
       </TipBox>
 
       <SaveFooter>
-        {status && (
-          <StatusText $error={!status.ok}>{status.msg}</StatusText>
-        )}
+        {status && <StatusText $error={!status.ok}>{status.msg}</StatusText>}
         <SaveButton onClick={handleSave} disabled={isPending}>
           {isPending ? 'Saving…' : 'Save stores'}
         </SaveButton>
       </SaveFooter>
     </PageWrapper>
-  )
+  );
 }

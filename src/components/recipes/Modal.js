@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import styled from 'styled-components'
+import { useEffect } from 'react';
+import styled from 'styled-components';
 
 const Overlay = styled.div`
   position: fixed;
@@ -13,7 +13,7 @@ const Overlay = styled.div`
   padding: ${({ theme }) => theme.spacing.lg};
   z-index: 1000;
   overflow-y: auto;
-`
+`;
 
 const Panel = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -24,21 +24,21 @@ const Panel = styled.div`
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: ${({ theme }) => theme.shadows.elevated};
-`
+`;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Title = styled.h2`
   font-size: 18px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0;
-`
+`;
 
 const CloseButton = styled.button`
   width: 32px;
@@ -55,24 +55,24 @@ const CloseButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.border};
   }
-`
+`;
 
 export default function Modal({ title, onClose, children }) {
   useEffect(() => {
     function onKey(e) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onClose();
     }
-    window.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  }, [onClose])
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
 
   function onOverlayClick(e) {
-    if (e.target === e.currentTarget) onClose()
+    if (e.target === e.currentTarget) onClose();
   }
 
   return (
@@ -80,10 +80,12 @@ export default function Modal({ title, onClose, children }) {
       <Panel>
         <Header>
           <Title>{title}</Title>
-          <CloseButton onClick={onClose} aria-label="Close">{'\u2715'}</CloseButton>
+          <CloseButton onClick={onClose} aria-label="Close">
+            {'\u2715'}
+          </CloseButton>
         </Header>
         {children}
       </Panel>
     </Overlay>
-  )
+  );
 }

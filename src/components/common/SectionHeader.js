@@ -1,26 +1,26 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import Link from 'next/link'
+import styled from 'styled-components';
+import Link from 'next/link';
 
 const Wrapper = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Left = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const Title = styled.h2`
   font-size: 20px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const Badge = styled.span`
   display: flex;
@@ -29,14 +29,14 @@ const Badge = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 500;
   color: ${({ theme }) => theme.colors.teal};
-`
+`;
 
 const BadgeDot = styled.span`
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.teal};
-`
+`;
 
 const StyledLink = styled(Link)`
   font-size: 14px;
@@ -47,7 +47,7 @@ const StyledLink = styled(Link)`
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 export default function SectionHeader({ title, badge, linkText, linkHref }) {
   return (
@@ -66,5 +66,5 @@ export default function SectionHeader({ title, badge, linkText, linkHref }) {
         </StyledLink>
       )}
     </Wrapper>
-  )
+  );
 }

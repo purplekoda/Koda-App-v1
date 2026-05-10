@@ -97,6 +97,6 @@ const theme = {
   touchTarget: '44px',
   bottomNavHeight: '48px',
   sidebarWidth: '240px',
-}
+};
 
-export default theme
+export default theme;

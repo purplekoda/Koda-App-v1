@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import styled from 'styled-components'
+import { useState } from 'react';
+import styled from 'styled-components';
 
 const MEAL_TIME_LABELS = {
   breakfast_addition: 'Breakfast addition',
@@ -9,21 +9,21 @@ const MEAL_TIME_LABELS = {
   lunch_addition: 'Lunch addition',
   afternoon_snack: 'Afternoon snack',
   evening_snack: 'Evening snack',
-}
+};
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 0.5px solid ${({ theme }) => theme.colors.borderLight};
   border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   margin-bottom: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Thumbnail = styled.img`
   width: 56px;
@@ -31,7 +31,7 @@ const Thumbnail = styled.img`
   border-radius: ${({ theme }) => theme.radii.md};
   object-fit: cover;
   flex-shrink: 0;
-`
+`;
 
 const PlaceholderThumb = styled.div`
   width: 56px;
@@ -43,32 +43,32 @@ const PlaceholderThumb = styled.div`
   justify-content: center;
   font-size: 24px;
   flex-shrink: 0;
-`
+`;
 
 const FoodName = styled.h3`
   font-size: 18px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   line-height: 1.3;
-`
+`;
 
 const ServingSize = styled.span`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const MacroGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: ${({ theme }) => theme.spacing.md};
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const MacroField = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
-`
+`;
 
 const MacroLabel = styled.label`
   font-size: 12px;
@@ -76,7 +76,7 @@ const MacroLabel = styled.label`
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: ${({ $color }) => $color};
-`
+`;
 
 const MacroInput = styled.input`
   padding: ${({ theme }) => theme.spacing.md};
@@ -95,13 +95,13 @@ const MacroInput = styled.input`
     border-color: ${({ $color }) => $color};
     background: white;
   }
-`
+`;
 
 const MacroUnit = styled.span`
   font-size: 11px;
   color: ${({ theme }) => theme.colors.textMuted};
   text-align: center;
-`
+`;
 
 const Note = styled.p`
   font-size: 12px;
@@ -109,7 +109,7 @@ const Note = styled.p`
   font-style: italic;
   margin-bottom: ${({ theme }) => theme.spacing.xl};
   text-align: center;
-`
+`;
 
 const ConfirmButton = styled.button`
   width: 100%;
@@ -127,7 +127,7 @@ const ConfirmButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 const CancelButton = styled.button`
   width: 100%;
@@ -136,7 +136,7 @@ const CancelButton = styled.button`
   font-size: 14px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 // ── Confirmation Dialog ──────────────────────────────────
 
@@ -149,7 +149,7 @@ const ConfirmOverlay = styled.div`
   align-items: center;
   justify-content: center;
   padding: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const ConfirmDialog = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -157,26 +157,26 @@ const ConfirmDialog = styled.div`
   padding: ${({ theme }) => theme.spacing.xl};
   max-width: 400px;
   width: 100%;
-`
+`;
 
 const ConfirmTitle = styled.h4`
   font-size: 16px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const ConfirmText = styled.p`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.5;
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const DialogButtons = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const DialogConfirm = styled.button`
   flex: 1;
@@ -193,7 +193,7 @@ const DialogConfirm = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 const DialogCancel = styled.button`
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
@@ -201,7 +201,7 @@ const DialogCancel = styled.button`
   font-size: 14px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 // ── Constants ────────────────────────────────────────────
 
@@ -210,7 +210,7 @@ const MACRO_COLORS = {
   protein: '#1D9E75',
   carbs: '#185FA5',
   fat: '#534AB7',
-}
+};
 
 // ── Component ────────────────────────────────────────────
 
@@ -228,22 +228,22 @@ export default function FoodReviewCard({
     protein: analysis.protein ?? 0,
     carbs: analysis.carbs ?? 0,
     fat: analysis.fat ?? 0,
-  })
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  });
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const edited =
     macros.calories !== analysis.calories ||
     macros.protein !== analysis.protein ||
     macros.carbs !== analysis.carbs ||
-    macros.fat !== analysis.fat
+    macros.fat !== analysis.fat;
 
   function handleMacroChange(key, value) {
-    const parsed = key === 'calories' ? parseInt(value, 10) : parseFloat(value)
-    setMacros(prev => ({ ...prev, [key]: isNaN(parsed) ? 0 : parsed }))
+    const parsed = key === 'calories' ? parseInt(value, 10) : parseFloat(value);
+    setMacros((prev) => ({ ...prev, [key]: isNaN(parsed) ? 0 : parsed }));
   }
 
   function handleConfirmClick() {
-    setShowConfirmDialog(true)
+    setShowConfirmDialog(true);
   }
 
   function handleFinalConfirm() {
@@ -251,7 +251,7 @@ export default function FoodReviewCard({
       ...macros,
       food_name: analysis.food_name,
       edited_by_user: edited,
-    })
+    });
   }
 
   return (
@@ -284,7 +284,7 @@ export default function FoodReviewCard({
                 min="0"
                 value={macros[key]}
                 $color={MACRO_COLORS[key]}
-                onChange={e => handleMacroChange(key, e.target.value)}
+                onChange={(e) => handleMacroChange(key, e.target.value)}
               />
               <MacroUnit>{unit}</MacroUnit>
             </MacroField>
@@ -301,18 +301,16 @@ export default function FoodReviewCard({
 
       {showConfirmDialog && (
         <ConfirmOverlay onClick={() => setShowConfirmDialog(false)}>
-          <ConfirmDialog onClick={e => e.stopPropagation()}>
+          <ConfirmDialog onClick={(e) => e.stopPropagation()}>
             <ConfirmTitle>Confirm</ConfirmTitle>
             <ConfirmText>
               Add {analysis.food_name} — {macros.calories} kcal, {macros.protein}g protein,{' '}
               {macros.carbs}g carbs, {macros.fat}g fat to {memberName}&apos;s{' '}
-              {MEAL_TIME_LABELS[mealTime]?.toLowerCase() || mealTime} for today?
-              This will update their daily macro totals.
+              {MEAL_TIME_LABELS[mealTime]?.toLowerCase() || mealTime} for today? This will update
+              their daily macro totals.
             </ConfirmText>
             <DialogButtons>
-              <DialogCancel onClick={() => setShowConfirmDialog(false)}>
-                Go back
-              </DialogCancel>
+              <DialogCancel onClick={() => setShowConfirmDialog(false)}>Go back</DialogCancel>
               <DialogConfirm onClick={handleFinalConfirm} disabled={saving}>
                 {saving ? 'Saving...' : 'Confirm'}
               </DialogConfirm>
@@ -321,5 +319,5 @@ export default function FoodReviewCard({
         </ConfirmOverlay>
       )}
     </>
-  )
+  );
 }

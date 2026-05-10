@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
-import { useState, useTransition } from 'react'
-import Link from 'next/link'
-import styled from 'styled-components'
-import SingleSelectCards from '@/components/onboarding/shared/SingleSelectCards'
-import { SHOPPING_STYLE_OPTIONS, DELIVERY_SERVICE_OPTIONS } from '@/data/onboarding-options'
-import { saveShoppingPreferencesAction } from '../actions'
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import styled from 'styled-components';
+import SingleSelectCards from '@/components/onboarding/shared/SingleSelectCards';
+import { SHOPPING_STYLE_OPTIONS, DELIVERY_SERVICE_OPTIONS } from '@/data/onboarding-options';
+import { saveShoppingPreferencesAction } from '../actions';
 
 const PageWrapper = styled.div`
   max-width: 540px;
@@ -16,14 +16,14 @@ const PageWrapper = styled.div`
     padding: ${({ theme }) => theme.spacing.xl} ${({ theme }) => theme.spacing.lg};
     padding-bottom: calc(${({ theme }) => theme.bottomNavHeight} + ${({ theme }) => theme.spacing.xl});
   }
-`
+`;
 
 const PageHeader = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   margin-bottom: ${({ theme }) => theme.spacing.xxl};
-`
+`;
 
 const BackButton = styled(Link)`
   width: 32px;
@@ -40,20 +40,20 @@ const BackButton = styled(Link)`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const PageTitle = styled.h1`
   font-size: 18px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const Subtitle = styled.p`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
   line-height: 1.4;
-`
+`;
 
 const DeliveryServiceRow = styled.div`
   display: flex;
@@ -61,21 +61,21 @@ const DeliveryServiceRow = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
   margin-top: ${({ theme }) => theme.spacing.md};
   padding-left: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const DeliveryChip = styled.button`
   padding: 6px 14px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  border: 1.5px solid ${({ $selected, theme }) => $selected ? theme.colors.teal : theme.colors.border};
-  background: ${({ $selected, theme }) => $selected ? theme.colors.tealLight + '30' : theme.colors.surface};
-  color: ${({ $selected, theme }) => $selected ? theme.colors.teal : theme.colors.textSecondary};
+  border: 1.5px solid ${({ $selected, theme }) => ($selected ? theme.colors.teal : theme.colors.border)};
+  background: ${({ $selected, theme }) => ($selected ? theme.colors.tealLight + '30' : theme.colors.surface)};
+  color: ${({ $selected, theme }) => ($selected ? theme.colors.teal : theme.colors.textSecondary)};
   font-size: 13px;
-  font-weight: ${({ $selected }) => $selected ? 600 : 400};
+  font-weight: ${({ $selected }) => ($selected ? 600 : 400)};
   cursor: pointer;
   transition: all 0.15s;
 
   &:hover { border-color: ${({ theme }) => theme.colors.teal}; }
-`
+`;
 
 const SaveFooter = styled.div`
   display: flex;
@@ -83,7 +83,7 @@ const SaveFooter = styled.div`
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing.md};
   margin-top: ${({ theme }) => theme.spacing.xxl};
-`
+`;
 
 const SaveButton = styled.button`
   height: 36px;
@@ -98,31 +98,31 @@ const SaveButton = styled.button`
 
   &:disabled { opacity: 0.5; cursor: not-allowed; }
   &:hover:not(:disabled) { opacity: 0.9; }
-`
+`;
 
 const StatusText = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.sm};
-  color: ${({ $error, theme }) =>
-    $error ? theme.colors.error : theme.colors.success};
-`
+  color: ${({ $error, theme }) => ($error ? theme.colors.error : theme.colors.success)};
+`;
 
-export default function ShoppingPreferencesClient({ shoppingStyle: initialStyle, deliveryService: initialSvc }) {
-  const [style, setStyle] = useState(initialStyle)
-  const [svc, setSvc] = useState(initialSvc)
-  const [status, setStatus] = useState(null)
-  const [isPending, startTransition] = useTransition()
+export default function ShoppingPreferencesClient({
+  shoppingStyle: initialStyle,
+  deliveryService: initialSvc,
+}) {
+  const [style, setStyle] = useState(initialStyle);
+  const [svc, setSvc] = useState(initialSvc);
+  const [status, setStatus] = useState(null);
+  const [isPending, startTransition] = useTransition();
 
   function handleSave() {
-    setStatus(null)
+    setStatus(null);
     startTransition(async () => {
       const result = await saveShoppingPreferencesAction({
         shopping_style: style,
         preferred_delivery_service: style === 'delivery_preferred' ? svc : null,
-      })
-      setStatus(result.success
-        ? { ok: true, msg: 'Saved' }
-        : { ok: false, msg: result.error })
-    })
+      });
+      setStatus(result.success ? { ok: true, msg: 'Saved' } : { ok: false, msg: result.error });
+    });
   }
 
   return (
@@ -130,16 +130,24 @@ export default function ShoppingPreferencesClient({ shoppingStyle: initialStyle,
       <PageHeader>
         <BackButton href="/settings" aria-label="Back to settings">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M9 2L4 7L9 12"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </BackButton>
         <PageTitle>Shopping preferences</PageTitle>
       </PageHeader>
 
-      <Subtitle>This helps Koda organize your grocery lists the way that works best for you.</Subtitle>
+      <Subtitle>
+        This helps Koda organize your grocery lists the way that works best for you.
+      </Subtitle>
 
       <SingleSelectCards
-        options={SHOPPING_STYLE_OPTIONS.map(o => ({
+        options={SHOPPING_STYLE_OPTIONS.map((o) => ({
           value: o.value,
           label: `${o.icon} ${o.label}`,
           subtitle: o.subtitle,
@@ -150,7 +158,7 @@ export default function ShoppingPreferencesClient({ shoppingStyle: initialStyle,
 
       {style === 'delivery_preferred' && (
         <DeliveryServiceRow>
-          {DELIVERY_SERVICE_OPTIONS.map(opt => (
+          {DELIVERY_SERVICE_OPTIONS.map((opt) => (
             <DeliveryChip
               key={opt.value}
               type="button"
@@ -164,13 +172,11 @@ export default function ShoppingPreferencesClient({ shoppingStyle: initialStyle,
       )}
 
       <SaveFooter>
-        {status && (
-          <StatusText $error={!status.ok}>{status.msg}</StatusText>
-        )}
+        {status && <StatusText $error={!status.ok}>{status.msg}</StatusText>}
         <SaveButton onClick={handleSave} disabled={isPending}>
           {isPending ? 'Saving\u2026' : 'Save preferences'}
         </SaveButton>
       </SaveFooter>
     </PageWrapper>
-  )
+  );
 }

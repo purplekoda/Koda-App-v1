@@ -1,5 +1,5 @@
-import NotificationsSettingsClient from './NotificationsSettingsClient'
+import NotificationsSettingsClient from './NotificationsSettingsClient';
 
 export default function NotificationsSettingsPage() {
-  return <NotificationsSettingsClient />
+  return <NotificationsSettingsClient />;
 }

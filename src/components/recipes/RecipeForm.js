@@ -1,25 +1,25 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import styled from 'styled-components'
+import { useState } from 'react';
+import styled from 'styled-components';
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Field = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.xs};
-`
+`;
 
 const Label = styled.label`
   font-size: 13px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textSecondary};
-`
+`;
 
 const Input = styled.input`
   padding: 10px 12px;
@@ -34,7 +34,7 @@ const Input = styled.input`
     outline: none;
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const Textarea = styled.textarea`
   padding: 10px 12px;
@@ -51,7 +51,7 @@ const Textarea = styled.textarea`
     outline: none;
     border-color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const Row = styled.div`
   display: grid;
@@ -61,14 +61,14 @@ const Row = styled.div`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     grid-template-columns: 1fr;
   }
-`
+`;
 
 const IngredientRow = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr auto;
   gap: ${({ theme }) => theme.spacing.sm};
   align-items: center;
-`
+`;
 
 const IconButton = styled.button`
   display: flex;
@@ -88,7 +88,7 @@ const IconButton = styled.button`
     color: ${({ theme }) => theme.colors.coral};
     border-color: ${({ theme }) => theme.colors.coralMid};
   }
-`
+`;
 
 const AddRowButton = styled.button`
   padding: 8px 14px;
@@ -104,14 +104,14 @@ const AddRowButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.tealMid};
   }
-`
+`;
 
 const Actions = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   justify-content: flex-end;
   margin-top: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const PrimaryButton = styled.button`
   padding: 10px 20px;
@@ -131,7 +131,7 @@ const PrimaryButton = styled.button`
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.tealDark};
   }
-`
+`;
 
 const SecondaryButton = styled.button`
   padding: 10px 20px;
@@ -147,13 +147,13 @@ const SecondaryButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const ErrorText = styled.p`
   color: ${({ theme }) => theme.colors.coral};
   font-size: 13px;
   margin: 0;
-`
+`;
 
 const DuplicateWarning = styled.p`
   font-size: 13px;
@@ -163,7 +163,7 @@ const DuplicateWarning = styled.p`
   border-radius: ${({ theme }) => theme.radii.sm};
   padding: 7px 10px;
   margin: 0;
-`
+`;
 
 const ImagePickerLabel = styled.label`
   display: flex;
@@ -184,21 +184,21 @@ const ImagePickerLabel = styled.label`
     border-color: ${({ theme }) => theme.colors.teal};
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
+`;
 
 const ImagePreviewWrap = styled.div`
   position: relative;
   border-radius: ${({ theme }) => theme.radii.lg};
   overflow: hidden;
   border: 0.5px solid ${({ theme }) => theme.colors.border};
-`
+`;
 
 const ImagePreview = styled.img`
   width: 100%;
   max-height: 240px;
   object-fit: cover;
   display: block;
-`
+`;
 
 const ImageRemoveBtn = styled.button`
   position: absolute;
@@ -219,7 +219,7 @@ const ImageRemoveBtn = styled.button`
   &:hover {
     background: rgba(0, 0, 0, 0.8);
   }
-`
+`;
 
 const PhotoActions = styled.div`
   display: flex;
@@ -229,7 +229,7 @@ const PhotoActions = styled.div`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     flex-direction: column;
   }
-`
+`;
 
 const AiPhotoButton = styled.button`
   flex: 1;
@@ -258,104 +258,114 @@ const AiPhotoButton = styled.button`
     opacity: 0.6;
     cursor: not-allowed;
   }
-`
+`;
 
-const emptyIngredient = () => ({ name: '', quantity: '' })
+const emptyIngredient = () => ({ name: '', quantity: '' });
 
-export default function RecipeForm({ initial, onSubmit, onCancel, isPending, submitLabel = 'Save', onGenerateImage, existingNames = [] }) {
-  const [name, setName] = useState(initial?.name || '')
-  const [description, setDescription] = useState(initial?.description || '')
-  const [instructions, setInstructions] = useState(initial?.instructions || '')
-  const [prepTime, setPrepTime] = useState(initial?.prep_time_minutes ?? '')
-  const [cookTime, setCookTime] = useState(initial?.cook_time_minutes ?? '')
-  const [servings, setServings] = useState(initial?.servings ?? '')
-  const [tagsStr, setTagsStr] = useState((initial?.tags || []).join(', '))
+export default function RecipeForm({
+  initial,
+  onSubmit,
+  onCancel,
+  isPending,
+  submitLabel = 'Save',
+  onGenerateImage,
+  existingNames = [],
+}) {
+  const [name, setName] = useState(initial?.name || '');
+  const [description, setDescription] = useState(initial?.description || '');
+  const [instructions, setInstructions] = useState(initial?.instructions || '');
+  const [prepTime, setPrepTime] = useState(initial?.prep_time_minutes ?? '');
+  const [cookTime, setCookTime] = useState(initial?.cook_time_minutes ?? '');
+  const [servings, setServings] = useState(initial?.servings ?? '');
+  const [tagsStr, setTagsStr] = useState((initial?.tags || []).join(', '));
   const [ingredients, setIngredients] = useState(
-    initial?.ingredients?.length ? initial.ingredients : [emptyIngredient()]
-  )
-  const [imageUrl, setImageUrl] = useState(initial?.image_url || null)
-  const [error, setError] = useState(null)
-  const [generatingImage, setGeneratingImage] = useState(false)
-  const [nameDuplicate, setNameDuplicate] = useState(
-    () => initial?.name ? existingNames.includes(initial.name.toLowerCase()) : false
-  )
+    initial?.ingredients?.length ? initial.ingredients : [emptyIngredient()],
+  );
+  const [imageUrl, setImageUrl] = useState(initial?.image_url || null);
+  const [error, setError] = useState(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [nameDuplicate, setNameDuplicate] = useState(() =>
+    initial?.name ? existingNames.includes(initial.name.toLowerCase()) : false,
+  );
 
   function handleNameBlur() {
-    setNameDuplicate(name.trim() ? existingNames.includes(name.trim().toLowerCase()) : false)
+    setNameDuplicate(name.trim() ? existingNames.includes(name.trim().toLowerCase()) : false);
   }
 
   function handleImageChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
 
-    const img = new Image()
+    const img = new Image();
     img.onload = () => {
       // Keep images small enough to survive the 500k-char validator cap and
       // Supabase's row size budget. 800px / 0.72 quality ≈ 50-80 KB data URI.
-      const MAX = 800
-      const QUALITY = 0.72
-      let { width, height } = img
+      const MAX = 800;
+      const QUALITY = 0.72;
+      let { width, height } = img;
       if (width > MAX || height > MAX) {
-        const ratio = Math.min(MAX / width, MAX / height)
-        width = Math.round(width * ratio)
-        height = Math.round(height * ratio)
+        const ratio = Math.min(MAX / width, MAX / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
       }
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, width, height)
-      const dataUrl = canvas.toDataURL('image/jpeg', QUALITY)
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
       // Guard: if still over 300 KB encoded, re-compress at half size
       if (dataUrl.length > 300_000) {
-        const canvas2 = document.createElement('canvas')
-        canvas2.width = Math.round(width * 0.6)
-        canvas2.height = Math.round(height * 0.6)
-        const ctx2 = canvas2.getContext('2d')
-        ctx2.drawImage(img, 0, 0, canvas2.width, canvas2.height)
-        setImageUrl(canvas2.toDataURL('image/jpeg', 0.65))
+        const canvas2 = document.createElement('canvas');
+        canvas2.width = Math.round(width * 0.6);
+        canvas2.height = Math.round(height * 0.6);
+        const ctx2 = canvas2.getContext('2d');
+        ctx2.drawImage(img, 0, 0, canvas2.width, canvas2.height);
+        setImageUrl(canvas2.toDataURL('image/jpeg', 0.65));
       } else {
-        setImageUrl(dataUrl)
+        setImageUrl(dataUrl);
       }
-      URL.revokeObjectURL(img.src)
-    }
-    img.src = URL.createObjectURL(file)
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
   }
 
   async function handleGenerateImage() {
-    if (!onGenerateImage || !name.trim()) return
-    setGeneratingImage(true)
-    setError(null)
+    if (!onGenerateImage || !name.trim()) return;
+    setGeneratingImage(true);
+    setError(null);
     try {
-      const result = await onGenerateImage(name.trim(), description.trim())
+      const result = await onGenerateImage(name.trim(), description.trim());
       if (result.success && result.data?.image_url) {
-        setImageUrl(result.data.image_url)
+        setImageUrl(result.data.image_url);
       } else {
-        setError(result.error || 'Could not generate photo.')
+        setError(result.error || 'Could not generate photo.');
       }
     } catch {
-      setError('Could not generate photo. Please try again.')
+      setError('Could not generate photo. Please try again.');
     } finally {
-      setGeneratingImage(false)
+      setGeneratingImage(false);
     }
   }
 
   function updateIngredient(index, field, value) {
-    setIngredients(prev => prev.map((ing, i) => i === index ? { ...ing, [field]: value } : ing))
+    setIngredients((prev) =>
+      prev.map((ing, i) => (i === index ? { ...ing, [field]: value } : ing)),
+    );
   }
 
   function addIngredient() {
-    setIngredients(prev => [...prev, emptyIngredient()])
+    setIngredients((prev) => [...prev, emptyIngredient()]);
   }
 
   function removeIngredient(index) {
-    setIngredients(prev => prev.filter((_, i) => i !== index))
+    setIngredients((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
     const payload = {
       name: name.trim(),
@@ -364,20 +374,23 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
       prep_time_minutes: prepTime === '' ? null : Number(prepTime),
       cook_time_minutes: cookTime === '' ? null : Number(cookTime),
       servings: servings === '' ? null : Number(servings),
-      tags: tagsStr.split(',').map(t => t.trim()).filter(Boolean),
-      ingredients: ingredients.filter(i => i.name.trim()),
+      tags: tagsStr
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      ingredients: ingredients.filter((i) => i.name.trim()),
       image_url: imageUrl || null,
       ...(initial?.source ? { source: initial.source } : {}),
-    }
+    };
 
     if (!payload.name) {
-      setError('Recipe name is required')
-      return
+      setError('Recipe name is required');
+      return;
     }
 
-    const result = await onSubmit(payload)
+    const result = await onSubmit(payload);
     if (result && !result.success) {
-      setError(result.error || 'Could not save recipe')
+      setError(result.error || 'Could not save recipe');
     }
   }
 
@@ -389,14 +402,19 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
           id="recipe-name"
           type="text"
           value={name}
-          onChange={e => { setName(e.target.value); setNameDuplicate(false) }}
+          onChange={(e) => {
+            setName(e.target.value);
+            setNameDuplicate(false);
+          }}
           onBlur={handleNameBlur}
           placeholder="e.g. Grandma's Lasagna"
           maxLength={200}
           required
         />
         {nameDuplicate && (
-          <DuplicateWarning>A recipe with this name already exists in your library.</DuplicateWarning>
+          <DuplicateWarning>
+            A recipe with this name already exists in your library.
+          </DuplicateWarning>
         )}
       </Field>
 
@@ -442,7 +460,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
         <Textarea
           id="recipe-description"
           value={description}
-          onChange={e => setDescription(e.target.value)}
+          onChange={(e) => setDescription(e.target.value)}
           placeholder="A short description"
           maxLength={1000}
           rows={2}
@@ -458,7 +476,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
             min={0}
             max={1440}
             value={prepTime}
-            onChange={e => setPrepTime(e.target.value)}
+            onChange={(e) => setPrepTime(e.target.value)}
           />
         </Field>
         <Field>
@@ -469,7 +487,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
             min={0}
             max={1440}
             value={cookTime}
-            onChange={e => setCookTime(e.target.value)}
+            onChange={(e) => setCookTime(e.target.value)}
           />
         </Field>
         <Field>
@@ -480,7 +498,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
             min={1}
             max={100}
             value={servings}
-            onChange={e => setServings(e.target.value)}
+            onChange={(e) => setServings(e.target.value)}
           />
         </Field>
       </Row>
@@ -492,14 +510,14 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
             <Input
               type="text"
               value={ing.name}
-              onChange={e => updateIngredient(i, 'name', e.target.value)}
+              onChange={(e) => updateIngredient(i, 'name', e.target.value)}
               placeholder="Ingredient"
               maxLength={200}
             />
             <Input
               type="text"
               value={ing.quantity}
-              onChange={e => updateIngredient(i, 'quantity', e.target.value)}
+              onChange={(e) => updateIngredient(i, 'quantity', e.target.value)}
               placeholder="Qty"
               maxLength={50}
             />
@@ -522,7 +540,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
         <Textarea
           id="recipe-instructions"
           value={instructions}
-          onChange={e => setInstructions(e.target.value)}
+          onChange={(e) => setInstructions(e.target.value)}
           placeholder="Step-by-step directions"
           maxLength={5000}
           rows={6}
@@ -535,7 +553,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
           id="recipe-tags"
           type="text"
           value={tagsStr}
-          onChange={e => setTagsStr(e.target.value)}
+          onChange={(e) => setTagsStr(e.target.value)}
           placeholder="e.g. dinner, vegetarian, quick"
         />
       </Field>
@@ -551,5 +569,5 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
         </PrimaryButton>
       </Actions>
     </Form>
-  )
+  );
 }

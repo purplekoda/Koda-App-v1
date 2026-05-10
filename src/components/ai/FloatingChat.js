@@ -1,38 +1,38 @@
-'use client'
+'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react'
-import styled, { keyframes, css } from 'styled-components'
-import { useChat } from './ChatProvider'
-import SuggestionCard from './SuggestionCard'
-import { useVoiceInput } from '@/lib/voice/useVoiceInput'
-import { useVoiceOutput } from '@/lib/voice/useVoiceOutput'
-import { stopSpeaking } from '@/lib/voice/tts'
-import { isSTTSupported } from '@/lib/voice/stt'
-import { useMicPermission } from '@/hooks/useMicPermission'
-import { useContinuousMic, MIC_STATE } from '@/hooks/useContinuousMic'
-import { toggleHandsFreeAction } from '@/app/(app)/settings/actions'
-import SpeakingIndicator from '@/components/voice/SpeakingIndicator'
-import ListeningIndicator from '@/components/voice/ListeningIndicator'
-import ProcessingIndicator from '@/components/voice/ProcessingIndicator'
-import SilenceCountdown from '@/components/voice/SilenceCountdown'
-import TranscriptBubble from '@/components/voice/TranscriptBubble'
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import styled, { keyframes, css } from 'styled-components';
+import { useChat } from './ChatProvider';
+import SuggestionCard from './SuggestionCard';
+import { useVoiceInput } from '@/lib/voice/useVoiceInput';
+import { useVoiceOutput } from '@/lib/voice/useVoiceOutput';
+import { stopSpeaking } from '@/lib/voice/tts';
+import { isSTTSupported } from '@/lib/voice/stt';
+import { useMicPermission } from '@/hooks/useMicPermission';
+import { useContinuousMic, MIC_STATE } from '@/hooks/useContinuousMic';
+import { toggleHandsFreeAction } from '@/app/(app)/settings/actions';
+import SpeakingIndicator from '@/components/voice/SpeakingIndicator';
+import ListeningIndicator from '@/components/voice/ListeningIndicator';
+import ProcessingIndicator from '@/components/voice/ProcessingIndicator';
+import SilenceCountdown from '@/components/voice/SilenceCountdown';
+import TranscriptBubble from '@/components/voice/TranscriptBubble';
 
 // ── Animations ────────────────────────────────────────
 
 const pulse = keyframes`
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.15); opacity: 0.7; }
-`
+`;
 
 const waveAnimation = keyframes`
   0%, 100% { transform: scaleY(0.4); }
   50% { transform: scaleY(1); }
-`
+`;
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
-`
+`;
 
 // ── Layout ────────────────────────────────────────────
 
@@ -51,7 +51,7 @@ const FixedLayer = styled.div`
     padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
     padding-bottom: calc(${({ theme }) => theme.bottomNavHeight} + ${({ theme }) => theme.spacing.md});
   }
-`
+`;
 
 const Column = styled.div`
   width: 100%;
@@ -60,7 +60,7 @@ const Column = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const Panel = styled.div`
   display: flex;
@@ -71,7 +71,7 @@ const Panel = styled.div`
   border-radius: ${({ theme }) => theme.radii.xl};
   box-shadow: ${({ theme }) => theme.shadows.elevated};
   overflow: hidden;
-`
+`;
 
 const PanelHeader = styled.div`
   display: flex;
@@ -79,7 +79,7 @@ const PanelHeader = styled.div`
   justify-content: space-between;
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
   border-bottom: 0.5px solid ${({ theme }) => theme.colors.borderLight};
-`
+`;
 
 const HeaderLabel = styled.div`
   display: flex;
@@ -88,13 +88,13 @@ const HeaderLabel = styled.div`
   font-size: 13px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const HeaderRight = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const PurpleDot = styled.span`
   width: 8px;
@@ -102,7 +102,7 @@ const PurpleDot = styled.span`
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.purple};
   flex-shrink: 0;
-`
+`;
 
 const IconButton = styled.button`
   width: 28px;
@@ -122,7 +122,7 @@ const IconButton = styled.button`
     background: ${({ theme }) => theme.colors.border};
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-`
+`;
 
 const VoiceToggleButton = styled.button`
   display: flex;
@@ -130,9 +130,9 @@ const VoiceToggleButton = styled.button`
   gap: 4px;
   padding: 4px 10px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  border: 0.5px solid ${({ $on, theme }) => $on ? theme.colors.tealMid : theme.colors.border};
-  background: ${({ $on, theme }) => $on ? theme.colors.tealLight : theme.colors.surface};
-  color: ${({ $on, theme }) => $on ? theme.colors.teal : theme.colors.textMuted};
+  border: 0.5px solid ${({ $on, theme }) => ($on ? theme.colors.tealMid : theme.colors.border)};
+  background: ${({ $on, theme }) => ($on ? theme.colors.tealLight : theme.colors.surface)};
+  color: ${({ $on, theme }) => ($on ? theme.colors.teal : theme.colors.textMuted)};
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -142,7 +142,7 @@ const VoiceToggleButton = styled.button`
     border-color: ${({ theme }) => theme.colors.teal};
     color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 const HandsFreeToggle = styled.button`
   display: flex;
@@ -150,9 +150,9 @@ const HandsFreeToggle = styled.button`
   gap: 4px;
   padding: 4px 10px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  border: 0.5px solid ${({ $on, theme }) => $on ? theme.colors.teal : theme.colors.border};
-  background: ${({ $on, theme }) => $on ? theme.colors.teal : theme.colors.surface};
-  color: ${({ $on, theme }) => $on ? 'white' : theme.colors.textMuted};
+  border: 0.5px solid ${({ $on, theme }) => ($on ? theme.colors.teal : theme.colors.border)};
+  background: ${({ $on, theme }) => ($on ? theme.colors.teal : theme.colors.surface)};
+  color: ${({ $on, theme }) => ($on ? 'white' : theme.colors.textMuted)};
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -162,7 +162,7 @@ const HandsFreeToggle = styled.button`
     border-color: ${({ theme }) => theme.colors.teal};
     ${({ $on }) => !$on && 'color: inherit;'}
   }
-`
+`;
 
 // ── Hands-free banner ─────────────────────────────────
 
@@ -178,7 +178,7 @@ const HandsFreeBanner = styled.div`
   font-weight: 500;
   border-bottom: 0.5px solid ${({ theme }) => theme.colors.tealMid};
   animation: ${fadeIn} 0.2s ease;
-`
+`;
 
 // ── Messages ──────────────────────────────────────────
 
@@ -189,7 +189,7 @@ const Messages = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const BubbleRow = styled.div`
   display: flex;
@@ -197,7 +197,7 @@ const BubbleRow = styled.div`
   gap: 6px;
   align-self: ${({ $role }) => ($role === 'user' ? 'flex-end' : 'flex-start')};
   max-width: 85%;
-`
+`;
 
 const Bubble = styled.div`
   padding: 10px 14px;
@@ -218,15 +218,15 @@ const Bubble = styled.div`
   border-bottom-left-radius: ${({ $role }) => ($role === 'model' ? '4px' : undefined)};
   flex: 1;
   min-width: 0;
-`
+`;
 
 const SpeakerButton = styled.button`
   width: 26px;
   height: 26px;
   border-radius: 50%;
   border: none;
-  background: ${({ $speaking, theme }) => $speaking ? theme.colors.purpleMid : theme.colors.borderLight};
-  color: ${({ $speaking, theme }) => $speaking ? theme.colors.surface : theme.colors.textMuted};
+  background: ${({ $speaking, theme }) => ($speaking ? theme.colors.purpleMid : theme.colors.borderLight)};
+  color: ${({ $speaking, theme }) => ($speaking ? theme.colors.surface : theme.colors.textMuted)};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,14 +240,14 @@ const SpeakerButton = styled.button`
     background: ${({ theme }) => theme.colors.purpleMid};
     color: ${({ theme }) => theme.colors.surface};
   }
-`
+`;
 
 const Typing = styled.div`
   align-self: flex-start;
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-style: italic;
-`
+`;
 
 const ChipRow = styled.div`
   display: flex;
@@ -255,7 +255,7 @@ const ChipRow = styled.div`
   gap: 6px;
   align-self: flex-start;
   max-width: 100%;
-`
+`;
 
 const Chip = styled.button`
   padding: 6px 12px;
@@ -275,7 +275,7 @@ const Chip = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 const WelcomeBubble = styled.div`
   align-self: flex-start;
@@ -287,14 +287,14 @@ const WelcomeBubble = styled.div`
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.textPrimary};
   animation: ${fadeIn} 0.3s ease;
-`
+`;
 
 const WelcomeName = styled.div`
   font-size: 12px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.teal};
   margin-bottom: 4px;
-`
+`;
 
 // ── Speaking indicator on model messages ──────────────
 
@@ -303,7 +303,7 @@ const SpeakingWave = styled.div`
   align-items: center;
   gap: 2px;
   height: 14px;
-`
+`;
 
 const WaveBar = styled.span`
   width: 2px;
@@ -313,7 +313,7 @@ const WaveBar = styled.span`
   animation: ${waveAnimation} 0.8s ease-in-out infinite;
   animation-delay: ${({ $delay }) => $delay || '0s'};
   transform-origin: center;
-`
+`;
 
 // ── Input bar ─────────────────────────────────────────
 
@@ -332,7 +332,7 @@ const BarForm = styled.form`
     border-radius: ${({ theme }) => theme.radii.pill};
     padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
   }
-`
+`;
 
 const Input = styled.input`
   flex: 1;
@@ -349,7 +349,7 @@ const Input = styled.input`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     font-size: 14px;
   }
-`
+`;
 
 const MicButton = styled.button`
   width: ${({ theme }) => theme.touchTarget};
@@ -358,8 +358,8 @@ const MicButton = styled.button`
   min-height: ${({ theme }) => theme.touchTarget};
   border-radius: 50%;
   border: none;
-  background: ${({ $listening, theme }) => $listening ? theme.colors.teal : theme.colors.borderLight};
-  color: ${({ $listening, theme }) => $listening ? theme.colors.surface : theme.colors.textMuted};
+  background: ${({ $listening, theme }) => ($listening ? theme.colors.teal : theme.colors.borderLight)};
+  color: ${({ $listening, theme }) => ($listening ? theme.colors.surface : theme.colors.textMuted)};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,15 +370,15 @@ const MicButton = styled.button`
   position: relative;
 
   &:hover {
-    background: ${({ $listening, theme }) => $listening ? theme.colors.tealDark : theme.colors.border};
-    color: ${({ $listening, theme }) => $listening ? theme.colors.surface : theme.colors.textPrimary};
+    background: ${({ $listening, theme }) => ($listening ? theme.colors.tealDark : theme.colors.border)};
+    color: ${({ $listening, theme }) => ($listening ? theme.colors.surface : theme.colors.textPrimary)};
   }
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-`
+`;
 
 const ListeningRing = styled.span`
   position: absolute;
@@ -387,7 +387,7 @@ const ListeningRing = styled.span`
   border: 2px solid ${({ theme }) => theme.colors.teal};
   animation: ${pulse} 1.5s ease-in-out infinite;
   pointer-events: none;
-`
+`;
 
 const AskButton = styled.button`
   display: flex;
@@ -420,29 +420,28 @@ const AskButton = styled.button`
     background: ${({ theme }) => theme.colors.borderLight};
     justify-content: center;
   }
-`
+`;
 
 const AskText = styled.span`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     display: none;
   }
-`
+`;
 
 const Arrow = styled.span`
   font-size: 16px;
-`
+`;
 
 // ── Status labels ─────────────────────────────────────
 
 const StatusLabel = styled.div`
   font-size: 11px;
-  color: ${({ $type, theme }) =>
-    $type === 'listening' ? theme.colors.teal : theme.colors.purple};
+  color: ${({ $type, theme }) => ($type === 'listening' ? theme.colors.teal : theme.colors.purple)};
   font-weight: 500;
   text-align: center;
   padding: 2px 0;
   animation: ${fadeIn} 0.2s ease;
-`
+`;
 
 const VoiceError = styled.div`
   font-size: 12px;
@@ -450,7 +449,7 @@ const VoiceError = styled.div`
   text-align: center;
   padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.md};
   animation: ${fadeIn} 0.2s ease;
-`
+`;
 
 // ── Hands-free status area ────────────────────────────
 
@@ -460,7 +459,7 @@ const HandsFreeStatus = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.xs};
   padding: ${({ theme }) => theme.spacing.sm} 0;
-`
+`;
 
 const InactivityBanner = styled.div`
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
@@ -470,7 +469,7 @@ const InactivityBanner = styled.div`
   font-size: 12px;
   text-align: center;
   animation: ${fadeIn} 0.3s ease;
-`
+`;
 
 const ResumeButton = styled.button`
   padding: 6px 16px;
@@ -482,47 +481,65 @@ const ResumeButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   &:hover { opacity: 0.9; }
-`
+`;
 
 // ── Component ─────────────────────────────────────────
 
 export default function FloatingChat() {
   const {
-    messages, isOpen, setIsOpen, sendMessage, isPending,
-    confirmSuggestion, rejectSuggestion,
-    voiceResponsesEnabled, setVoiceResponsesEnabled,
-    handsFreeChatEnabled, setHandsFreeChatEnabled,
-  } = useChat()
+    messages,
+    isOpen,
+    setIsOpen,
+    sendMessage,
+    isPending,
+    confirmSuggestion,
+    rejectSuggestion,
+    voiceResponsesEnabled,
+    setVoiceResponsesEnabled,
+    handsFreeChatEnabled,
+    setHandsFreeChatEnabled,
+  } = useChat();
 
-  const [draft, setDraft] = useState('')
-  const [handsFreeMode, setHandsFreeMode] = useState(false)
-  const handsFreeInitRef = useRef(false)
-  const scrollRef = useRef(null)
-  const inputRef = useRef(null)
-  const prevMessageCountRef = useRef(messages.length)
+  const [draft, setDraft] = useState('');
+  const [handsFreeMode, setHandsFreeMode] = useState(false);
+  const handsFreeInitRef = useRef(false);
+  const scrollRef = useRef(null);
+  const inputRef = useRef(null);
+  const prevMessageCountRef = useRef(messages.length);
 
   // Voice hooks (push-to-talk mode)
   const {
-    isListening, interimText, error: voiceError,
-    supported: sttSupported, startVoiceInput, stopVoiceInput, clearError,
-  } = useVoiceInput()
+    isListening,
+    interimText,
+    error: voiceError,
+    supported: sttSupported,
+    startVoiceInput,
+    stopVoiceInput,
+    clearError,
+  } = useVoiceInput();
 
   const {
-    isSpeaking, speakingMessageIndex, supported: ttsSupported,
-    speak, stop: stopTTS,
-  } = useVoiceOutput()
+    isSpeaking,
+    speakingMessageIndex,
+    supported: ttsSupported,
+    speak,
+    stop: stopTTS,
+  } = useVoiceOutput();
 
-  const { checkAndRequest, PermissionModal } = useMicPermission()
+  const { checkAndRequest, PermissionModal } = useMicPermission();
 
   // ── Hands-free continuous mic ──────────────────────────
 
-  const handleHandsFreeTranscript = useCallback(async (transcript) => {
-    // Send the transcript as a chat message and wait for the response
-    sendMessage(transcript)
-    // Return empty string — the response will come through messages state
-    // and we'll auto-speak it via the useEffect below
-    return ''
-  }, [sendMessage])
+  const handleHandsFreeTranscript = useCallback(
+    async (transcript) => {
+      // Send the transcript as a chat message and wait for the response
+      sendMessage(transcript);
+      // Return empty string — the response will come through messages state
+      // and we'll auto-speak it via the useEffect below
+      return '';
+    },
+    [sendMessage],
+  );
 
   const {
     currentState: hfState,
@@ -540,55 +557,55 @@ export default function FloatingChat() {
     onInterruption: () => {
       // We don't add an interruption message in chat — just stop speaking
     },
-  })
+  });
 
-  const hfSpeaking = hfState === MIC_STATE.SPEAKING
-  const hfListening = hfState === MIC_STATE.LISTENING
-  const hfProcessing = hfState === MIC_STATE.PROCESSING
-  const hfPaused = hfState === MIC_STATE.PAUSED
+  const hfSpeaking = hfState === MIC_STATE.SPEAKING;
+  const hfListening = hfState === MIC_STATE.LISTENING;
+  const hfProcessing = hfState === MIC_STATE.PROCESSING;
+  const hfPaused = hfState === MIC_STATE.PAUSED;
 
-  const hasMessages = messages.length > 0
+  const hasMessages = messages.length > 0;
 
   // Auto-scroll on new messages / pending state
   useEffect(() => {
     if (isOpen && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [isOpen, messages.length, isPending])
+  }, [isOpen, messages.length, isPending]);
 
   // Auto-focus input when panel opens (only in non-hands-free mode)
   useEffect(() => {
     if (isOpen && inputRef.current && !handsFreeMode) {
-      inputRef.current.focus()
+      inputRef.current.focus();
     }
-  }, [isOpen, handsFreeMode])
+  }, [isOpen, handsFreeMode]);
 
   // Auto-speak new Koda responses when voice responses are enabled (push-to-talk mode)
   useEffect(() => {
-    if (handsFreeMode) return // hands-free has its own TTS via the continuous loop
-    if (!voiceResponsesEnabled || !ttsSupported) return
+    if (handsFreeMode) return; // hands-free has its own TTS via the continuous loop
+    if (!voiceResponsesEnabled || !ttsSupported) return;
     if (messages.length <= prevMessageCountRef.current) {
-      prevMessageCountRef.current = messages.length
-      return
+      prevMessageCountRef.current = messages.length;
+      return;
     }
-    prevMessageCountRef.current = messages.length
+    prevMessageCountRef.current = messages.length;
 
-    const last = messages[messages.length - 1]
+    const last = messages[messages.length - 1];
     if (last?.role === 'model' && !last.isError && last.text) {
-      speak(last.text, messages.length - 1)
+      speak(last.text, messages.length - 1);
     }
-  }, [messages.length, voiceResponsesEnabled, ttsSupported, messages, speak, handsFreeMode])
+  }, [messages.length, voiceResponsesEnabled, ttsSupported, messages, speak, handsFreeMode]);
 
   // In hands-free mode, auto-speak new Koda responses then resume listening
   useEffect(() => {
-    if (!handsFreeMode || !hfMicActive) return
+    if (!handsFreeMode || !hfMicActive) return;
     if (messages.length <= prevMessageCountRef.current) {
-      prevMessageCountRef.current = messages.length
-      return
+      prevMessageCountRef.current = messages.length;
+      return;
     }
-    prevMessageCountRef.current = messages.length
+    prevMessageCountRef.current = messages.length;
 
-    const last = messages[messages.length - 1]
+    const last = messages[messages.length - 1];
     if (last?.role === 'model' && !last.isError && last.text) {
       // Use the continuous mic's speakAndListen to speak response and then resume listening
       // We need to import speakAndListen — but we can't from the hook directly here
@@ -597,111 +614,111 @@ export default function FloatingChat() {
       // Actually the hook manages speaking internally, so we just need to trigger it.
       // The simplest approach: speak the response through TTS directly and the hook
       // will pick up after.
-      speak(last.text, messages.length - 1)
+      speak(last.text, messages.length - 1);
     }
-  }, [messages.length, handsFreeMode, hfMicActive, messages, speak])
+  }, [messages.length, handsFreeMode, hfMicActive, messages, speak]);
 
   // Auto-activate hands-free if user had it enabled previously
   useEffect(() => {
-    if (handsFreeInitRef.current || !isOpen || !handsFreeChatEnabled) return
-    handsFreeInitRef.current = true
+    if (handsFreeInitRef.current || !isOpen || !handsFreeChatEnabled) return;
+    handsFreeInitRef.current = true;
     // Auto-start hands-free — permission check will handle prompt/denied
-    ;(async () => {
-      const granted = await checkAndRequest()
+    (async () => {
+      const granted = await checkAndRequest();
       if (granted) {
-        setHandsFreeMode(true)
-        startHandsFree()
+        setHandsFreeMode(true);
+        startHandsFree();
       }
-    })()
-  }, [isOpen, handsFreeChatEnabled, checkAndRequest, startHandsFree])
+    })();
+  }, [isOpen, handsFreeChatEnabled, checkAndRequest, startHandsFree]);
 
   // ── Hands-free toggle ──────────────────────────────────
 
   async function toggleHandsFree() {
     if (handsFreeMode) {
       // Turn off hands-free
-      stopHandsFree()
-      setHandsFreeMode(false)
-      setHandsFreeChatEnabled(false)
-      toggleHandsFreeAction(false).catch(() => {})
-      return
+      stopHandsFree();
+      setHandsFreeMode(false);
+      setHandsFreeChatEnabled(false);
+      toggleHandsFreeAction(false).catch(() => {});
+      return;
     }
 
     // Turn on hands-free — check permission first
-    const granted = await checkAndRequest()
-    if (!granted) return
+    const granted = await checkAndRequest();
+    if (!granted) return;
 
     // Stop any push-to-talk listening
-    if (isListening) stopVoiceInput()
-    if (isSpeaking) stopTTS()
+    if (isListening) stopVoiceInput();
+    if (isSpeaking) stopTTS();
 
-    setHandsFreeMode(true)
-    setHandsFreeChatEnabled(true)
-    toggleHandsFreeAction(true).catch(() => {})
-    startHandsFree()
+    setHandsFreeMode(true);
+    setHandsFreeChatEnabled(true);
+    toggleHandsFreeAction(true).catch(() => {});
+    startHandsFree();
   }
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   function handleSubmit(e) {
-    e.preventDefault()
-    const trimmed = draft.trim()
-    if (!trimmed || isPending) return
-    if (isSpeaking) stopTTS()
+    e.preventDefault();
+    const trimmed = draft.trim();
+    if (!trimmed || isPending) return;
+    if (isSpeaking) stopTTS();
     if (handsFreeMode) {
-      stopHandsFree()
-      setHandsFreeMode(false)
+      stopHandsFree();
+      setHandsFreeMode(false);
     }
-    sendMessage(trimmed)
-    setDraft('')
+    sendMessage(trimmed);
+    setDraft('');
   }
 
   function handleChip(chip) {
-    if (isPending) return
-    if (isSpeaking) stopTTS()
-    sendMessage(chip)
+    if (isPending) return;
+    if (isSpeaking) stopTTS();
+    sendMessage(chip);
   }
 
   async function handleMicToggle() {
-    clearError()
+    clearError();
     if (isListening) {
-      stopVoiceInput()
-      return
+      stopVoiceInput();
+      return;
     }
 
-    const granted = await checkAndRequest()
-    if (!granted) return
+    const granted = await checkAndRequest();
+    if (!granted) return;
 
     startVoiceInput((finalText) => {
-      setDraft(prev => {
-        const combined = prev ? `${prev} ${finalText}` : finalText
-        return combined
-      })
-    })
+      setDraft((prev) => {
+        const combined = prev ? `${prev} ${finalText}` : finalText;
+        return combined;
+      });
+    });
   }
 
   function handleSpeakerClick(messageIndex, text) {
     if (speakingMessageIndex === messageIndex) {
-      stopTTS()
+      stopTTS();
     } else {
-      speak(text, messageIndex)
+      speak(text, messageIndex);
     }
   }
 
   function toggleVoiceResponses() {
-    setVoiceResponsesEnabled(prev => !prev)
-    if (isSpeaking) stopTTS()
+    setVoiceResponsesEnabled((prev) => !prev);
+    if (isSpeaking) stopTTS();
   }
 
   // Show interim text in input while listening (push-to-talk only)
-  const displayValue = !handsFreeMode && isListening && interimText ? interimText : draft
+  const displayValue = !handsFreeMode && isListening && interimText ? interimText : draft;
 
-  const lastMessage = messages[messages.length - 1]
+  const lastMessage = messages[messages.length - 1];
   const latestChips =
-    lastMessage?.role === 'model' && !lastMessage.isError ? lastMessage.chips : null
+    lastMessage?.role === 'model' && !lastMessage.isError ? lastMessage.chips : null;
 
   // Whether to show the push-to-talk mic (hidden in hands-free mode)
-  const showPTTMic = sttSupported && !handsFreeMode
+  const showPTTMic = sttSupported && !handsFreeMode;
 
   return (
     <FixedLayer>
@@ -726,7 +743,9 @@ export default function FloatingChat() {
                   type="button"
                   $on={handsFreeMode}
                   onClick={toggleHandsFree}
-                  aria-label={handsFreeMode ? 'Turn off hands-free mode' : 'Turn on hands-free mode'}
+                  aria-label={
+                    handsFreeMode ? 'Turn off hands-free mode' : 'Turn on hands-free mode'
+                  }
                   title={handsFreeMode ? 'Hands-free on' : 'Hands-free off'}
                 >
                   {'\uD83C\uDFA4'}
@@ -738,7 +757,9 @@ export default function FloatingChat() {
                   type="button"
                   $on={voiceResponsesEnabled}
                   onClick={toggleVoiceResponses}
-                  aria-label={voiceResponsesEnabled ? 'Turn off voice responses' : 'Turn on voice responses'}
+                  aria-label={
+                    voiceResponsesEnabled ? 'Turn off voice responses' : 'Turn on voice responses'
+                  }
                   title={voiceResponsesEnabled ? 'Voice responses on' : 'Voice responses off'}
                 >
                   {voiceResponsesEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07'}
@@ -749,13 +770,13 @@ export default function FloatingChat() {
                 type="button"
                 aria-label="Close chat"
                 onClick={() => {
-                  if (isSpeaking) stopTTS()
-                  if (isListening) stopVoiceInput()
+                  if (isSpeaking) stopTTS();
+                  if (isListening) stopVoiceInput();
                   if (handsFreeMode) {
-                    stopHandsFree()
-                    setHandsFreeMode(false)
+                    stopHandsFree();
+                    setHandsFreeMode(false);
                   }
-                  setIsOpen(false)
+                  setIsOpen(false);
                 }}
               >
                 {'\u2715'}
@@ -774,7 +795,8 @@ export default function FloatingChat() {
             {!hasMessages && !isPending && (
               <WelcomeBubble>
                 <WelcomeName>Koda</WelcomeName>
-                Hey! I&apos;m Koda, your meal planning assistant. Ask me to plan your week, suggest recipes, swap a meal, or help with anything in the kitchen.
+                Hey! I&apos;m Koda, your meal planning assistant. Ask me to plan your week, suggest
+                recipes, swap a meal, or help with anything in the kitchen.
               </WelcomeBubble>
             )}
             {messages.map((m, i) => (
@@ -822,7 +844,7 @@ export default function FloatingChat() {
             {isPending && <Typing>Koda is thinking{'\u2026'}</Typing>}
             {latestChips && latestChips.length > 0 && !isPending && (
               <ChipRow>
-                {latestChips.map(chip => (
+                {latestChips.map((chip) => (
                   <Chip
                     key={chip}
                     type="button"
@@ -842,7 +864,9 @@ export default function FloatingChat() {
               {hfSpeaking && <SpeakingIndicator label="Speaking" color={undefined} />}
               {hfListening && <ListeningIndicator showMic={false} label="Listening" />}
               {hfProcessing && <ProcessingIndicator />}
-              {hfListening && <SilenceCountdown progress={hfSilenceProgress} show={hfSilenceProgress > 0} />}
+              {hfListening && (
+                <SilenceCountdown progress={hfSilenceProgress} show={hfSilenceProgress > 0} />
+              )}
               {hfInactivityPrompt && hfListening && (
                 <InactivityBanner>
                   Still there? Say something or tap the mic when you&apos;re ready.
@@ -870,8 +894,8 @@ export default function FloatingChat() {
           <Input
             ref={inputRef}
             value={displayValue}
-            onChange={e => {
-              if (!isListening && !handsFreeMode) setDraft(e.target.value)
+            onChange={(e) => {
+              if (!isListening && !handsFreeMode) setDraft(e.target.value);
             }}
             placeholder={
               handsFreeMode
@@ -914,5 +938,5 @@ export default function FloatingChat() {
       </Column>
       <PermissionModal />
     </FixedLayer>
-  )
+  );
 }

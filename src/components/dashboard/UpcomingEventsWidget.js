@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import SectionHeader from '@/components/common/SectionHeader'
+import styled from 'styled-components';
+import SectionHeader from '@/components/common/SectionHeader';
 
 const List = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const EventRow = styled.div`
   display: flex;
@@ -23,7 +23,7 @@ const EventRow = styled.div`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const ColorDot = styled.span`
   width: 8px;
@@ -31,22 +31,22 @@ const ColorDot = styled.span`
   border-radius: 50%;
   background: ${({ $color }) => $color};
   flex-shrink: 0;
-`
+`;
 
 const EventTitle = styled.span`
   flex: 1;
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const EventDate = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.md};
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 function formatDate(dateStr) {
-  const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const date = new Date(dateStr + 'T00:00:00');
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export default function UpcomingEventsWidget({ events }) {
@@ -63,5 +63,5 @@ export default function UpcomingEventsWidget({ events }) {
         ))}
       </List>
     </div>
-  )
+  );
 }

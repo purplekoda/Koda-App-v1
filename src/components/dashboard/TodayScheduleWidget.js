@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import SectionHeader from '@/components/common/SectionHeader'
+import styled from 'styled-components';
+import SectionHeader from '@/components/common/SectionHeader';
 
-const Wrapper = styled.div``
+const Wrapper = styled.div``;
 
 const EventList = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const EventCard = styled.div`
   display: flex;
@@ -25,22 +25,22 @@ const EventCard = styled.div`
   &:hover {
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const EventInfo = styled.div`
   flex: 1;
-`
+`;
 
 const EventTitle = styled.div`
   font-size: 14px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
-`
+`;
 
 const EventTime = styled.div`
   font-size: ${({ theme }) => theme.fontSizes.md};
   color: ${({ theme }) => theme.colors.textMuted};
-`
+`;
 
 const TimeBadge = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.md};
@@ -48,7 +48,7 @@ const TimeBadge = styled.span`
   background: ${({ theme }) => theme.colors.grayLight};
   padding: 2px 8px;
   border-radius: ${({ theme }) => theme.radii.pill};
-`
+`;
 
 export default function TodayScheduleWidget({ schedule }) {
   return (
@@ -66,5 +66,5 @@ export default function TodayScheduleWidget({ schedule }) {
         ))}
       </EventList>
     </Wrapper>
-  )
+  );
 }

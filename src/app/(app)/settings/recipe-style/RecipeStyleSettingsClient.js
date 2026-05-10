@@ -1,17 +1,17 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import SettingsStepLayout from '@/components/settings/SettingsStepLayout'
-import { useSettingsSave } from '@/components/settings/useSettingsSave'
-import AdventurousnessStep from '@/components/onboarding/steps/AdventurousnessStep'
-import { saveRecipeStyleSettingsAction } from '../step-actions'
+import { useState } from 'react';
+import SettingsStepLayout from '@/components/settings/SettingsStepLayout';
+import { useSettingsSave } from '@/components/settings/useSettingsSave';
+import AdventurousnessStep from '@/components/onboarding/steps/AdventurousnessStep';
+import { saveRecipeStyleSettingsAction } from '../step-actions';
 
 export default function RecipeStyleSettingsClient({ adventurousness: initial }) {
-  const { save, isPending, error, toast, goBack } = useSettingsSave()
-  const [adventurousness, setAdventurousness] = useState(initial)
+  const { save, isPending, error, toast, goBack } = useSettingsSave();
+  const [adventurousness, setAdventurousness] = useState(initial);
 
   function handleSave() {
-    save(() => saveRecipeStyleSettingsAction({ adventurousness }))
+    save(() => saveRecipeStyleSettingsAction({ adventurousness }));
   }
 
   return (
@@ -24,5 +24,5 @@ export default function RecipeStyleSettingsClient({ adventurousness: initial }) 
         isPending={isPending}
       />
     </SettingsStepLayout>
-  )
+  );
 }

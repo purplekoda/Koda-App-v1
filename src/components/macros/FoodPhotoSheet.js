@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useRef } from 'react'
-import styled from 'styled-components'
+import { useRef } from 'react';
+import styled from 'styled-components';
 
 const Overlay = styled.div`
   position: fixed;
@@ -11,7 +11,7 @@ const Overlay = styled.div`
   display: flex;
   align-items: flex-end;
   justify-content: center;
-`
+`;
 
 const Sheet = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -20,7 +20,7 @@ const Sheet = styled.div`
   max-width: 480px;
   padding: ${({ theme }) => theme.spacing.xl};
   padding-bottom: calc(${({ theme }) => theme.spacing.xxl} + env(safe-area-inset-bottom, 0px));
-`
+`;
 
 const Handle = styled.div`
   width: 36px;
@@ -28,14 +28,14 @@ const Handle = styled.div`
   border-radius: 2px;
   background: ${({ theme }) => theme.colors.grayMid};
   margin: 0 auto ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Title = styled.h3`
   font-size: 18px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
-`
+`;
 
 const Tip = styled.p`
   font-size: 13px;
@@ -45,7 +45,7 @@ const Tip = styled.p`
   padding: ${({ theme }) => theme.spacing.md};
   background: ${({ theme }) => theme.colors.infoLight};
   border-radius: ${({ theme }) => theme.radii.md};
-`
+`;
 
 const OptionButton = styled.button`
   display: flex;
@@ -69,13 +69,13 @@ const OptionButton = styled.button`
   & + & {
     margin-top: ${({ theme }) => theme.spacing.md};
   }
-`
+`;
 
 const OptionIcon = styled.span`
   font-size: 22px;
   width: 36px;
   text-align: center;
-`
+`;
 
 const CancelButton = styled.button`
   width: 100%;
@@ -85,41 +85,40 @@ const CancelButton = styled.button`
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textMuted};
   min-height: ${({ theme }) => theme.touchTarget};
-`
+`;
 
 const HiddenInput = styled.input`
   display: none;
-`
+`;
 
 export default function FoodPhotoSheet({ onImageSelected, onClose }) {
-  const cameraRef = useRef(null)
-  const uploadRef = useRef(null)
+  const cameraRef = useRef(null);
+  const uploadRef = useRef(null);
 
   function handleFileChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = () => {
-      const base64 = reader.result.split(',')[1]
+      const base64 = reader.result.split(',')[1];
       onImageSelected({
         base64,
         mimeType: file.type || 'image/jpeg',
         preview: reader.result,
-      })
-    }
-    reader.readAsDataURL(file)
+      });
+    };
+    reader.readAsDataURL(file);
   }
 
   return (
     <Overlay onClick={onClose}>
-      <Sheet onClick={e => e.stopPropagation()}>
+      <Sheet onClick={(e) => e.stopPropagation()}>
         <Handle />
         <Title>Add food or snack</Title>
         <Tip>
-          For the most accurate results, take a clear photo of the nutrition label
-          on the packaging. If there is no label, photograph the food itself and
-          Gemini will estimate.
+          For the most accurate results, take a clear photo of the nutrition label on the packaging.
+          If there is no label, photograph the food itself and Gemini will estimate.
         </Tip>
 
         <OptionButton onClick={() => cameraRef.current?.click()}>
@@ -139,15 +138,10 @@ export default function FoodPhotoSheet({ onImageSelected, onClose }) {
           capture="environment"
           onChange={handleFileChange}
         />
-        <HiddenInput
-          ref={uploadRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-        />
+        <HiddenInput ref={uploadRef} type="file" accept="image/*" onChange={handleFileChange} />
 
         <CancelButton onClick={onClose}>Cancel</CancelButton>
       </Sheet>
     </Overlay>
-  )
+  );
 }

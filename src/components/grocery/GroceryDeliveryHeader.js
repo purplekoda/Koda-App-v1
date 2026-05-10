@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import styled from 'styled-components'
-import Link from 'next/link'
-import { GROCERY_STORES, FULFILLMENT_OPTIONS, storeColor, storeLabel } from '@/data/grocery-stores'
+import styled from 'styled-components';
+import Link from 'next/link';
+import { GROCERY_STORES, FULFILLMENT_OPTIONS, storeColor, storeLabel } from '@/data/grocery-stores';
 
 const HeaderCard = styled.div`
   background: ${({ theme }) => theme.colors.surface};
@@ -11,7 +11,7 @@ const HeaderCard = styled.div`
   padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.xl};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
   box-shadow: ${({ theme }) => theme.shadows.card};
-`
+`;
 
 const Row = styled.div`
   display: flex;
@@ -28,7 +28,7 @@ const Row = styled.div`
     flex-direction: column;
     gap: ${({ theme }) => theme.spacing.sm};
   }
-`
+`;
 
 const RowLabel = styled.span`
   font-size: ${({ theme }) => theme.fontSizes.sm};
@@ -37,24 +37,22 @@ const RowLabel = styled.span`
   white-space: nowrap;
   padding-top: 7px;
   min-width: 90px;
-`
+`;
 
 const ChipRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.sm};
   flex: 1;
-`
+`;
 
 const Chip = styled.button`
   padding: 5px 14px;
   border-radius: ${({ theme }) => theme.radii.pill};
   border: 1.5px solid ${({ $active, theme }) =>
     $active ? theme.colors.amber : theme.colors.border};
-  background: ${({ $active, theme }) =>
-    $active ? theme.colors.amberLight : theme.colors.surface};
-  color: ${({ $active, theme }) =>
-    $active ? theme.colors.amber : theme.colors.textSecondary};
+  background: ${({ $active, theme }) => ($active ? theme.colors.amberLight : theme.colors.surface)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.amber : theme.colors.textSecondary)};
   font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   cursor: pointer;
@@ -65,7 +63,7 @@ const Chip = styled.button`
     border-color: ${({ theme }) => theme.colors.amber};
     color: ${({ theme }) => theme.colors.amber};
   }
-`
+`;
 
 const EmptyHint = styled(Link)`
   font-size: ${({ theme }) => theme.fontSizes.sm};
@@ -77,7 +75,7 @@ const EmptyHint = styled(Link)`
   &:hover {
     color: ${({ theme }) => theme.colors.teal};
   }
-`
+`;
 
 /**
  * GroceryDeliveryHeader
@@ -101,48 +99,50 @@ export default function GroceryDeliveryHeader({
   onSelectFulfillment,
 }) {
   // Support both new store_list (rich) and legacy flat stores array
-  const storeList = groceryPreferences?.store_list
-  const hasStoreList = Array.isArray(storeList) && storeList.length > 0
+  const storeList = groceryPreferences?.store_list;
+  const hasStoreList = Array.isArray(storeList) && storeList.length > 0;
 
   const displayStores = hasStoreList
-    ? storeList.map(s => ({
+    ? storeList.map((s) => ({
         value: s.value,
-        label: s.value === 'other' ? (s.label || 'Other') : (GROCERY_STORES.find(g => g.value === s.value)?.label || s.label),
+        label:
+          s.value === 'other'
+            ? s.label || 'Other'
+            : GROCERY_STORES.find((g) => g.value === s.value)?.label || s.label,
       }))
     : (groceryPreferences?.stores || []).length > 0
-      ? (groceryPreferences.stores).map(v => ({
+      ? groceryPreferences.stores.map((v) => ({
           value: v,
           label: storeLabel(v, groceryPreferences.other_store_name),
         }))
-      : null // null = no stores configured
+      : null; // null = no stores configured
 
   return (
     <HeaderCard>
       <Row>
         <RowLabel>Sending to</RowLabel>
         <ChipRow>
-          {displayStores
-            ? displayStores.map(store => (
-                <Chip
-                  key={store.value}
-                  type="button"
-                  $active={selectedStore === store.value}
-                  onClick={() => onSelectStore(
-                    selectedStore === store.value ? '' : store.value
-                  )}
-                >
-                  {store.label}
-                </Chip>
-              ))
-            : <EmptyHint href="/settings/grocery-stores">Set preferred stores in settings</EmptyHint>
-          }
+          {displayStores ? (
+            displayStores.map((store) => (
+              <Chip
+                key={store.value}
+                type="button"
+                $active={selectedStore === store.value}
+                onClick={() => onSelectStore(selectedStore === store.value ? '' : store.value)}
+              >
+                {store.label}
+              </Chip>
+            ))
+          ) : (
+            <EmptyHint href="/settings/grocery-stores">Set preferred stores in settings</EmptyHint>
+          )}
         </ChipRow>
       </Row>
 
       <Row>
         <RowLabel>How</RowLabel>
         <ChipRow>
-          {FULFILLMENT_OPTIONS.map(opt => (
+          {FULFILLMENT_OPTIONS.map((opt) => (
             <Chip
               key={opt.value}
               type="button"
@@ -155,5 +155,5 @@ export default function GroceryDeliveryHeader({
         </ChipRow>
       </Row>
     </HeaderCard>
-  )
+  );
 }

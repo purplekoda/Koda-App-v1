@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import styled from 'styled-components'
-import Link from 'next/link'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { sanitizeString, sanitizeEmail } from '@/lib/sanitize'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import styled from 'styled-components';
+import Link from 'next/link';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { sanitizeString, sanitizeEmail } from '@/lib/sanitize';
 
 const Container = styled.div`
   display: flex;
@@ -14,7 +14,7 @@ const Container = styled.div`
   min-height: 100vh;
   padding: ${({ theme }) => theme.spacing.xl};
   background: ${({ theme }) => theme.colors.background};
-`
+`;
 
 const Card = styled.div`
   width: 100%;
@@ -23,7 +23,7 @@ const Card = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   padding: ${({ theme }) => theme.spacing.xxl};
   box-shadow: ${({ theme }) => theme.shadows.elevated};
-`
+`;
 
 const Logo = styled.h1`
   text-align: center;
@@ -31,20 +31,20 @@ const Logo = styled.h1`
   font-weight: 500;
   color: ${({ theme }) => theme.colors.teal};
   margin-bottom: ${({ theme }) => theme.spacing.xs};
-`
+`;
 
 const Tagline = styled.p`
   text-align: center;
   font-size: ${({ theme }) => theme.fontSizes.body};
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: ${({ theme }) => theme.spacing.xxl};
-`
+`;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.lg};
-`
+`;
 
 const Label = styled.label`
   font-size: ${({ theme }) => theme.fontSizes.md};
@@ -52,7 +52,7 @@ const Label = styled.label`
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: 4px;
   display: block;
-`
+`;
 
 const InputField = styled.input`
   width: 100%;
@@ -67,7 +67,7 @@ const InputField = styled.input`
     border-color: ${({ theme }) => theme.colors.teal};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.tealLight};
   }
-`
+`;
 
 const SubmitButton = styled.button`
   width: 100%;
@@ -87,69 +87,69 @@ const SubmitButton = styled.button`
     opacity: 0.6;
     cursor: not-allowed;
   }
-`
+`;
 
 const ErrorMessage = styled.p`
   color: ${({ theme }) => theme.colors.coral};
   font-size: ${({ theme }) => theme.fontSizes.md};
   text-align: center;
-`
+`;
 
 const SuccessMessage = styled.p`
   color: ${({ theme }) => theme.colors.teal};
   font-size: ${({ theme }) => theme.fontSizes.md};
   text-align: center;
-`
+`;
 
 const Footer = styled.p`
   text-align: center;
   font-size: ${({ theme }) => theme.fontSizes.md};
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: ${({ theme }) => theme.spacing.xl};
-`
+`;
 
 const FooterLink = styled(Link)`
   color: ${({ theme }) => theme.colors.teal};
   font-weight: 500;
-`
+`;
 
 export default function SignupPage() {
-  const router = useRouter()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
-    setLoading(true)
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
 
-    const cleanName = sanitizeString(name, 100)
+    const cleanName = sanitizeString(name, 100);
     if (!cleanName) {
-      setError('Please enter your name.')
-      setLoading(false)
-      return
+      setError('Please enter your name.');
+      setLoading(false);
+      return;
     }
 
-    const cleanEmail = sanitizeEmail(email)
+    const cleanEmail = sanitizeEmail(email);
     if (!cleanEmail) {
-      setError('Please enter a valid email address.')
-      setLoading(false)
-      return
+      setError('Please enter a valid email address.');
+      setLoading(false);
+      return;
     }
 
     if (password.length < 6 || password.length > 128) {
-      setError('Password must be between 6 and 128 characters.')
-      setLoading(false)
-      return
+      setError('Password must be between 6 and 128 characters.');
+      setLoading(false);
+      return;
     }
 
     try {
-      const supabase = getSupabaseBrowserClient()
+      const supabase = getSupabaseBrowserClient();
       const { error: authError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
@@ -158,20 +158,20 @@ export default function SignupPage() {
             display_name: cleanName,
           },
         },
-      })
+      });
 
       if (authError) {
         // Never expose raw Supabase errors — prevents user enumeration
-        console.error('Signup error:', authError.message)
-        setError('Account creation failed. Please check your details and try again.')
-        return
+        console.error('Signup error:', authError.message);
+        setError('Account creation failed. Please check your details and try again.');
+        return;
       }
 
-      setSuccess('Account created! Check your email to confirm, then sign in.')
+      setSuccess('Account created! Check your email to confirm, then sign in.');
     } catch {
-      setError('Something went wrong. Please try again.')
+      setError('Something went wrong. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -228,5 +228,5 @@ export default function SignupPage() {
         </Footer>
       </Card>
     </Container>
-  )
+  );
 }

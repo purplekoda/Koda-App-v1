@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import { startTransition } from 'react'
-import styled from 'styled-components'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { sidebarSections } from '@/data/navigation'
-import { logout } from '@/app/(auth)/actions'
-import { useChat } from '@/components/ai/ChatProvider'
+import { startTransition } from 'react';
+import styled from 'styled-components';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { sidebarSections } from '@/data/navigation';
+import { logout } from '@/app/(auth)/actions';
+import { useChat } from '@/components/ai/ChatProvider';
 
 const SidebarContainer = styled.aside`
   width: ${({ theme }) => theme.sidebarWidth};
@@ -22,7 +22,7 @@ const SidebarContainer = styled.aside`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     display: none;
   }
-`
+`;
 
 const Logo = styled.div`
   display: flex;
@@ -33,14 +33,14 @@ const Logo = styled.div`
   font-size: 22px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.teal};
-`
+`;
 
 const LogoDot = styled.span`
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.teal};
-`
+`;
 
 const SectionLabel = styled.div`
   font-size: ${({ theme }) => theme.fontSizes.md};
@@ -49,7 +49,7 @@ const SectionLabel = styled.div`
   color: ${({ theme }) => theme.colors.textMuted};
   padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.xl};
   padding-bottom: ${({ theme }) => theme.spacing.xs};
-`
+`;
 
 const NavLink = styled(Link)`
   display: flex;
@@ -58,16 +58,16 @@ const NavLink = styled(Link)`
   padding: 10px ${({ theme }) => theme.spacing.xl};
   min-height: ${({ theme }) => theme.touchTarget};
   font-size: 15px;
-  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textSecondary};
-  font-weight: ${({ $active }) => $active ? 500 : 400};
-  border-left: 3px solid ${({ $active, theme }) => $active ? theme.colors.teal : 'transparent'};
+  color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textSecondary)};
+  font-weight: ${({ $active }) => ($active ? 500 : 400)};
+  border-left: 3px solid ${({ $active, theme }) => ($active ? theme.colors.teal : 'transparent')};
   transition: all 0.15s ease;
 
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const NavButton = styled.button`
   display: flex;
@@ -91,7 +91,7 @@ const NavButton = styled.button`
     color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.borderLight};
   }
-`
+`;
 
 const NavDot = styled.span`
   width: 10px;
@@ -99,11 +99,11 @@ const NavDot = styled.span`
   border-radius: 3px;
   background: ${({ $color }) => $color};
   flex-shrink: 0;
-`
+`;
 
 const NavContent = styled.div`
   flex: 1;
-`
+`;
 
 const UserSection = styled.div`
   margin-top: auto;
@@ -112,7 +112,7 @@ const UserSection = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
-`
+`;
 
 const Avatar = styled.div`
   width: 32px;
@@ -126,12 +126,12 @@ const Avatar = styled.div`
   font-size: ${({ theme }) => theme.fontSizes.sm};
   font-weight: 600;
   flex-shrink: 0;
-`
+`;
 
 const UserInfo = styled.div`
   flex: 1;
   min-width: 0;
-`
+`;
 
 const UserName = styled.div`
   font-size: ${({ theme }) => theme.fontSizes.body};
@@ -140,7 +140,7 @@ const UserName = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`
+`;
 
 const LogoutButton = styled.button`
   font-size: ${({ theme }) => theme.fontSizes.sm};
@@ -154,16 +154,16 @@ const LogoutButton = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.coral};
   }
-`
+`;
 
 export default function Sidebar({ user, trackMacros }) {
-  const pathname = usePathname()
-  const { isOpen, setIsOpen } = useChat()
+  const pathname = usePathname();
+  const { isOpen, setIsOpen } = useChat();
 
   function handleLogout() {
     startTransition(() => {
-      logout()
-    })
+      logout();
+    });
   }
 
   return (
@@ -178,15 +178,15 @@ export default function Sidebar({ user, trackMacros }) {
             {section.items
               .filter((item) => item.id !== 'macros' || trackMacros)
               .map((item) => (
-              <NavLink
-                key={item.id}
-                href={item.href}
-                $active={pathname === item.href || pathname.startsWith(item.href + '/')}
-              >
-                <NavDot $color={item.color} />
-                {item.name}
-              </NavLink>
-            ))}
+                <NavLink
+                  key={item.id}
+                  href={item.href}
+                  $active={pathname === item.href || pathname.startsWith(item.href + '/')}
+                >
+                  <NavDot $color={item.color} />
+                  {item.name}
+                </NavLink>
+              ))}
           </div>
         ))}
         <SectionLabel>ASSISTANT</SectionLabel>
@@ -215,5 +215,5 @@ export default function Sidebar({ user, trackMacros }) {
         </UserSection>
       )}
     </SidebarContainer>
-  )
+  );
 }

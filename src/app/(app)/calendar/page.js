@@ -1,4 +1,4 @@
-import PlaceholderPage from '@/components/common/PlaceholderPage'
+import PlaceholderPage from '@/components/common/PlaceholderPage';
 
 export default function CalendarPage() {
   return (
@@ -7,5 +7,5 @@ export default function CalendarPage() {
       title="Calendar"
       description="View your family schedule, sync with Google Calendar, and see meal plans alongside events all in one place."
     />
-  )
+  );
 }
