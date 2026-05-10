@@ -11,7 +11,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage && node scripts/coverage-ratchet.js",
     "format": "biome format --write .",
-    "format:check": "biome format ."
+    "format:check": "biome format .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
@@ -34,6 +35,7 @@
     "@vitest/coverage-v8": "^4.1.5",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "vitest": "^4.1.5"
   }
