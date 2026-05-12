@@ -75,7 +75,7 @@ export async function toggleStapleStockAction(stapleId, isOutOfStock) {
         } else {
           const { getSupabaseServerClient } = await import('@/lib/supabase/server')
           const supabase = await getSupabaseServerClient()
-          await supabase.from('grocery_list').insert({
+          await supabase.from('grocery_items').insert({
             user_id: user.id,
             name: item.name,
             quantity: '1',

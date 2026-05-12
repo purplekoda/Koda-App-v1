@@ -40,7 +40,7 @@ const FixedLayer = styled.div`
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--cooking-bar-offset, 0px);
   z-index: 50;
   pointer-events: none;
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xxxl};

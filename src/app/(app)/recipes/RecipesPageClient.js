@@ -1858,6 +1858,12 @@ export default function RecipesPageClient({ initialRecipes, faithPractices, card
   const [importReviewData, setImportReviewData] = useState(null)
   const [isSavingImport, setIsSavingImport] = useState(false)
   const [isGeneratingImportImage, setIsGeneratingImportImage] = useState(false)
+  const [photoImportOpen, setPhotoImportOpen] = useState(false)
+  const [photoImportFiles, setPhotoImportFiles] = useState([])
+  const [photoImportPreviews, setPhotoImportPreviews] = useState([])
+  const [photoImportError, setPhotoImportError] = useState(null)
+  const [isPhotoImporting, setIsPhotoImporting] = useState(false)
+  const [photoImportPhase, setPhotoImportPhase] = useState(null)
 
   // Collections state
   const [collections, setCollections] = useState(initialCollections || [])
@@ -2470,6 +2476,60 @@ export default function RecipesPageClient({ initialRecipes, faithPractices, card
     }
   }
 
+  function handlePhotoImportFiles(e) {
+    const incoming = Array.from(e.target.files || [])
+    if (!incoming.length) return
+    const combined = [...photoImportFiles, ...incoming].slice(0, 6)
+    setPhotoImportFiles(combined)
+    setPhotoImportPreviews(combined.map(f => URL.createObjectURL(f)))
+    setPhotoImportError(null)
+    e.target.value = ''
+  }
+
+  function removePhotoImportFile(index) {
+    URL.revokeObjectURL(photoImportPreviews[index])
+    setPhotoImportFiles(prev => prev.filter((_, i) => i !== index))
+    setPhotoImportPreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function closePhotoImport() {
+    photoImportPreviews.forEach(url => URL.revokeObjectURL(url))
+    setPhotoImportOpen(false)
+    setPhotoImportFiles([])
+    setPhotoImportPreviews([])
+    setPhotoImportError(null)
+  }
+
+  async function handlePhotoImport() {
+    if (photoImportFiles.length === 0) {
+      setPhotoImportError('Add at least one photo.')
+      return
+    }
+    setPhotoImportError(null)
+    setIsPhotoImporting(true)
+    setPhotoImportPhase('Preparing photos\u2026')
+    try {
+      const fd = new FormData()
+      const resized = await Promise.all(photoImportFiles.map(resizeImage))
+      resized.forEach(f => fd.append('images', f))
+      setPhotoImportPhase('Identifying dish\u2026')
+      const result = await importRecipeFromPhotoAction(fd)
+      setIsPhotoImporting(false)
+      setPhotoImportPhase(null)
+      if (result.success && result.data) {
+        setImportReviewData(result.data)
+        closePhotoImport()
+        setImportReviewOpen(true)
+      } else {
+        setPhotoImportError(result.error || 'Could not identify recipe from photo.')
+      }
+    } catch {
+      setIsPhotoImporting(false)
+      setPhotoImportPhase(null)
+      setPhotoImportError('We couldn\u2019t read this photo \u2014 try a clearer photo of the dish.')
+    }
+  }
+
   async function handleGenerate() {
     const trimmed = promptText.trim()
     if (!trimmed) {
@@ -2575,6 +2635,10 @@ export default function RecipesPageClient({ initialRecipes, faithPractices, card
                 <CreateMenuItem type="button" onClick={() => { setCreateMenuOpen(false); setScanOpen(true) }} disabled={isScanning}>
                   <CreateMenuIcon>{'\uD83D\uDCF7'}</CreateMenuIcon>
                   Scan a recipe
+                </CreateMenuItem>
+                <CreateMenuItem type="button" onClick={() => { setCreateMenuOpen(false); setPhotoImportOpen(true) }} disabled={isPhotoImporting}>
+                  <CreateMenuIcon>{'\uD83C\uDF7D'}</CreateMenuIcon>
+                  Identify a dish
                 </CreateMenuItem>
                 <CreateMenuItem type="button" onClick={() => { setCreateMenuOpen(false); openWebSearch() }}>
                   <CreateMenuIcon>{'\uD83D\uDD0D'}</CreateMenuIcon>
@@ -3469,6 +3533,65 @@ export default function RecipesPageClient({ initialRecipes, faithPractices, card
             </PromptSecondary>
             <PromptPrimary onClick={handleScan} disabled={isScanning || scanFiles.length === 0}>
               {isScanning ? (scanPhase || 'Scanning\u2026') : `Scan ${scanFiles.length > 0 ? `(${scanFiles.length} photo${scanFiles.length !== 1 ? 's' : ''})` : ''}`}
+            </PromptPrimary>
+          </PromptActions>
+        </Modal>
+      )}
+
+      {photoImportOpen && (
+        <Modal title="Identify a dish" onClose={closePhotoImport}>
+          <PromptHint>
+            Snap a photo of a dish and Koda will identify it and generate a recipe. Add up to 6 images.
+          </PromptHint>
+          {photoImportFiles.length === 0 ? (
+            <ScanDropZone>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePhotoImportFiles}
+                style={{ display: 'none' }}
+              />
+              <ScanDropIcon>{'\uD83C\uDF7D'}</ScanDropIcon>
+              <ScanDropText>Tap to take a photo or choose from gallery</ScanDropText>
+              <ScanDropHint>JPEG, PNG, WebP, HEIC</ScanDropHint>
+            </ScanDropZone>
+          ) : (
+            <ScanPreviewGrid>
+              {photoImportPreviews.map((url, i) => (
+                <ScanPreviewItem key={i}>
+                  <ScanPreviewImg src={url} alt={`Dish photo ${i + 1}`} />
+                  <ScanRemoveBtn
+                    type="button"
+                    onClick={() => removePhotoImportFile(i)}
+                    aria-label={`Remove photo ${i + 1}`}
+                    disabled={isPhotoImporting}
+                  >
+                    {'\u2715'}
+                  </ScanRemoveBtn>
+                </ScanPreviewItem>
+              ))}
+              {photoImportFiles.length < 6 && (
+                <ScanDropZone style={{ minHeight: 80 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoImportFiles}
+                    style={{ display: 'none' }}
+                  />
+                  <ScanDropText>+ Add more</ScanDropText>
+                </ScanDropZone>
+              )}
+            </ScanPreviewGrid>
+          )}
+          {photoImportError && <PromptError role="alert">{photoImportError}</PromptError>}
+          <PromptActions>
+            <PromptSecondary onClick={closePhotoImport} disabled={isPhotoImporting}>
+              Cancel
+            </PromptSecondary>
+            <PromptPrimary onClick={handlePhotoImport} disabled={isPhotoImporting || photoImportFiles.length === 0}>
+              {isPhotoImporting ? (photoImportPhase || 'Identifying\u2026') : `Identify ${photoImportFiles.length > 0 ? `(${photoImportFiles.length} photo${photoImportFiles.length !== 1 ? 's' : ''})` : ''}`}
             </PromptPrimary>
           </PromptActions>
         </Modal>

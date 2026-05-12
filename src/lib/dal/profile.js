@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { isMockMode } from './require-user'
-import { getMockProfile, saveMockProfile, getMockGroceryPreferences, saveMockGroceryPreferences, getMockRecipeCardSettings, saveMockRecipeCardSettings, getMockDashboardSections, saveMockDashboardSections } from './mock-store'
+import { getMockProfile, saveMockProfile, getMockGroceryPreferences, saveMockGroceryPreferences, getMockRecipeCardSettings, saveMockRecipeCardSettings, getMockDashboardSections, saveMockDashboardSections, getMockChatButtonPosition, saveMockChatButtonPosition } from './mock-store'
 import { DEFAULT_SECTIONS } from '@/data/dashboard-sections'
 
 export async function getProfile(userId) {
@@ -134,4 +134,39 @@ export async function saveDashboardSections(userId, sections) {
 
   if (error) throw new Error('Failed to save dashboard sections')
   return sections
+}
+
+const DEFAULT_CHAT_BUTTON_POSITION = { corner: 'bottom-right', offset: 0 }
+
+export async function getChatButtonPosition(userId) {
+  if (isMockMode()) {
+    return getMockChatButtonPosition()
+  }
+
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('chat_button_position')
+    .eq('id', userId)
+    .single()
+
+  if (error) return DEFAULT_CHAT_BUTTON_POSITION
+  return data?.chat_button_position || DEFAULT_CHAT_BUTTON_POSITION
+}
+
+export async function saveChatButtonPosition(userId, position) {
+  if (isMockMode()) {
+    return saveMockChatButtonPosition(position)
+  }
+
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  const { error } = await supabase
+    .from('profiles')
+    .update({ chat_button_position: position, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+
+  if (error) throw new Error('Failed to save chat button position')
+  return position
 }

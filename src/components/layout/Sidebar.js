@@ -35,13 +35,6 @@ const Logo = styled.div`
   color: ${({ theme }) => theme.colors.teal};
 `
 
-const LogoDot = styled.span`
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.colors.teal};
-`
-
 const SectionLabel = styled.div`
   font-size: ${({ theme }) => theme.fontSizes.md};
   font-weight: 500;
@@ -169,7 +162,9 @@ export default function Sidebar({ user, trackMacros }) {
   return (
     <SidebarContainer>
       <Logo>
-        <LogoDot /> Koda
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/icon-64.png" alt="Koda" width={32} height={32} style={{ display: 'block' }} />
+        Koda
       </Logo>
       <NavContent>
         {sidebarSections.map((section) => (

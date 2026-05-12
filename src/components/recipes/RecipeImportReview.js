@@ -353,9 +353,30 @@ const SecondaryBtn = styled.button`
 
 function parseSteps(instructions) {
   if (!instructions) return []
+  if (Array.isArray(instructions)) return instructions
+
+  // Split on "1. " or "1) " numbered patterns
+  if (/\d+[.)]\s+/.test(instructions)) {
+    const steps = instructions
+      .split(/\n?\s*\d+[.)]\s+/)
+      .filter(s => s.trim().length > 0)
+      .map(s => s.trim())
+    if (steps.length > 1) return steps
+  }
+
+  // Split on "Step 1:" patterns
+  if (/step\s+\d+[:.]\s*/i.test(instructions)) {
+    const steps = instructions
+      .split(/\n?\s*step\s+\d+[:.]\s*/i)
+      .filter(s => s.trim().length > 0)
+      .map(s => s.trim())
+    if (steps.length > 1) return steps
+  }
+
+  // Fallback: split on newlines, strip leading numbering
   return instructions
     .split(/\n/)
-    .map(s => s.replace(/^\d+[\.\)\-]\s*/, '').trim())
+    .map(s => s.replace(/^\s*\d+[\.\)\-]\s*/, '').trim())
     .filter(Boolean)
 }
 

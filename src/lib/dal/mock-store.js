@@ -686,6 +686,19 @@ export function saveMockVoiceSettings(settings) {
   return getMockVoiceSettings()
 }
 
+// ── Chat Button Position ──────────────────────────────
+
+let mockChatButtonPosition = { corner: 'bottom-right', offset: 0 }
+
+export function getMockChatButtonPosition() {
+  return { ...mockChatButtonPosition }
+}
+
+export function saveMockChatButtonPosition(position) {
+  mockChatButtonPosition = { ...position }
+  return getMockChatButtonPosition()
+}
+
 // ── Macro Extras ──────────────────────────────────────
 
 async function getRawMacroExtras() {

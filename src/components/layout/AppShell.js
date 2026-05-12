@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import Sidebar from './Sidebar'
 import BottomTabBar from './BottomTabBar'
 import FloatingChat from '@/components/ai/FloatingChat'
+import KodaChatButton from '@/components/ai/KodaChatButton'
 import { ChatProvider } from '@/components/ai/ChatProvider'
 
 const Shell = styled.div`
@@ -24,7 +25,7 @@ const MainContent = styled.main`
   }
 `
 
-export default function AppShell({ children, user, trackMacros, voiceSettings }) {
+export default function AppShell({ children, user, trackMacros, voiceSettings, chatButtonPosition }) {
   return (
     <ChatProvider voiceSettings={voiceSettings}>
       <Shell>
@@ -32,6 +33,7 @@ export default function AppShell({ children, user, trackMacros, voiceSettings })
         <MainContent>{children}</MainContent>
         <BottomTabBar />
         <FloatingChat />
+        <KodaChatButton initialPosition={chatButtonPosition} />
       </Shell>
     </ChatProvider>
   )

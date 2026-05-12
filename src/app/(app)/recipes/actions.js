@@ -20,6 +20,7 @@ import {
   removeRecipeFromCollection,
 } from '@/lib/dal/collections'
 import { validateCookingPreferences } from '@/lib/validators'
+import { normalizeInstructions } from '@/lib/gemini'
 
 export async function createRecipeAction(formData) {
   try {
@@ -29,6 +30,11 @@ export async function createRecipeAction(formData) {
 
     const validation = validateRecipe(formData)
     if (!validation.valid) return fail(validation.errors.join(', '))
+
+    // Normalize instructions into clean numbered steps
+    if (validation.data.instructions) {
+      validation.data.instructions = await normalizeInstructions(validation.data.instructions)
+    }
 
     const { isMockMode } = await import('@/lib/dal/require-user')
     if (!isMockMode()) {
@@ -90,6 +96,11 @@ export async function updateRecipeAction(recipeId, formData) {
 
     const validation = validateRecipe(formData)
     if (!validation.valid) return fail(validation.errors.join(', '))
+
+    // Normalize instructions into clean numbered steps
+    if (validation.data.instructions) {
+      validation.data.instructions = await normalizeInstructions(validation.data.instructions)
+    }
 
     const recipe = await updateRecipe(user.id, recipeId, validation.data)
     if (!recipe) return fail('Recipe not found')
@@ -235,15 +246,22 @@ export async function scanRecipeAction(formData) {
       }),
     )
 
-    const { scanRecipeFromImages } = await import('@/lib/gemini')
-    const raw = await scanRecipeFromImages(images)
+    let raw
+    try {
+      const { scanRecipeFromImages } = await import('@/lib/gemini')
+      raw = await scanRecipeFromImages(images)
+    } catch (geminiErr) {
+      console.error('[scanRecipe] Gemini failed:', geminiErr?.message)
+      return fail('We couldn\u2019t read this photo \u2014 try a clearer photo of the recipe or nutrition label.')
+    }
 
     const validation = validateRecipe(raw)
-    if (!validation.valid) return fail('Could not extract a valid recipe. Try clearer photos.')
+    if (!validation.valid) return fail('We found text but couldn\u2019t extract a valid recipe \u2014 try clearer photos.')
 
     return ok({ ...validation.data, source: 'gemini' })
-  } catch {
-    return fail('Could not scan recipe. Please try again.')
+  } catch (err) {
+    console.error('[scanRecipe] error:', err?.message || err)
+    return fail('We couldn\u2019t read this photo \u2014 try a clearer photo of the recipe or nutrition label.')
   }
 }
 
@@ -458,13 +476,19 @@ export async function importRecipeFromUrlAction(url) {
       return fail('We couldn\'t read this page \u2014 it may require a login. Try copying the recipe text directly instead.')
     }
 
-    const { extractRecipeFromHtml } = await import('@/lib/gemini')
-    const raw = await extractRecipeFromHtml(html, cleanUrl)
+    let raw
+    try {
+      const { extractRecipeFromHtml } = await import('@/lib/gemini')
+      raw = await extractRecipeFromHtml(html, cleanUrl)
+    } catch (geminiErr) {
+      console.error('[importRecipe] Gemini extraction failed:', geminiErr?.message, cleanUrl)
+      return fail('We found the page but could not read the recipe \u2014 you can try pasting the recipe text manually instead.')
+    }
 
     const validation = validateRecipe(raw)
     if (!validation.valid) {
       console.error('[importRecipe] Validation failed:', validation.errors, cleanUrl)
-      return fail('Could not extract a valid recipe from this page.')
+      return fail('We found the page but could not read the recipe \u2014 you can fill in the details manually.')
     }
 
     // Check for partial extraction (fewer than 3 ingredients)
@@ -484,7 +508,10 @@ export async function importRecipeFromUrlAction(url) {
     })
   } catch (err) {
     console.error('[importRecipe] error:', err?.message || err)
-    return fail('Could not import recipe. Please try again.')
+    if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+      return fail('The request timed out \u2014 the site may be slow or blocking automated requests. Try again or paste the recipe manually.')
+    }
+    return fail('We couldn\u2019t reach that website \u2014 try copying the recipe URL again.')
   }
 }
 
@@ -514,11 +541,17 @@ export async function importRecipeFromPhotoAction(formData) {
       }),
     )
 
-    const { identifyDishFromPhoto } = await import('@/lib/gemini')
-    const raw = await identifyDishFromPhoto(images)
+    let raw
+    try {
+      const { identifyDishFromPhoto } = await import('@/lib/gemini')
+      raw = await identifyDishFromPhoto(images)
+    } catch (geminiErr) {
+      console.error('[importRecipeFromPhoto] Gemini failed:', geminiErr?.message)
+      return fail('We couldn\u2019t read this photo \u2014 try a clearer photo of the recipe or dish.')
+    }
 
     const validation = validateRecipe(raw)
-    if (!validation.valid) return fail('Could not identify a recipe from this photo. Try a clearer image.')
+    if (!validation.valid) return fail('We couldn\u2019t identify a recipe from this photo \u2014 try a clearer image or a different angle.')
 
     // Upload the first photo to Supabase Storage as the recipe image
     let imageUrl = null
@@ -556,8 +589,9 @@ export async function importRecipeFromPhotoAction(formData) {
       ...(raw.confidence ? { _confidence: raw.confidence } : {}),
       ...(isPartial ? { _isPartial: true } : {}),
     })
-  } catch {
-    return fail('Could not identify recipe from photo. Please try again.')
+  } catch (err) {
+    console.error('[importRecipeFromPhoto] error:', err?.message || err)
+    return fail('We couldn\u2019t read this photo \u2014 try a clearer photo of the recipe or dish.')
   }
 }
 
