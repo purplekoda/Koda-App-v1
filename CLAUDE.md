@@ -22,10 +22,12 @@ Koda is a household meal-planning and kitchen management app. Key areas: dashboa
 - `task build` — production build
 - `task lint` — run ESLint
 - `task lint:fix` — ESLint with auto-fix
-- `task check` — lint + build
+- `task test` — run vitest in watch mode
+- `task test:coverage` — run vitest with coverage + ratchet enforcement
+- `task check` — lint + tests + build
 - `task clean` — remove `.next`
 
-Or via npm: `npm run dev`, `npm run build`, `npm run lint`
+Or via npm: `npm run dev`, `npm run build`, `npm run lint`, `npm run test`, `npm run test:coverage`
 
 # Architecture
 
@@ -79,3 +81,28 @@ Handles CSP (nonce-based script-src via `x-nonce` request header), CORS enforcem
 - The app runs in mock-data mode when Supabase env vars are missing
 - Server-only secrets (`SUPABASE_SERVICE_ROLE_KEY`, deep-link bases) must never be exposed to the client
 - Required Netlify env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL`
+
+# Testing & Tooling
+
+## Vitest
+
+- `npm run test` — watch mode
+- `npm run test:run` — single run
+- `npm run test:coverage` — full run + coverage + ratchet enforcement
+- Tests are colocated next to source as `*.test.{js,jsx}`. Test utilities live under `src/test/`.
+- Use `renderWithTheme()` from `src/test/render.js` for any component using styled-components.
+- Use `createSupabaseMock()` from `src/test/supabase-mock.js` for DAL/server-action tests.
+- `next/navigation` and `next/headers` are auto-mocked globally in `vitest.setup.js`.
+- The Vite config uses `@vitejs/plugin-react-swc` (not the default `@vitejs/plugin-react`) because Vite 8's oxc transformer does not parse JSX in `.js` files, and source code uses `.js` for React components.
+
+## Coverage ratchet
+
+- `.coverage-baseline.json` stores the line and branch coverage floor (`{lines, branches}`).
+- The baseline only goes up. Drops fail the build.
+- When coverage improves, `scripts/coverage-ratchet.js` updates the baseline and exits 1, asking you to commit `.coverage-baseline.json` and push again.
+- Manual baseline edits downward should be rare and reviewed.
+
+## CI
+
+- `.github/workflows/ci.yml` runs on every push and PR: lint, test:coverage.
+- Coverage HTML report is uploaded as a workflow artifact.
