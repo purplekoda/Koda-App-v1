@@ -166,7 +166,8 @@ export function proxy(request) {
       pathname.startsWith('/_next') ||
       pathname.startsWith('/api') ||
       pathname === '/favicon.ico' ||
-      pathname === '/'
+      pathname === '/' ||
+      /\.(png|ico|jpg|jpeg|svg|gif|webp|json|txt|xml)$/.test(pathname)
     ) {
       return response;
     }

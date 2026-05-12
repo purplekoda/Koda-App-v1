@@ -15,6 +15,18 @@ import {
 import { saveVoiceSettings, getVoiceSettings } from '@/lib/dal/voice-settings';
 import { saveCookingPreferences } from '@/lib/dal/cooking-preferences';
 import { GROCERY_STORES, FULFILLMENT_OPTIONS } from '@/data/grocery-stores';
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { requireUser } from '@/lib/dal/require-user'
+import { apiLimiter } from '@/lib/rate-limit'
+import { ok, fail } from '@/lib/action-result'
+import { validateProfileUpdate, validateCookingPreferences } from '@/lib/validators'
+import { sanitizeString, sanitizeEnum } from '@/lib/sanitize'
+import { getProfile, updateProfile, saveGroceryPreferences, saveRecipeCardSettings, saveChatButtonPosition } from '@/lib/dal/profile'
+import { saveVoiceSettings, getVoiceSettings } from '@/lib/dal/voice-settings'
+import { saveCookingPreferences } from '@/lib/dal/cooking-preferences'
+import { GROCERY_STORES, FULFILLMENT_OPTIONS } from '@/data/grocery-stores'
 
 export async function saveProfileAction(formData) {
   try {
@@ -394,5 +406,24 @@ export async function toggleHandsFreeAction(enabled) {
     return ok(updated);
   } catch {
     return fail('Could not save hands-free preference.');
+  }
+}
+
+const VALID_CORNERS = ['bottom-right', 'bottom-left', 'top-right', 'top-left']
+
+export async function saveChatButtonPositionAction(position) {
+  try {
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    const corner = sanitizeEnum(position?.corner, VALID_CORNERS) || 'bottom-right'
+    const offset = Math.max(0, Math.min(2000, Number(position?.offset) || 0))
+    const sanitized = { corner, offset }
+
+    await saveChatButtonPosition(user.id, sanitized)
+    return ok(sanitized)
+  } catch {
+    return fail('Could not save button position.')
   }
 }

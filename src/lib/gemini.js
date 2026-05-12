@@ -133,7 +133,11 @@ const RECIPE_SCHEMA = {
         required: ['name', 'quantity'],
       },
     },
-    instructions: { type: Type.STRING, description: 'Step-by-step directions as a single string' },
+    instructions: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING, description: 'One complete cooking step — a single clear action' },
+      description: 'Each element is one cooking step. Do NOT combine multiple actions into one step. Example: ["Preheat oven to 375°F", "Mix flour, sugar, and baking powder in a large bowl", "Add eggs and milk, stir until smooth"]',
+    },
     prep_time_minutes: { type: Type.INTEGER },
     cook_time_minutes: { type: Type.INTEGER },
     servings: { type: Type.INTEGER },
@@ -148,6 +152,128 @@ const RECIPE_SCHEMA = {
     'servings',
   ],
 };
+
+/**
+ * Convert an array of step strings into a numbered instruction string for storage.
+ * @param {string[]|string} steps
+ * @returns {string}
+ */
+function formatStepsForStorage(steps) {
+  if (!steps) return ''
+  if (typeof steps === 'string') return steps
+  if (!Array.isArray(steps)) return String(steps)
+  return steps
+    .filter(s => typeof s === 'string' && s.trim())
+    .map((s, i) => `${i + 1}. ${s.trim()}`)
+    .join('\n')
+}
+
+/**
+ * Try to parse numbered steps from raw instructions text using regex.
+ * Returns an array of step strings, or null if no clear pattern is found.
+ */
+function tryParseStepsLocally(instructions) {
+  if (!instructions || typeof instructions !== 'string') return null
+
+  // Pattern: "1. Do this" / "2. Do that" (numbered with period)
+  if (/\d+\.\s+/.test(instructions)) {
+    const steps = instructions
+      .split(/\n?\s*\d+\.\s+/)
+      .filter(s => s.trim().length > 0)
+      .map(s => s.trim())
+    if (steps.length > 1) return steps
+  }
+
+  // Pattern: "Step 1: Do this" / "Step 2: Do that"
+  if (/step\s+\d+[:.]\s+/i.test(instructions)) {
+    const steps = instructions
+      .split(/\n?\s*step\s+\d+[:.]\s+/i)
+      .filter(s => s.trim().length > 0)
+      .map(s => s.trim())
+    if (steps.length > 1) return steps
+  }
+
+  // Pattern: "1) Do this" / "2) Do that"
+  if (/\d+\)\s+/.test(instructions)) {
+    const steps = instructions
+      .split(/\n?\s*\d+\)\s+/)
+      .filter(s => s.trim().length > 0)
+      .map(s => s.trim())
+    if (steps.length > 1) return steps
+  }
+
+  return null
+}
+
+/**
+ * Normalize a raw instructions string into clean numbered steps.
+ * 1. If the text has numbered patterns, parse them locally (fast).
+ * 2. Otherwise, call Gemini to split unstructured text into logical steps.
+ * 3. Falls back to sentence splitting if Gemini fails.
+ *
+ * @param {string} instructions - Raw instruction text
+ * @returns {Promise<string>} Numbered steps string (e.g. "1. Step one\n2. Step two")
+ */
+export async function normalizeInstructions(instructions) {
+  if (!instructions || typeof instructions !== 'string') return instructions || ''
+
+  // Already well-formatted numbered steps? Return as-is.
+  const localSteps = tryParseStepsLocally(instructions)
+  if (localSteps) {
+    return localSteps.map((s, i) => `${i + 1}. ${s}`).join('\n')
+  }
+
+  // Single-line or very short? Not worth splitting.
+  const trimmed = instructions.trim()
+  if (trimmed.length < 40 || !trimmed.includes(' ')) return `1. ${trimmed}`
+
+  // Newline-separated lines that each look like a complete step
+  const lines = trimmed.split('\n').map(s => s.trim()).filter(Boolean)
+  if (lines.length > 1) {
+    return lines.map((s, i) => `${i + 1}. ${s.replace(/^\d+[\.\)\-]\s*/, '').trim()}`).join('\n')
+  }
+
+  // Call Gemini to intelligently split unstructured text
+  try {
+    const apiKey = process.env.GOOGLE_AI_API_KEY
+    if (!apiKey) throw new Error('no key')
+
+    const ai = new GoogleGenAI({ apiKey })
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents:
+        'The following text contains recipe cooking instructions written as a single block without clear step numbers. ' +
+        'Split these instructions into individual logical cooking steps. Each step should be one clear action — ' +
+        'for example one step might be "Preheat the oven to 375 degrees" and another might be ' +
+        '"Mix the flour, sugar, and baking powder in a large bowl." ' +
+        'Do not combine multiple actions into one step and do not split a single action across multiple steps.\n\n' +
+        trimmed,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+        },
+        abortSignal: AbortSignal.timeout(15_000),
+      },
+    })
+
+    const steps = JSON.parse(response.text)
+    if (Array.isArray(steps) && steps.length > 0) {
+      return steps.filter(s => typeof s === 'string' && s.trim()).map((s, i) => `${i + 1}. ${s.trim()}`).join('\n')
+    }
+  } catch {
+    // Fall back to sentence splitting
+  }
+
+  // Fallback: split on sentence boundaries (period followed by space + uppercase)
+  const sentences = trimmed.split(/\.(?=\s+[A-Z])/).map(s => s.trim()).filter(s => s.length > 5)
+  if (sentences.length > 1) {
+    return sentences.map((s, i) => `${i + 1}. ${s.endsWith('.') ? s : s + '.'}`).join('\n')
+  }
+
+  return `1. ${trimmed}`
+}
 
 /**
  * Call Gemini 2.0 Flash with a chat history and return the response text.
@@ -179,6 +305,69 @@ export async function callGemini(history) {
 }
 
 /**
+ * Call Gemini with a cooking-mode system prompt and full recipe context.
+ *
+ * Used by the hands-free cooking assistant on recipe detail pages.
+ * The system prompt instructs Gemini to act as a concise, warm cooking
+ * guide that knows every detail of the recipe.
+ *
+ * @param {string} message - The user's spoken command/question.
+ * @param {{ name: string, ingredients: Array, instructions: string, steps: string[], prep_time_minutes?: number, cook_time_minutes?: number, servings?: number }} recipe
+ * @param {number} currentStep - 1-based index of the current step.
+ * @param {Array<{ role: 'user'|'model', parts: [{ text: string }] }>} [history]
+ * @returns {Promise<string>} The model's text response.
+ */
+export async function callCookingAssistant(message, recipe, currentStep, history = []) {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (!apiKey) {
+    throw new Error('GOOGLE_AI_API_KEY is not configured')
+  }
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  const ingredientList = (recipe.ingredients || [])
+    .map(i => `- ${i.name}${i.quantity ? ` (${i.quantity})` : ''}`)
+    .join('\n')
+
+  const stepsText = (recipe.steps || [])
+    .map((s, i) => `Step ${i + 1}: ${s}`)
+    .join('\n')
+
+  const systemInstruction =
+    "You are Koda's hands-free cooking assistant. The user is actively cooking the following recipe. " +
+    "You are ONLY permitted to discuss the following topics — the steps and instructions in this specific " +
+    "recipe, ingredient quantities and measurements from this recipe, substitutions for ingredients in " +
+    "this recipe, cooking techniques or methods mentioned in this recipe, timing and temperature guidance " +
+    "for this recipe, and troubleshooting problems that arise while cooking this specific recipe. " +
+    "You are NOT permitted to discuss anything outside of this recipe — no other recipes, no general " +
+    "cooking advice unrelated to this recipe, no meal planning, no nutrition tracking, no grocery lists, " +
+    "no other topics whatsoever. If the user asks about anything not related to this recipe respond with " +
+    "'I can only help with this recipe right now — ask me about the steps, ingredients, or substitutions " +
+    "and I will help you out.' " +
+    "Keep all responses under 3 sentences. Speak naturally and warmly. Always end with a brief " +
+    "follow-up question or prompt related to this recipe.\n\n" +
+    `RECIPE: ${recipe.name}\n` +
+    (recipe.servings ? `Servings: ${recipe.servings}\n` : '') +
+    (recipe.prep_time_minutes ? `Prep time: ${recipe.prep_time_minutes} min\n` : '') +
+    (recipe.cook_time_minutes ? `Cook time: ${recipe.cook_time_minutes} min\n` : '') +
+    `\nINGREDIENTS:\n${ingredientList}\n` +
+    `\nSTEPS:\n${stepsText}\n` +
+    `\nThe user is currently on step ${currentStep} of ${recipe.steps?.length || '?'}.`
+
+  const priorHistory = history.length > 0 ? history : []
+
+  const chat = ai.chats.create({
+    model: 'gemini-2.5-flash',
+    config: { systemInstruction },
+    history: priorHistory,
+  })
+
+  const result = await chat.sendMessage({ message })
+
+  return result.text
+}
+
+/**
  * Generate a structured recipe from a natural-language prompt.
  * Returns a parsed object matching the RECIPE_SCHEMA shape.
  *
@@ -206,6 +395,9 @@ export async function generateRecipe(prompt, context = null) {
   });
 
   return JSON.parse(response.text);
+  const recipe = JSON.parse(response.text)
+  recipe.instructions = formatStepsForStorage(recipe.instructions)
+  return recipe
 }
 
 /**
@@ -241,6 +433,9 @@ export async function scanRecipeFromImages(images) {
   });
 
   return JSON.parse(response.text);
+  const recipe = JSON.parse(response.text)
+  recipe.instructions = formatStepsForStorage(recipe.instructions)
+  return recipe
 }
 
 const PANTRY_SCAN_SYSTEM_PROMPT =
@@ -702,7 +897,11 @@ const WEB_RECIPE_SEARCH_SCHEMA = {
               required: ['name', 'quantity'],
             },
           },
-          instructions: { type: Type.STRING },
+          instructions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING, description: 'One complete cooking step' },
+            description: 'Each element is one cooking step. Do NOT combine multiple actions into one step.',
+          },
         },
         required: ['name', 'description', 'rating', 'review_count', 'ingredients', 'instructions'],
       },
@@ -778,6 +977,10 @@ export async function searchWebRecipes(query) {
   const recipes = (parsed.recipes ?? []).slice(0, 2);
   if (recipes.length === 0) throw new Error('No recipes generated');
   return recipes;
+  const parsed = JSON.parse(structureRes.text)
+  const recipes = (parsed.recipes ?? []).slice(0, 2)
+  if (recipes.length === 0) throw new Error('No recipes generated')
+  return recipes.map(r => ({ ...r, instructions: formatStepsForStorage(r.instructions) }))
 }
 
 const SURPRISE_RECIPE_SCHEMA = {
@@ -811,7 +1014,11 @@ const SURPRISE_RECIPE_SCHEMA = {
         required: ['name', 'quantity'],
       },
     },
-    instructions: { type: Type.STRING },
+    instructions: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING, description: 'One complete cooking step' },
+      description: 'Each element is one cooking step. Do NOT combine multiple actions into one step.',
+    },
     tags: { type: Type.ARRAY, items: { type: Type.STRING } },
   },
   required: ['name', 'description', 'trending_reason', 'ingredients', 'instructions'],
@@ -878,6 +1085,9 @@ export async function searchSurpriseMeRecipe(context = {}) {
   });
 
   return JSON.parse(structureRes.text);
+  const recipe = JSON.parse(structureRes.text)
+  recipe.instructions = formatStepsForStorage(recipe.instructions)
+  return recipe
 }
 
 const SURPRISE_BATCH_SCHEMA = {
@@ -961,6 +1171,8 @@ export async function searchSurpriseMeRecipes(context = {}) {
 
   const parsed = JSON.parse(structureRes.text);
   return parsed.recipes || [];
+  const parsed = JSON.parse(structureRes.text)
+  return (parsed.recipes || []).map(r => ({ ...r, instructions: formatStepsForStorage(r.instructions) }))
 }
 
 /**
@@ -1112,6 +1324,8 @@ export async function searchRecipeSuggestionsForMeal(mealName, context = {}) {
 
   const parsed = JSON.parse(structureRes.text);
   return (parsed.recipes ?? []).slice(0, 3);
+  const parsed = JSON.parse(structureRes.text)
+  return (parsed.recipes ?? []).slice(0, 3).map(r => ({ ...r, instructions: formatStepsForStorage(r.instructions) }))
 }
 
 /**
@@ -1171,6 +1385,9 @@ const DISH_PHOTO_SCHEMA = {
     instructions: {
       type: Type.STRING,
       description: 'Step-by-step directions if determinable, otherwise general cooking guidance',
+      type: Type.ARRAY,
+      items: { type: Type.STRING, description: 'One complete cooking step' },
+      description: 'Each element is one cooking step. If the dish is not clearly identifiable, provide general cooking guidance as individual steps.',
     },
     prep_time_minutes: { type: Type.INTEGER, nullable: true },
     cook_time_minutes: { type: Type.INTEGER, nullable: true },
@@ -1218,6 +1435,9 @@ export async function identifyDishFromPhoto(images) {
   });
 
   return JSON.parse(response.text);
+  const dish = JSON.parse(response.text)
+  dish.instructions = formatStepsForStorage(dish.instructions)
+  return dish
 }
 
 const NUTRITION_SYSTEM_PROMPT =
@@ -1303,12 +1523,26 @@ export async function extractRecipeFromHtml(html, url) {
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const trimmed = html
+  // Preserve JSON-LD structured data (recipe sites embed recipe info here)
+  const jsonLdBlocks = []
+  const jsonLdPattern = /<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi
+  let ldMatch
+  while ((ldMatch = jsonLdPattern.exec(html)) !== null) {
+    jsonLdBlocks.push(ldMatch[0])
+  }
+  const jsonLdSection = jsonLdBlocks.length
+    ? '\n\n<!-- Structured recipe data -->\n' + jsonLdBlocks.join('\n')
+    : ''
+
+  const cleaned = html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<nav[\s\S]*?<\/nav>/gi, '')
     .replace(/<footer[\s\S]*?<\/footer>/gi, '')
     .slice(0, 60_000);
+
+  // Append JSON-LD back and truncate to keep within model limits
+  const trimmed = (cleaned + jsonLdSection).slice(0, 60_000)
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
@@ -1321,6 +1555,9 @@ export async function extractRecipeFromHtml(html, url) {
   });
 
   return JSON.parse(response.text);
+  const recipe = JSON.parse(response.text)
+  recipe.instructions = formatStepsForStorage(recipe.instructions)
+  return recipe
 }
 
 // ── Meal Swap via Chat ──────────────────────────────────────────────────
