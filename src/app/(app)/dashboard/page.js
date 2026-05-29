@@ -7,6 +7,8 @@ import { getManagedPantryItems } from '@/lib/dal/pantry-management'
 import { getGroceryItems } from '@/lib/dal/grocery'
 import { getMacroMembers } from '@/lib/dal/macros'
 import { getCookingPreferences } from '@/lib/dal/cooking-preferences'
+import { getYesterdayKodaMeals } from '@/lib/dal/meal-feedback'
+import { DEFAULT_SECTIONS } from '@/data/dashboard-sections'
 import DashboardPageClient from './DashboardPageClient'
 
 export default async function DashboardPage() {
@@ -18,25 +20,27 @@ export default async function DashboardPage() {
   let dashboardSections = [], pantryItems = [], managedPantry = []
   let groceryItems = [], macroMembers = [], dinnerIdeas = []
   let cookingPreferences = null
+  let yesterdayKodaMeals = []
 
   try {
     ;[
       weeklyMeals, todayMeals, todaySchedule, todos,
       dashboardSections, pantryItems, managedPantry,
       groceryItems, macroMembers, dinnerIdeas,
-      cookingPreferences,
+      cookingPreferences, yesterdayKodaMeals,
     ] = await Promise.all([
-      getWeeklyMeals(user.id),
-      getTodayMeals(user.id),
-      getTodaySchedule(user.id),
-      getTodos(user.id),
-      getDashboardSections(user.id),
+      getWeeklyMeals(user.id).catch(() => []),
+      getTodayMeals(user.id).catch(() => []),
+      getTodaySchedule(user.id).catch(() => []),
+      getTodos(user.id).catch(() => []),
+      getDashboardSections(user.id).catch(() => DEFAULT_SECTIONS),
       getPantryItems(user.id).catch(() => []),
       getManagedPantryItems(user.id).catch(() => []),
       getGroceryItems(user.id).catch(() => []),
       getMacroMembers(user.id).catch(() => []),
       getDinnerIdeas(user.id).catch(() => []),
       getCookingPreferences(user.id).catch(() => null),
+      getYesterdayKodaMeals(user.id).catch(() => []),
     ])
   } catch (err) {
     console.error('[DashboardPage] Failed to load data:', err?.message)
@@ -58,6 +62,7 @@ export default async function DashboardPage() {
       macroMembers={macroMembers}
       dinnerIdeas={dinnerIdeas}
       cookingPreferences={cookingPreferences}
+      yesterdayKodaMeals={yesterdayKodaMeals}
     />
   )
 }

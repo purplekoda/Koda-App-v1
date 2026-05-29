@@ -274,6 +274,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
     initial?.ingredients?.length ? initial.ingredients : [emptyIngredient()]
   )
   const [imageUrl, setImageUrl] = useState(initial?.image_url || null)
+  const [photoPath, setPhotoPath] = useState(initial?.photo_path || null)
   const [error, setError] = useState(null)
   const [generatingImage, setGeneratingImage] = useState(false)
   const [nameDuplicate, setNameDuplicate] = useState(
@@ -318,6 +319,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
       } else {
         setImageUrl(dataUrl)
       }
+      setPhotoPath(null)
       URL.revokeObjectURL(img.src)
     }
     img.src = URL.createObjectURL(file)
@@ -331,6 +333,7 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
       const result = await onGenerateImage(name.trim(), description.trim())
       if (result.success && result.data?.image_url) {
         setImageUrl(result.data.image_url)
+        setPhotoPath(result.data.photo_path || null)
       } else {
         setError(result.error || 'Could not generate photo.')
       }
@@ -367,6 +370,8 @@ export default function RecipeForm({ initial, onSubmit, onCancel, isPending, sub
       tags: tagsStr.split(',').map(t => t.trim()).filter(Boolean),
       ingredients: ingredients.filter(i => i.name.trim()),
       image_url: imageUrl || null,
+      photo_path: photoPath || null,
+      photo_source: photoPath ? 'supabase' : (imageUrl && !imageUrl.startsWith('data:') ? 'external' : null),
       ...(initial?.source ? { source: initial.source } : {}),
     }
 

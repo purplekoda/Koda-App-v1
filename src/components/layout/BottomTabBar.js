@@ -4,7 +4,6 @@ import styled from 'styled-components'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { bottomTabs } from '@/data/navigation'
-import { useChat } from '@/components/ai/ChatProvider'
 
 const TabBarContainer = styled.nav`
   display: none;
@@ -44,13 +43,6 @@ const Tab = styled(Link)`
   transition: background 0.15s ease;
 `
 
-const TabButton = styled.button`
-  ${tabStyles}
-  min-height: ${({ theme }) => theme.touchTarget};
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ $active, theme }) => ($active ? theme.colors.purpleLight : 'transparent')};
-  transition: background 0.15s ease;
-`
 
 const TabDot = styled.span`
   width: 20px;
@@ -66,13 +58,12 @@ const TabLabel = styled.span`
   font-weight: ${({ $active }) => ($active ? 500 : 400)};
 `
 
-export default function BottomTabBar() {
+export default function BottomTabBar({ trackMacros }) {
   const pathname = usePathname()
-  const { isOpen, setIsOpen } = useChat()
 
   return (
     <TabBarContainer>
-      {bottomTabs.map((tab) => {
+      {bottomTabs.filter(tab => !tab.requiresMacros || trackMacros).map((tab) => {
         const active = pathname === tab.href || pathname.startsWith(tab.href + '/')
         return (
           <Tab key={tab.id} href={tab.href} $active={active}>
@@ -81,16 +72,6 @@ export default function BottomTabBar() {
           </Tab>
         )
       })}
-      <TabButton
-        type="button"
-        $active={isOpen}
-        onClick={() => setIsOpen(!isOpen)}
-        aria-pressed={isOpen}
-        aria-label={isOpen ? 'Hide chat' : 'Show chat'}
-      >
-        <TabDot $color="#7F77DD" $active={isOpen} />
-        <TabLabel $active={isOpen}>Chat</TabLabel>
-      </TabButton>
     </TabBarContainer>
   )
 }

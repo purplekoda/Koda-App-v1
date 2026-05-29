@@ -292,6 +292,8 @@ export default function ManualStepsFlow({
       setError(null)
       const r = await saveBudgetAction({
         weekly_budget: formState.budget,
+        monthly_budget: formState.monthlyBudget,
+        split_monthly_to_weekly: formState.splitMonthly,
         budget_priorities: formState.budgetPriorities,
         shopping_style: formState.shoppingStyle,
         preferred_delivery_service: formState.deliveryService,
@@ -479,10 +481,14 @@ export default function ManualStepsFlow({
         return (
           <BudgetStep
             budget={formState.budget}
+            monthlyBudget={formState.monthlyBudget}
+            splitMonthly={formState.splitMonthly}
             priorities={formState.budgetPriorities}
             shoppingStyle={formState.shoppingStyle}
             deliveryService={formState.deliveryService}
             onChangeBudget={(v) => update('budget', v)}
+            onChangeMonthlyBudget={(v) => update('monthlyBudget', v)}
+            onChangeSplitMonthly={(v) => update('splitMonthly', v)}
             onChangePriorities={(v) => update('budgetPriorities', v)}
             onChangeShoppingStyle={(v) => update('shoppingStyle', v)}
             onChangeDeliveryService={(v) => update('deliveryService', v)}

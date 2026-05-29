@@ -2,11 +2,12 @@
 
 import { useState, useTransition, useEffect, useCallback } from 'react'
 import styled from 'styled-components'
-import { generateMacroInsight, analyzeFoodPhoto, logMacroExtra } from './actions'
+import { generateMacroInsight, analyzeFoodPhoto, logMacroExtra, fetchWeeklyExtras } from './actions'
 import FoodPhotoSheet from '@/components/macros/FoodPhotoSheet'
 import MealTimePicker from '@/components/macros/MealTimePicker'
 import FoodReviewCard from '@/components/macros/FoodReviewCard'
 import MacroHistory from '@/components/macros/MacroHistory'
+import ManualFoodEntry from '@/components/macros/ManualFoodEntry'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -436,6 +437,10 @@ const BreakdownTable = styled.div`
   border-radius: ${({ theme }) => theme.radii.lg};
   overflow: hidden;
   margin-bottom: ${({ theme }) => theme.spacing.xxl};
+
+  & > div + div {
+    border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+  }
 `
 
 const BreakdownRow = styled.div`
@@ -444,10 +449,6 @@ const BreakdownRow = styled.div`
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
   border-left: 3px solid ${({ $isToday }) => $isToday ? '#1D9E75' : 'transparent'};
-
-  & + & {
-    border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
-  }
 `
 
 const DayName = styled.span`
@@ -473,17 +474,117 @@ const MealChip = styled.span`
   white-space: nowrap;
 `
 
-const RowMacros = styled.span`
-  font-size: 11px;
+const DayMacroBarGroup = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`
+
+const DayMacroBarRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`
+
+const DayMacroBarLabel = styled.span`
+  font-size: 10px;
   color: ${({ theme }) => theme.colors.textMuted};
-  min-width: 140px;
+  min-width: 48px;
+  flex-shrink: 0;
+`
+
+const DayMacroBarTrack = styled.div`
+  flex: 1;
+  height: 5px;
+  background: ${({ theme }) => theme.colors.grayLight};
+  border-radius: 2px;
+  overflow: hidden;
+`
+
+const DayMacroBarFill = styled.div`
+  height: 100%;
+  width: ${({ $pct }) => Math.min($pct, 100)}%;
+  background: ${({ $color, $over }) => $over ? '#D85A30' : $color};
+  border-radius: 2px;
+  transition: width 0.3s ease;
+`
+
+const DayMacroBarValue = styled.span`
+  font-size: 10px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  min-width: 44px;
   text-align: right;
+  flex-shrink: 0;
 `
 
 const FlagIcon = styled.span`
   font-size: 14px;
   min-width: 18px;
   text-align: center;
+`
+
+const ClickableBreakdownRow = styled.div`
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.grayLight};
+  }
+`
+
+const DayExpandedSection = styled.div`
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  padding-top: 0;
+  border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+  background: ${({ theme }) => theme.colors.grayLight};
+`
+
+const DayExpandedMealGroup = styled.div`
+  & + & {
+    margin-top: ${({ theme }) => theme.spacing.md};
+  }
+`
+
+const DayExpandedMealTitle = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${({ $color }) => $color};
+  padding: ${({ theme }) => theme.spacing.sm} 0 4px;
+`
+
+const DayExpandedEntry = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const DayExpandedEntryMacros = styled.span`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+`
+
+const DayExpandedEmpty = styled.p`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-style: italic;
+  padding: ${({ theme }) => theme.spacing.sm} 0;
+`
+
+const DayChevron = styled.span`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  transform: ${({ $open }) => $open ? 'rotate(180deg)' : 'rotate(0deg)'};
+  display: inline-block;
 `
 
 // Smart insight card
@@ -529,6 +630,234 @@ const AddFoodButton = styled.button`
   border: 1.5px dashed ${({ theme }) => theme.colors.teal};
   cursor: pointer;
   transition: all 0.15s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.teal};
+    color: white;
+  }
+`
+
+// Date navigator
+const DateNav = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.md};
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.surface};
+  border: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+  border-radius: ${({ theme }) => theme.radii.lg};
+`
+
+const DateNavArrow = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  font-size: 18px;
+  color: ${({ $disabled, theme }) => $disabled ? theme.colors.textMuted : theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.grayLight};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ${({ $disabled }) => $disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${({ $disabled }) => $disabled ? 0.4 : 1};
+  transition: background 0.12s ease;
+
+  &:hover:not([disabled]) {
+    background: ${({ theme }) => theme.colors.borderLight};
+  }
+`
+
+const DateNavLabel = styled.button`
+  flex: 1;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  padding: 4px;
+  border-radius: ${({ theme }) => theme.radii.sm};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.grayLight};
+  }
+`
+
+// Food log by meal type
+const FoodLogSection = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.xxl};
+`
+
+const MealSection = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+`
+
+const MealSectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: ${({ theme }) => theme.spacing.sm} 0;
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  border-bottom: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+`
+
+const MealSectionTitle = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${({ $color }) => $color};
+`
+
+const MealSectionCal = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textMuted};
+`
+
+const FoodEntry = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.sm} 0;
+  border-bottom: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`
+
+const FoodEntryName = styled.span`
+  flex: 1;
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const FoodEntryMacros = styled.span`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+`
+
+const EmptyMeal = styled.p`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-style: italic;
+  padding: ${({ theme }) => theme.spacing.sm} 0;
+`
+
+// Log food button and choice sheet
+const LogFoodButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.md};
+  margin-top: ${({ theme }) => theme.spacing.xl};
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+  min-height: ${({ theme }) => theme.touchTarget};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  font-size: 15px;
+  font-weight: 600;
+  background: ${({ theme }) => theme.colors.teal};
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
+`
+
+const LogChoiceSheet = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+`
+
+const LogChoiceCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radii.xl} ${({ theme }) => theme.radii.xl} 0 0;
+  width: 100%;
+  max-width: 480px;
+  padding: ${({ theme }) => theme.spacing.xl};
+  padding-bottom: calc(${({ theme }) => theme.spacing.xxl} + env(safe-area-inset-bottom, 0px));
+`
+
+const LogChoiceHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: ${({ theme }) => theme.colors.grayMid};
+  margin: 0 auto ${({ theme }) => theme.spacing.lg};
+`
+
+const LogChoiceTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+`
+
+const LogChoiceOption = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.lg};
+  min-height: ${({ theme }) => theme.touchTarget};
+  background: ${({ theme }) => theme.colors.grayLight};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  font-size: 15px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+  text-align: left;
+
+  & + & {
+    margin-top: ${({ theme }) => theme.spacing.md};
+  }
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.borderLight};
+  }
+`
+
+const LogChoiceIcon = styled.span`
+  font-size: 22px;
+  width: 36px;
+  text-align: center;
+`
+
+const LogChoiceCancel = styled.button`
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.md};
+  margin-top: ${({ theme }) => theme.spacing.lg};
+  font-size: 14px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textMuted};
+  min-height: ${({ theme }) => theme.touchTarget};
+`
+
+const InlinePlusButton = styled.button`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.tealLight};
+  color: ${({ theme }) => theme.colors.teal};
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  line-height: 1;
 
   &:hover {
     background: ${({ theme }) => theme.colors.teal};
@@ -609,9 +938,9 @@ const SubTab = styled.button`
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function MacrosPageClient({ members, todayIndex, extrasMap: initialExtrasMap }) {
-  const [view, setView] = useState('household')
-  const [activeMemberId, setActiveMemberId] = useState(members[0]?.id)
+export default function MacrosPageClient({ members, todayIndex, extrasMap: initialExtrasMap, primaryMemberId }) {
+  const [view, setView] = useState(primaryMemberId ? 'individual' : 'household')
+  const [activeMemberId, setActiveMemberId] = useState(primaryMemberId ?? members[0]?.id)
   const [insights, setInsights] = useState({})
   const [, startTransition] = useTransition()
 
@@ -619,15 +948,43 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
   const [extrasMap, setExtrasMap] = useState(initialExtrasMap || {})
 
   // Logging flow state
-  const [logStep, setLogStep] = useState(null) // null | 'photo' | 'analyzing' | 'mealTime' | 'review'
+  const [logStep, setLogStep] = useState(null) // null | 'choose' | 'photo' | 'analyzing' | 'mealTime' | 'review' | 'manual'
   const [selectedImage, setSelectedImage] = useState(null)
   const [foodAnalysis, setFoodAnalysis] = useState(null)
   const [selectedMealTime, setSelectedMealTime] = useState(null)
+  const [preselectedMealTime, setPreselectedMealTime] = useState(null)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
 
+  // History tab: expanded day and fetched entries cache keyed by "memberId:dateStr"
+  const [expandedDay, setExpandedDay] = useState(null)
+  const [weekExtrasCache, setWeekExtrasCache] = useState({})
+
   // Individual sub-tab: 'today' or 'history'
   const [subTab, setSubTab] = useState('today')
+
+  // Date navigator state (ISO date string, defaults to today)
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10))
+
+  function formatDateDisplay(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00')
+    const today = new Date().toISOString().slice(0, 10)
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+    if (dateStr === today) return 'Today'
+    if (dateStr === yesterday) return 'Yesterday'
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  }
+
+  function navigateDate(delta) {
+    setSelectedDate(prev => {
+      const d = new Date(prev + 'T12:00:00')
+      d.setDate(d.getDate() + delta)
+      const next = d.toISOString().slice(0, 10)
+      // Don't navigate to future dates
+      if (next > new Date().toISOString().slice(0, 10)) return prev
+      return next
+    })
+  }
 
   // Add todayIndex to each member for calculations
   const membersWithToday = members.map(m => ({ ...m, todayIndex }))
@@ -666,6 +1023,7 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
     setSelectedImage(null)
     setFoodAnalysis(null)
     setSelectedMealTime(null)
+    setPreselectedMealTime(null)
     setSaving(false)
   }
 
@@ -681,7 +1039,12 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
 
       if (result.success) {
         setFoodAnalysis(result.data)
-        setLogStep('mealTime')
+        if (preselectedMealTime) {
+          setSelectedMealTime(preselectedMealTime)
+          setLogStep('review')
+        } else {
+          setLogStep('mealTime')
+        }
       } else {
         setToast(result.error || 'Could not analyze the photo.')
         resetLogFlow()
@@ -694,10 +1057,69 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
     setLogStep('review')
   }
 
+  function handleLogForMealType(mealType) {
+    setPreselectedMealTime(mealType)
+    setLogStep('choose')
+  }
+
+  function getDayDate(dayIndex) {
+    const today = new Date()
+    const diff = dayIndex - todayIndex
+    const d = new Date(today)
+    d.setDate(today.getDate() + diff)
+    return d.toISOString().slice(0, 10)
+  }
+
+  function handleLogForDay(dayIndex) {
+    const dateStr = getDayDate(dayIndex)
+    setSelectedDate(dateStr)
+    setLogStep('choose')
+  }
+
+  function getWeekStart() {
+    const today = new Date()
+    const dow = today.getDay()
+    const daysFromMonday = dow === 0 ? 6 : dow - 1
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - daysFromMonday)
+    return monday.toISOString().slice(0, 10)
+  }
+
+  function handleDayExpand(dayIndex) {
+    const dateStr = getDayDate(dayIndex)
+    const cacheKey = `${activeMember.id}:${dateStr}`
+
+    if (expandedDay === dayIndex) {
+      setExpandedDay(null)
+      return
+    }
+
+    setExpandedDay(dayIndex)
+
+    if (dayIndex === todayIndex) return // today's data already in extrasMap
+    if (weekExtrasCache[cacheKey] !== undefined) return // already fetched
+
+    // Mark as loading then fetch
+    setWeekExtrasCache(prev => ({ ...prev, [cacheKey]: null }))
+    startTransition(async () => {
+      const result = await fetchWeeklyExtras(activeMember.id, getWeekStart())
+      if (result.success) {
+        const byDate = {}
+        result.data.forEach(entry => {
+          const key = `${activeMember.id}:${entry.logged_date}`
+          if (!byDate[key]) byDate[key] = []
+          byDate[key].push(entry)
+        })
+        setWeekExtrasCache(prev => ({ ...prev, ...byDate }))
+      }
+    })
+  }
+
   async function handleConfirmLog(macroData) {
     setSaving(true)
     const result = await logMacroExtra({
       member_id: activeMember.id,
+      logged_date: selectedDate,
       meal_time: selectedMealTime,
       food_name: macroData.food_name,
       calories: macroData.calories,
@@ -733,6 +1155,43 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
     resetLogFlow()
   }
 
+  async function handleManualSave(entryData) {
+    setSaving(true)
+    const result = await logMacroExtra({
+      member_id: activeMember.id,
+      meal_time: entryData.meal_type,
+      food_name: entryData.food_name,
+      calories: entryData.calories,
+      protein: entryData.protein,
+      carbs: entryData.carbs,
+      fat: entryData.fat,
+      label_found: false,
+      confidence: 'medium',
+      gemini_notes: '',
+    })
+
+    if (result.success) {
+      const memberId = activeMember.id
+      const prev = extrasMap[memberId] || { extras: [], total: { calories: 0, protein: 0, carbs: 0, fat: 0 } }
+      setExtrasMap(prevMap => ({
+        ...prevMap,
+        [memberId]: {
+          extras: [...prev.extras, result.data || entryData],
+          total: {
+            calories: prev.total.calories + (entryData.calories || 0),
+            protein: prev.total.protein + (entryData.protein || 0),
+            carbs: prev.total.carbs + (entryData.carbs || 0),
+            fat: prev.total.fat + (entryData.fat || 0),
+          },
+        },
+      }))
+      setToast(`${entryData.food_name} logged successfully`)
+    } else {
+      setToast(result.error || 'Could not save the entry.')
+    }
+    resetLogFlow()
+  }
+
   // Auto-dismiss toast
   useEffect(() => {
     if (!toast) return
@@ -759,7 +1218,7 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
         {membersWithToday.map(member => {
           const memberExtras = extrasMap[member.id]?.total || { calories: 0, protein: 0, carbs: 0, fat: 0 }
           const status = getMemberStatus(member, memberExtras)
-          const today = member.weeklyActuals[todayIndex] || member.weeklyActuals[0]
+          const today = member.weeklyActuals?.[todayIndex] || member.weeklyActuals?.[0] || { calories: 0, protein: 0, carbs: 0, fat: 0, meals: [] }
           return (
             <MemberCard key={member.id} onClick={() => handleMemberCardClick(member.id)}>
               <MemberInfo>
@@ -835,13 +1294,23 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
     if (!activeMember) return null
     const memberExtras = extrasMap[activeMember.id] || { extras: [], total: { calories: 0, protein: 0, carbs: 0, fat: 0 } }
     const status = getMemberStatus(activeMember, memberExtras.total)
-    const today = activeMember.weeklyActuals[todayIndex] || activeMember.weeklyActuals[0]
+    const today = activeMember.weeklyActuals?.[todayIndex] || activeMember.weeklyActuals?.[0] || { calories: 0, protein: 0, carbs: 0, fat: 0, meals: [] }
     const insight = insights[activeMember.id]
 
     const showAddButton = activeMember.allowPhotoMacroLogging !== false
 
     return (
       <>
+        <DateNav>
+          <DateNavArrow onClick={() => navigateDate(-1)}>&#8592;</DateNavArrow>
+          <DateNavLabel>{formatDateDisplay(selectedDate)}</DateNavLabel>
+          <DateNavArrow
+            onClick={() => navigateDate(1)}
+            $disabled={selectedDate >= new Date().toISOString().slice(0, 10)}
+            disabled={selectedDate >= new Date().toISOString().slice(0, 10)}
+          >&#8594;</DateNavArrow>
+        </DateNav>
+
         <MemberSwitcher>
           {membersWithToday.map(m => (
             <MemberChip
@@ -875,10 +1344,148 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
         </SubTabWrapper>
 
         {subTab === 'history' ? (
-          <MacroHistory memberId={activeMember.id} memberName={activeMember.name} targets={activeMember.targets} />
+          <>
+            <SectionTitle>This week</SectionTitle>
+            <BreakdownTable>
+              {activeMember.weeklyActuals.map((day, i) => {
+                const isToday = i === todayIndex
+                const isPast = i < todayIndex
+                const dateStr = getDayDate(i)
+                const cacheKey = `${activeMember.id}:${dateStr}`
+                const dayExtras = isToday ? memberExtras.total : { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                const hasData = day.calories > 0 || (isToday && memberExtras.total.calories > 0)
+                const anyOff = hasData && ['calories', 'protein', 'carbs', 'fat'].some(key => {
+                  const actual = day[key] + (dayExtras[key] || 0)
+                  const diff = Math.abs(actual - activeMember.targets[key]) / activeMember.targets[key]
+                  return diff > 0.25
+                })
+                const isOpen = expandedDay === i
+                const canExpand = isToday || isPast
+
+                // Resolve entries for the expanded view
+                const expandedEntries = isToday
+                  ? memberExtras.extras
+                  : (weekExtrasCache[cacheKey] || [])
+                const isLoadingEntries = !isToday && weekExtrasCache[cacheKey] === null
+
+                return (
+                  <div key={day.day}>
+                    <ClickableBreakdownRow
+                      onClick={canExpand ? () => handleDayExpand(i) : undefined}
+                      style={{ cursor: canExpand ? 'pointer' : 'default' }}
+                    >
+                      <BreakdownRow $isToday={isToday}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '36px' }}>
+                          <DayName>{day.day}</DayName>
+                          {showAddButton && canExpand && (
+                            <InlinePlusButton
+                              aria-label={`Log food for ${day.day}`}
+                              onClick={e => { e.stopPropagation(); setSubTab('today'); handleLogForDay(i) }}
+                            >
+                              +
+                            </InlinePlusButton>
+                          )}
+                        </div>
+                        <MealChips>
+                          {day.meals.map((meal, mi) => (
+                            <MealChip key={mi} $color={MEAL_COLORS[mi] || '#5F5E5A'}>{meal}</MealChip>
+                          ))}
+                          {isToday && memberExtras.extras.length > 0 && (
+                            <MealChip $color="#7F77DD">
+                              +{memberExtras.extras.length} extra{memberExtras.extras.length !== 1 ? 's' : ''}
+                            </MealChip>
+                          )}
+                        </MealChips>
+                        <DayMacroBarGroup style={{ flex: 2 }}>
+                          {['protein', 'calories', 'carbs', 'fat'].map(key => {
+                            const actual = day[key] + (isToday ? (dayExtras[key] || 0) : 0)
+                            const pct = activeMember.targets[key] > 0
+                              ? (actual / activeMember.targets[key]) * 100
+                              : 0
+                            const unit = key === 'calories' ? ' cal' : 'g'
+                            return (
+                              <DayMacroBarRow key={key}>
+                                <DayMacroBarLabel>{MACRO_LABELS[key]}</DayMacroBarLabel>
+                                <DayMacroBarTrack>
+                                  <DayMacroBarFill $pct={pct} $color={MACRO_COLORS[key]} $over={pct > 110} />
+                                </DayMacroBarTrack>
+                                <DayMacroBarValue>{actual}{unit}</DayMacroBarValue>
+                              </DayMacroBarRow>
+                            )
+                          })}
+                        </DayMacroBarGroup>
+                        <FlagIcon>{anyOff ? '⚠' : ''}</FlagIcon>
+                        {canExpand && <DayChevron $open={isOpen}>&#9660;</DayChevron>}
+                      </BreakdownRow>
+                    </ClickableBreakdownRow>
+
+                    {isOpen && (
+                      <DayExpandedSection>
+                        {isLoadingEntries ? (
+                          <DayExpandedEmpty>Loading...</DayExpandedEmpty>
+                        ) : expandedEntries.length === 0 ? (
+                          <DayExpandedEmpty>Nothing logged for this day</DayExpandedEmpty>
+                        ) : (
+                          ['breakfast', 'lunch', 'dinner', 'snack'].map(mealType => {
+                            const mealColors = { breakfast: '#BA7517', lunch: '#1D9E75', dinner: '#7F77DD', snack: '#185FA5' }
+                            const mealLabels = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' }
+                            const entries = expandedEntries.filter(e => e.meal_time === mealType)
+                            if (entries.length === 0) return null
+                            return (
+                              <DayExpandedMealGroup key={mealType}>
+                                <DayExpandedMealTitle $color={mealColors[mealType]}>
+                                  {mealLabels[mealType]}
+                                </DayExpandedMealTitle>
+                                {entries.map((entry, idx) => (
+                                  <DayExpandedEntry key={entry.id || idx}>
+                                    <span>{entry.food_name}</span>
+                                    <DayExpandedEntryMacros>
+                                      {entry.calories} cal · {entry.protein}g P · {entry.carbs}g C · {entry.fat}g F
+                                    </DayExpandedEntryMacros>
+                                  </DayExpandedEntry>
+                                ))}
+                              </DayExpandedMealGroup>
+                            )
+                          })
+                        )}
+                      </DayExpandedSection>
+                    )}
+                  </div>
+                )
+              })}
+            </BreakdownTable>
+            <MacroHistory memberId={activeMember.id} memberName={activeMember.name} targets={activeMember.targets} />
+          </>
         ) : (
           <>
             {/* Logging flow steps */}
+            {logStep === 'choose' && (
+              <LogChoiceSheet onClick={resetLogFlow}>
+                <LogChoiceCard onClick={e => e.stopPropagation()}>
+                  <LogChoiceHandle />
+                  <LogChoiceTitle>Log food</LogChoiceTitle>
+                  <LogChoiceOption onClick={() => setLogStep('photo')}>
+                    <LogChoiceIcon>&#x1F4F7;</LogChoiceIcon>
+                    Take a photo
+                  </LogChoiceOption>
+                  <LogChoiceOption onClick={() => setLogStep('manual')}>
+                    <LogChoiceIcon>&#x270F;&#xFE0F;</LogChoiceIcon>
+                    Add manually
+                  </LogChoiceOption>
+                  <LogChoiceCancel onClick={resetLogFlow}>Cancel</LogChoiceCancel>
+                </LogChoiceCard>
+              </LogChoiceSheet>
+            )}
+
+            {logStep === 'manual' && (
+              <ManualFoodEntry
+                onSave={handleManualSave}
+                onCancel={resetLogFlow}
+                saving={saving}
+                initialMealType={preselectedMealTime}
+              />
+            )}
+
             {logStep === 'photo' && (
               <FoodPhotoSheet
                 onImageSelected={handleImageSelected}
@@ -920,7 +1527,7 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
             {!logStep && (
               <>
                 <MacroGrid>
-                  {['calories', 'protein', 'carbs', 'fat'].map(key => {
+                  {['protein', 'calories', 'carbs', 'fat'].map(key => {
                     const mealValue = today[key]
                     const extrasValue = memberExtras.total[key] || 0
                     const totalValue = mealValue + extrasValue
@@ -958,42 +1565,46 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
                   </SourceBreakdown>
                 )}
 
-                <SectionTitle>This week</SectionTitle>
-                <BreakdownTable>
-                  {activeMember.weeklyActuals.map((day, i) => {
-                    const isToday = i === todayIndex
-                    const dayExtras = isToday ? memberExtras.total : { calories: 0, protein: 0, carbs: 0, fat: 0 }
-                    const anyOff = ['calories', 'protein', 'carbs', 'fat'].some(key => {
-                      const actual = day[key] + (dayExtras[key] || 0)
-                      const diff = Math.abs(actual - activeMember.targets[key]) / activeMember.targets[key]
-                      return diff > 0.25
-                    })
+                {/* Food log by meal */}
+                <SectionTitle>Food log</SectionTitle>
+                <FoodLogSection>
+                  {['breakfast', 'lunch', 'dinner', 'snack'].map(mealType => {
+                    const entries = memberExtras.extras.filter(e => e.meal_time === mealType)
+                    const mealColors = { breakfast: '#BA7517', lunch: '#1D9E75', dinner: '#7F77DD', snack: '#185FA5' }
+                    const mealLabels = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks' }
+                    const mealCals = entries.reduce((sum, e) => sum + (e.calories || 0), 0)
                     return (
-                      <BreakdownRow key={day.day} $isToday={isToday}>
-                        <DayName>{day.day}</DayName>
-                        <MealChips>
-                          {day.meals.map((meal, mi) => (
-                            <MealChip key={mi} $color={MEAL_COLORS[mi] || '#5F5E5A'}>
-                              {meal}
-                            </MealChip>
-                          ))}
-                          {isToday && memberExtras.extras.length > 0 && (
-                            <MealChip $color="#7F77DD">
-                              +{memberExtras.extras.length} extra{memberExtras.extras.length !== 1 ? 's' : ''}
-                            </MealChip>
-                          )}
-                        </MealChips>
-                        <RowMacros>
-                          {day.calories + (isToday ? dayExtras.calories : 0)} cal ·{' '}
-                          {day.protein + (isToday ? dayExtras.protein : 0)}g P ·{' '}
-                          {day.carbs + (isToday ? dayExtras.carbs : 0)}g C ·{' '}
-                          {day.fat + (isToday ? dayExtras.fat : 0)}g F
-                        </RowMacros>
-                        <FlagIcon>{anyOff ? '⚠' : ''}</FlagIcon>
-                      </BreakdownRow>
+                      <MealSection key={mealType}>
+                        <MealSectionHeader>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <MealSectionTitle $color={mealColors[mealType]}>{mealLabels[mealType]}</MealSectionTitle>
+                            {showAddButton && (
+                              <InlinePlusButton
+                                aria-label={`Log food for ${mealLabels[mealType]}`}
+                                onClick={() => handleLogForMealType(mealType)}
+                              >
+                                +
+                              </InlinePlusButton>
+                            )}
+                          </div>
+                          {mealCals > 0 && <MealSectionCal>{mealCals} kcal</MealSectionCal>}
+                        </MealSectionHeader>
+                        {entries.length === 0 ? (
+                          <EmptyMeal>Nothing logged</EmptyMeal>
+                        ) : (
+                          entries.map((entry, idx) => (
+                            <FoodEntry key={entry.id || idx}>
+                              <FoodEntryName>{entry.food_name}</FoodEntryName>
+                              <FoodEntryMacros>
+                                {entry.calories} cal · {entry.protein}g P · {entry.carbs}g C · {entry.fat}g F
+                              </FoodEntryMacros>
+                            </FoodEntry>
+                          ))
+                        )}
+                      </MealSection>
                     )
                   })}
-                </BreakdownTable>
+                </FoodLogSection>
 
                 <InsightCard $status={status}>
                   {insight?.loading ? (
@@ -1006,9 +1617,9 @@ export default function MacrosPageClient({ members, todayIndex, extrasMap: initi
                 </InsightCard>
 
                 {showAddButton && (
-                  <AddFoodButton onClick={() => setLogStep('photo')}>
-                    + Add food or snack
-                  </AddFoodButton>
+                  <LogFoodButton onClick={() => setLogStep('choose')}>
+                    + Log food
+                  </LogFoodButton>
                 )}
               </>
             )}

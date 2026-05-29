@@ -5,6 +5,7 @@ export const sidebarSections = [
       { id: 'dashboard', name: 'Dashboard', href: '/dashboard', color: '#1D9E75' },
       { id: 'meal-planner', name: 'Meal planner', href: '/meals', color: '#1D9E75' },
       { id: 'grocery-list', name: 'Grocery list', href: '/grocery', color: '#BA7517' },
+      { id: 'budget', name: 'Budget', href: '/budget', color: '#185FA5' },
       { id: 'macros', name: 'Macros', href: '/macros', color: '#1D9E75' },
     ],
   },
@@ -26,7 +27,9 @@ export const sidebarSections = [
 export const bottomTabs = [
   { id: 'home', name: 'Home', href: '/dashboard', color: '#1D9E75' },
   { id: 'meals', name: 'Meals', href: '/meals', color: '#1D9E75' },
+  { id: 'macros', name: 'Macros', href: '/macros', color: '#1D9E75', requiresMacros: true },
   { id: 'pantry', name: 'Pantry', href: '/pantry', color: '#1D9E75' },
   { id: 'recipes', name: 'Recipe Box', href: '/recipes', color: '#7F77DD' },
+  { id: 'budget', name: 'Budget', href: '/budget', color: '#185FA5' },
   { id: 'settings', name: 'Settings', href: '/settings', color: '#5F5E5A' },
 ]

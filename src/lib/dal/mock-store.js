@@ -29,6 +29,7 @@ async function getRawMeals() {
         if (m.recipeId === undefined) m.recipeId = null
         if (m.slotId === undefined) m.slotId = null
         if (m.recipe === undefined) m.recipe = null
+        if (m.suggestedByKoda === undefined) m.suggestedByKoda = false
       })
     })
     return cloned
@@ -66,7 +67,7 @@ export async function updateMockMeal(day, type, update) {
   if (!mealObj) {
     // Dynamically create extra sides slots (sides2–4) when first used
     if (['sides2', 'sides3', 'sides4', 'breakfast_side', 'lunch_side', 'dinner_dessert'].includes(type)) {
-      mealObj = { type, name: null, recipeId: null, slotId: null, recipe: null, ingredients: [] }
+      mealObj = { type, name: null, recipeId: null, slotId: null, recipe: null, ingredients: [], suggestedByKoda: false }
       dayObj.meals.push(mealObj)
     } else {
       return null
@@ -144,19 +145,29 @@ export async function toggleMockGroceryItem(itemId, newStatus) {
   return item
 }
 
-export async function addMockGroceryItems(names) {
+export async function addMockGroceryItems(itemsOrNames) {
   const items = await getMockGrocery()
-  for (const name of names) {
+  for (const itemOrName of itemsOrNames) {
+    const isObj = typeof itemOrName === 'object' && itemOrName !== null
     items.push({
       id: `g-auto-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name,
-      quantity: '1',
-      category: 'Other',
+      name: isObj ? itemOrName.name : itemOrName,
+      quantity: isObj ? (itemOrName.quantity || '1') : '1',
+      category: isObj ? (itemOrName.category || 'Other') : 'Other',
+      store_assignment: isObj ? (itemOrName.store_assignment || null) : null,
       status: 'need',
       checked: false,
       source: 'chat',
     })
   }
+}
+
+export async function assignMockGroceryItemStore(itemId, storeId) {
+  const items = await getMockGrocery()
+  const item = items.find(i => String(i.id) === String(itemId))
+  if (!item) return null
+  item.store_assignment = storeId
+  return item
 }
 
 // ── Pantry ─────────────────────────────────────────────
@@ -499,6 +510,8 @@ export function saveMockTasteProfile(updates) {
         favorite_recipes: [],
         source_websites: [],
         recipe_count: 0,
+        rejected_meals: [],
+        disliked_ingredients: [],
         ...updates,
       }
   return getMockTasteProfile()
@@ -862,4 +875,179 @@ export async function removeRecipeFromMockCollection(recipeId, collectionId) {
   if (idx === -1) return false
   links.splice(idx, 1)
   return true
+}
+
+// ── Budget ─────────────────────────────────────────────
+
+export async function getMockBudget() {
+  return ensureInitialized('budget', async () => {
+    const { mockUserBudget } = await import('@/data/mock-budget')
+    return { ...mockUserBudget }
+  })
+}
+
+export async function setMockBudget(weeklyBudget, monthlyBudget) {
+  const budget = await getMockBudget()
+  budget.weekly_budget = weeklyBudget
+  budget.monthly_budget = monthlyBudget ?? null
+  budget.updated_at = new Date().toISOString()
+  return { ...budget }
+}
+
+async function getRawReceipts() {
+  return ensureInitialized('receipts', async () => {
+    const { mockReceipts } = await import('@/data/mock-budget')
+    return JSON.parse(JSON.stringify(mockReceipts))
+  })
+}
+
+async function getRawReceiptItems() {
+  return ensureInitialized('receiptItems', async () => {
+    const { mockReceiptItems } = await import('@/data/mock-budget')
+    return JSON.parse(JSON.stringify(mockReceiptItems))
+  })
+}
+
+export async function getMockReceipts(weekStart) {
+  const receipts = await getRawReceipts()
+  const filtered = weekStart ? receipts.filter(r => r.week_start === weekStart) : receipts
+  return [...filtered].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+}
+
+export async function getMockReceiptItems(receiptId) {
+  const items = await getRawReceiptItems()
+  return items.filter(i => i.receipt_id === receiptId)
+}
+
+export async function addMockReceipt(receipt, items) {
+  const receipts = await getRawReceipts()
+  const receiptItems = await getRawReceiptItems()
+  const now = new Date().toISOString()
+  const id = `receipt-${Date.now()}`
+  const newReceipt = { ...receipt, id, created_at: now }
+  receipts.unshift(newReceipt)
+  if (items?.length) {
+    items.forEach((item, idx) => {
+      receiptItems.push({ ...item, id: `item-${Date.now()}-${idx}`, receipt_id: id, created_at: now })
+    })
+  }
+  return newReceipt
+}
+
+export async function updateMockReceipt(receiptId, updates) {
+  const receipts = await getRawReceipts()
+  const receipt = receipts.find(r => r.id === receiptId)
+  if (!receipt) return null
+  Object.assign(receipt, updates)
+  return { ...receipt }
+}
+
+export async function deleteMockReceipt(receiptId) {
+  const receipts = await getRawReceipts()
+  const receiptItems = await getRawReceiptItems()
+  const idx = receipts.findIndex(r => r.id === receiptId)
+  if (idx !== -1) receipts.splice(idx, 1)
+  const itemIdxs = []
+  receiptItems.forEach((item, i) => { if (item.receipt_id === receiptId) itemIdxs.unshift(i) })
+  itemIdxs.forEach(i => receiptItems.splice(i, 1))
+}
+
+export async function updateMockReceiptItems(receiptId, items) {
+  const receiptItems = await getRawReceiptItems()
+  const now = new Date().toISOString()
+  // Remove existing items for this receipt
+  const toRemove = []
+  receiptItems.forEach((item, i) => { if (item.receipt_id === receiptId) toRemove.unshift(i) })
+  toRemove.forEach(i => receiptItems.splice(i, 1))
+  // Add new items
+  items.forEach((item, idx) => {
+    receiptItems.push({ ...item, id: item.id || `item-${Date.now()}-${idx}`, receipt_id: receiptId, created_at: now })
+  })
+}
+
+export async function getMockClassifiedItems(receiptId) {
+  const items = await getRawReceiptItems()
+  // Each item may have classified_data stored on it
+  return items.filter(i => i.receipt_id === receiptId && i._classified)
+    .map(i => i._classified)
+}
+
+export async function saveMockClassifiedItems(receiptId, classifiedItems) {
+  const items = await getRawReceiptItems()
+  // Store classification keyed on item_name since mock items have names
+  const classMap = Object.fromEntries(classifiedItems.map(c => [c.item_name.toLowerCase(), c]))
+  items.filter(i => i.receipt_id === receiptId).forEach(item => {
+    item._classified = classMap[item.item_name.toLowerCase()] || null
+  })
+}
+
+export async function markMockReceiptItemsAddedToPantry(itemIds) {
+  const items = await getRawReceiptItems()
+  const now = new Date().toISOString()
+  const idSet = new Set(itemIds)
+  items.forEach(item => {
+    if (idSet.has(item.id)) item.added_to_pantry_at = now
+  })
+}
+
+export async function findMockStapleByName(name) {
+  const staples = await getMockStaples()
+  const lower = name.toLowerCase()
+  return staples.find(s => s.name.toLowerCase() === lower) || null
+}
+
+export async function restockMockStaple(stapleId, sourceReceiptId) {
+  const staples = await getMockStaples()
+  const staple = staples.find(s => s.id === stapleId)
+  if (!staple) return null
+  staple.is_out_of_stock = false
+  staple.out_of_stock_since = null
+  staple.last_restocked_at = new Date().toISOString()
+  if (sourceReceiptId) staple.source_receipt_id = sourceReceiptId
+  return { ...staple }
+}
+
+export async function addMockStapleFromReceipt(staple, sourceReceiptId) {
+  const result = await addMockStaple(staple)
+  result.source_receipt_id = sourceReceiptId || null
+  result.last_restocked_at = new Date().toISOString()
+  return result
+}
+
+export async function addMockPantryItemFromReceipt(item, sourceReceiptId) {
+  const result = await addMockPantryItem(item)
+  result.source_receipt_id = sourceReceiptId || null
+  result.expires_at = item.expires_at || null
+  return result
+}
+
+export async function findMockPantryItemByNameRecent(name, withinDays = 7) {
+  const items = await getMockManagedPantry()
+  const lower = name.toLowerCase()
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - withinDays)
+  return items.find(i =>
+    i.ingredient_name.toLowerCase() === lower &&
+    !i.is_depleted &&
+    new Date(i.created_at) >= cutoff
+  ) || null
+}
+
+// ── Meal Feedback ──────────────────────────────────────
+let mockMealFeedbackStore = []
+
+export function getMockMealFeedback() {
+  return [...mockMealFeedbackStore]
+}
+
+export function addMockMealFeedback(entry) {
+  mockMealFeedbackStore.push({ ...entry, id: String(Date.now()), created_at: new Date().toISOString() })
+}
+
+// ── Yesterday's Koda meals (demo data for dashboard rating cards) ──
+export async function getMockYesterdayKodaMeals() {
+  return [
+    { name: 'Lemon Herb Chicken', type: 'dinner', day: 'yesterday', weekStart: new Date().toISOString().split('T')[0] },
+    { name: 'Avocado Toast', type: 'breakfast', day: 'yesterday', weekStart: new Date().toISOString().split('T')[0] },
+  ]
 }

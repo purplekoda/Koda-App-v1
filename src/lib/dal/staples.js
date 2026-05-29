@@ -121,3 +121,67 @@ export async function getOutOfStockStaples(userId) {
   const all = await getStaples(userId)
   return all.filter(s => s.is_out_of_stock)
 }
+
+/**
+ * Add or restock a pantry staple from a receipt.
+ * If a staple with the same name exists, marks it as in-stock and updates last_restocked_at.
+ * Returns { staple, wasNew: bool, wasRestocked: bool }
+ */
+export async function upsertStapleFromReceipt(userId, staple, receiptId) {
+  if (isMockMode()) {
+    const { findMockStapleByName, restockMockStaple, addMockStapleFromReceipt } = await import('./mock-store')
+    const existing = await findMockStapleByName(staple.name)
+    if (existing) {
+      const updated = await restockMockStaple(existing.id, receiptId)
+      return { staple: updated, wasNew: false, wasRestocked: true }
+    }
+    const newStaple = await addMockStapleFromReceipt(staple, receiptId)
+    return { staple: newStaple, wasNew: true, wasRestocked: false }
+  }
+
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+
+  // Dedup: case-insensitive name match within this household
+  const { data: existing } = await supabase
+    .from('pantry_staples')
+    .select('id, name, is_out_of_stock')
+    .eq('household_id', userId)
+    .ilike('name', staple.name)
+    .maybeSingle()
+
+  if (existing) {
+    const { data: updated, error } = await supabase
+      .from('pantry_staples')
+      .update({
+        is_out_of_stock: false,
+        out_of_stock_since: null,
+        last_restocked_at: new Date().toISOString(),
+        source_receipt_id: receiptId ?? null,
+      })
+      .eq('id', existing.id)
+      .select()
+      .single()
+
+    if (error) throw new Error('Failed to restock staple')
+    return { staple: updated, wasNew: false, wasRestocked: true }
+  }
+
+  const { data, error } = await supabase
+    .from('pantry_staples')
+    .insert({
+      household_id: userId,
+      name: staple.name,
+      category: staple.category || 'Other',
+      is_out_of_stock: false,
+      added_by: userId,
+      is_custom: true,
+      last_restocked_at: new Date().toISOString(),
+      source_receipt_id: receiptId ?? null,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error('Failed to add staple from receipt')
+  return { staple: data, wasNew: true, wasRestocked: false }
+}

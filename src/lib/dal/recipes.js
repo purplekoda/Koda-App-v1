@@ -8,6 +8,7 @@ import {
   updateMockRecipe,
   deleteMockRecipe,
 } from './mock-store'
+import { enrichRecipesWithSignedUrls } from '@/lib/storage'
 
 export async function getUserRecipes(userId) {
   if (isMockMode()) {
@@ -23,7 +24,7 @@ export async function getUserRecipes(userId) {
     .order('updated_at', { ascending: false })
 
   if (error) throw new Error('Failed to load recipes')
-  return data
+  return enrichRecipesWithSignedUrls(data)
 }
 
 export async function getRecipeById(userId, recipeId) {
@@ -41,7 +42,9 @@ export async function getRecipeById(userId, recipeId) {
     .maybeSingle()
 
   if (error) throw new Error('Failed to load recipe')
-  return data
+  if (!data) return null
+  const [enriched] = await enrichRecipesWithSignedUrls([data])
+  return enriched
 }
 
 export async function createRecipe(userId, recipe) {

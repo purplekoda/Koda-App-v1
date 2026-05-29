@@ -246,6 +246,10 @@ export async function saveBudgetSettingsAction(formData) {
     if (validation.data.weekly_budget !== undefined) {
       cookingPrefUpdates.weekly_budget = validation.data.weekly_budget
     }
+    if (validation.data.monthly_budget !== undefined) {
+      cookingPrefUpdates.monthly_budget = validation.data.monthly_budget
+    }
+    cookingPrefUpdates.split_monthly_to_weekly = validation.data.split_monthly_to_weekly
     if (validation.data.shopping_style) {
       profileUpdates.shopping_style = validation.data.shopping_style
     }

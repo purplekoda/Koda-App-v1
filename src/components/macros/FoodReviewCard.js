@@ -4,11 +4,10 @@ import { useState } from 'react'
 import styled from 'styled-components'
 
 const MEAL_TIME_LABELS = {
-  breakfast_addition: 'Breakfast addition',
-  morning_snack: 'Morning snack',
-  lunch_addition: 'Lunch addition',
-  afternoon_snack: 'Afternoon snack',
-  evening_snack: 'Evening snack',
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  snack: 'Snack',
 }
 
 const Card = styled.div`

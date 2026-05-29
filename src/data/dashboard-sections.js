@@ -76,3 +76,6 @@ export const DEFAULT_SECTIONS = [
 
 /** Set of all valid section IDs */
 export const VALID_SECTION_IDS = new Set(SECTION_DEFS.map(s => s.section_id))
+
+/** Sections hidden from users — code remains, not surfaced in UI or dashboard */
+export const HIDDEN_SECTION_IDS = new Set(['todo', 'today_schedule'])

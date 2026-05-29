@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
-import { requireUser } from '@/lib/dal/require-user'
+import { requireUser, isMockMode } from '@/lib/dal/require-user'
 import { getOnboardingStatus, getHouseholdMembers } from '@/lib/dal/onboarding'
 import { getVoiceSettings } from '@/lib/dal/voice-settings'
 import { getChatButtonPosition } from '@/lib/dal/profile'
@@ -19,7 +19,7 @@ export default async function AppLayout({ children }) {
     getVoiceSettings(user.id).catch(() => ({ voice_responses_enabled: false })),
     getChatButtonPosition(user.id).catch(() => ({ corner: 'bottom-right', offset: 0 })),
   ])
-  const trackMacros = members.some(m => m.track_macros)
+  const trackMacros = isMockMode() || members.some(m => m.track_macros)
 
   const displayName = user.user_metadata?.display_name || 'User'
   const initials = user.user_metadata?.initials || displayName.charAt(0).toUpperCase()

@@ -2,14 +2,13 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react'
 import styled from 'styled-components'
-import AIBar from '@/components/ai/AIBar'
 import GroceryStepBar from '@/components/grocery/GroceryStepBar'
 import GroceryDeliveryHeader from '@/components/grocery/GroceryDeliveryHeader'
 import StepReviewMeals from '@/components/grocery/StepReviewMeals'
 import StepPantryCheck from '@/components/grocery/StepPantryCheck'
 import StepChooseStore from '@/components/grocery/StepChooseStore'
 import StepSent from '@/components/grocery/StepSent'
-import { toggleGroceryItem, sendToStore } from './actions'
+import { toggleGroceryItem, sendToStore, assignItemStore } from './actions'
 
 const PageHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xl};
@@ -160,8 +159,6 @@ export default function GroceryPageClient({
         onSelectFulfillment={setSelectedFulfillment}
       />
 
-      <AIBar placeholder={'Add items or ask about substitutions\u2026'} context="grocery" />
-
       <GroceryStepBar currentStep={step} />
 
       {step === 0 && (
@@ -173,6 +170,7 @@ export default function GroceryPageClient({
           items={groceryItems}
           stores={stores}
           onUpdateItems={setGroceryItems}
+          onAssignStore={assignItemStore}
         />
       )}
 

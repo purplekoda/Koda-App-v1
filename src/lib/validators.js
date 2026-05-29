@@ -213,6 +213,20 @@ export function validateRecipe(body) {
     }
   }
 
+  if (body.photo_path !== undefined && body.photo_path !== null && typeof body.photo_path === 'string') {
+    const trimmed = body.photo_path.trim()
+    if (trimmed.length > 0 && trimmed.length <= 500) {
+      data.photo_path = trimmed
+    }
+  }
+
+  if (body.photo_source !== undefined && body.photo_source !== null) {
+    const allowed = ['supabase', 'external', 'none']
+    if (allowed.includes(body.photo_source)) {
+      data.photo_source = body.photo_source
+    }
+  }
+
   return errors.length > 0
     ? makeResult(false, null, errors)
     : makeResult(true, data)
@@ -515,6 +529,14 @@ export function validateBudgetStep(body) {
     else data.weekly_budget = v
   }
 
+  if (body.monthly_budget !== undefined && body.monthly_budget !== null && body.monthly_budget !== '') {
+    const v = sanitizeInteger(body.monthly_budget, 0, 20000)
+    if (v === null) errors.push('Monthly budget must be $0-$20000')
+    else data.monthly_budget = v
+  }
+
+  data.split_monthly_to_weekly = body.split_monthly_to_weekly === true
+
   const ALLOWED_PRIORITIES = ['fewer_trips', 'buy_bulk', 'store_brands', 'fresh_over_frozen', 'frozen_fine', 'organic']
   if (Array.isArray(body.budget_priorities)) {
     data.budget_priorities = body.budget_priorities
@@ -651,8 +673,7 @@ export function validateDietaryRestriction(body) {
 // ── Macro Extra ───────────────────────────────────────
 
 const MEAL_TIME_VALUES = [
-  'breakfast_addition', 'morning_snack', 'lunch_addition',
-  'afternoon_snack', 'evening_snack',
+  'breakfast', 'lunch', 'dinner', 'snack',
 ]
 
 export function validateMacroExtra(body) {
@@ -686,6 +707,9 @@ export function validateMacroExtra(body) {
   }
 
   // Optional fields
+  if (body.logged_date && /^\d{4}-\d{2}-\d{2}$/.test(body.logged_date)) {
+    data.logged_date = body.logged_date
+  }
   if (body.label_found !== undefined) data.label_found = !!body.label_found
   if (body.confidence) data.confidence = sanitizeEnum(body.confidence, ['low', 'medium', 'high'])
   if (body.gemini_notes) data.gemini_notes = sanitizeString(body.gemini_notes, 500)

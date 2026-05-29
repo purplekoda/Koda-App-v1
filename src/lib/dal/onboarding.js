@@ -160,7 +160,7 @@ export async function upsertHouseholdMembers(userId, members) {
 
   if (members.length === 0) return []
 
-  const rows = members.map(m => ({
+  const rows = members.map((m, i) => ({
     user_id: userId,
     name: m.name,
     age: m.age ?? null,
@@ -173,6 +173,7 @@ export async function upsertHouseholdMembers(userId, members) {
     macro_protein_g: m.macro_protein_g ?? null,
     macro_carbs_g: m.macro_carbs_g ?? null,
     macro_fat_g: m.macro_fat_g ?? null,
+    is_primary: i === 0,
   }))
 
   const { data, error } = await supabase

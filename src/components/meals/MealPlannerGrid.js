@@ -59,6 +59,22 @@ const DayDate = styled.span`
   margin-left: auto;
 `
 
+const CostBadge = styled.span`
+  display: block;
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-top: 3px;
+`
+
+const ProjectedSpend = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  text-align: right;
+  margin-top: ${({ theme }) => theme.spacing.md};
+  padding-top: ${({ theme }) => theme.spacing.md};
+  border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+`
+
 const SIDES_TYPES = ['sides', 'sides2', 'sides3', 'sides4']
 
 // Small pill shown below breakfast/lunch when an optional side has been added
@@ -198,7 +214,7 @@ const HalfThumbnail = styled.div`
   }
 `
 
-function DinnerSidesCard({ dinner, sidesSlots, dessertSlot, day, isToday, selectedMeal, onHalfClick }) {
+function DinnerSidesCard({ dinner, sidesSlots, dessertSlot, day, isToday, selectedMeal, onHalfClick, dinnerCost }) {
   const dinnerSelected    = selectedMeal && selectedMeal.day === day && selectedMeal.type === 'dinner'
   const anySidesSelected  = selectedMeal && selectedMeal.day === day && SIDES_TYPES.includes(selectedMeal.type)
   const dessertSelected   = selectedMeal && selectedMeal.day === day && selectedMeal.type === 'dinner_dessert'
@@ -219,6 +235,7 @@ function DinnerSidesCard({ dinner, sidesSlots, dessertSlot, day, isToday, select
           <HalfLabel $fillText="purpleDark" $isEmpty={!dinner.name}>dinner</HalfLabel>
           <HalfName $isEmpty={!dinner.name}>{dinner.name || '—'}</HalfName>
           {dinner.recipeId && <HalfRecipeBadge>recipe linked</HalfRecipeBadge>}
+          {dinnerCost != null && <CostBadge>${Number(dinnerCost).toFixed(2)}</CostBadge>}
         </HalfText>
         {dinner.recipeId && dinner.imageUrl && (
           <HalfThumbnail>
@@ -396,6 +413,14 @@ export default function MealPlannerGrid({
     }
   }
 
+  // Compute total projected spend from recipe estimated_cost across the week
+  const projectedSpend = meals.reduce((total, day) => {
+    return total + day.meals.reduce((dayTotal, meal) => {
+      const cost = meal.recipe?.estimated_cost
+      return dayTotal + (cost != null ? parseFloat(cost) : 0)
+    }, 0)
+  }, 0)
+
   return (
     <Wrapper>
       <Grid>
@@ -490,6 +515,7 @@ export default function MealPlannerGrid({
                             day={day.day}
                             onClick={() => handleCardClick(meal, day.day)}
                             onSlotClick={undefined}
+                            estimatedCost={meal.recipe?.estimated_cost ?? null}
                           />
                           {isSelected && (
                             <MealDetailInline
@@ -556,6 +582,7 @@ export default function MealPlannerGrid({
                         isToday={day.isToday}
                         selectedMeal={selectedMeal}
                         onHalfClick={handleCardClick}
+                        dinnerCost={dinnerMeal.recipe?.estimated_cost ?? null}
                       />
                     ) : (
                       <MealCard
@@ -569,6 +596,7 @@ export default function MealPlannerGrid({
                         day={day.day}
                         onClick={() => handleCardClick(dinnerMeal, day.day)}
                         onSlotClick={undefined}
+                        estimatedCost={dinnerMeal.recipe?.estimated_cost ?? null}
                       />
                     )}
                     {detailPanel}
@@ -579,6 +607,11 @@ export default function MealPlannerGrid({
           )
         })}
       </Grid>
+      {projectedSpend > 0 && (
+        <ProjectedSpend>
+          Estimated grocery spend: <strong>${projectedSpend.toFixed(2)}</strong> this week
+        </ProjectedSpend>
+      )}
     </Wrapper>
   )
 }

@@ -2,6 +2,7 @@ import 'server-only'
 
 import { isMockMode } from './require-user'
 import { getMockMeals, getMockTodayMeals, getMockSwapSuggestions } from './mock-store'
+import { enrichRecipesWithSignedUrls } from '@/lib/storage'
 
 const DAYS = [
   { day: 'Mon', dayOfWeek: 1 },
@@ -30,7 +31,7 @@ export function buildWeekScaffold(rows = [], weekOffset = 0) {
         recipeId: row?.recipe_id ?? null,
         slotId: row?.id ?? null,
         recipe: row?.recipes ?? null,
-        ingredients: [],
+        ingredients: row?.recipes?.ingredients ?? [],
       }
     })
 
@@ -46,7 +47,7 @@ export function buildWeekScaffold(rows = [], weekOffset = 0) {
           recipeId: row.recipe_id ?? null,
           slotId: row.id ?? null,
           recipe: row.recipes ?? null,
-          ingredients: [],
+          ingredients: row.recipes?.ingredients ?? [],
         })
       }
     })
@@ -108,12 +109,20 @@ export async function getWeeklyMeals(userId, weekOffset = 0) {
 
   const { data, error } = await supabase
     .from('meal_slots')
-    .select('*, recipes(id, name, description, image_url, tags, prep_time_minutes, cook_time_minutes, servings, ingredients, instructions)')
+    .select('*, recipes(id, name, description, image_url, photo_path, tags, prep_time_minutes, cook_time_minutes, servings, ingredients, instructions)')
     .eq('meal_plan_id', plan.id)
     .order('day_of_week')
 
   if (error) return buildWeekScaffold([], weekOffset)
-  return buildWeekScaffold(data, weekOffset)
+
+  const nestedRecipes = (data || []).map(r => r.recipes).filter(Boolean)
+  const enriched = await enrichRecipesWithSignedUrls(nestedRecipes)
+  const recipeMap = Object.fromEntries(enriched.map(r => [r.id, r]))
+  const enrichedData = data.map(row => ({
+    ...row,
+    recipes: row.recipes ? (recipeMap[row.recipes.id] ?? row.recipes) : null,
+  }))
+  return buildWeekScaffold(enrichedData, weekOffset)
 }
 
 export async function getUserRecipesForPicker(userId) {
@@ -135,12 +144,12 @@ export async function getUserRecipesForPicker(userId) {
   const supabase = await getSupabaseServerClient()
   const { data, error } = await supabase
     .from('recipes')
-    .select('id, name, description, image_url, tags, prep_time_minutes, cook_time_minutes')
+    .select('id, name, description, image_url, photo_path, tags, prep_time_minutes, cook_time_minutes')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
 
   if (error) throw new Error('Failed to load recipes')
-  return data
+  return enrichRecipesWithSignedUrls(data)
 }
 
 export async function getTodayMeals(userId) {

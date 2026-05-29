@@ -15,6 +15,7 @@ export const mockMacroMembers = [
     healthGoals: ['Lean muscle', 'Sustained energy'],
     trackMacros: true,
     allowPhotoMacroLogging: true,
+    isPrimary: true,
     targets: { calories: 1900, protein: 130, carbs: 200, fat: 65 },
     weeklyActuals: [
       { day: 'Mon', calories: 1850, protein: 125, carbs: 195, fat: 62, meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'] },
@@ -35,6 +36,7 @@ export const mockMacroMembers = [
     healthGoals: ['Weight management', 'Heart health'],
     trackMacros: true,
     allowPhotoMacroLogging: true,
+    isPrimary: false,
     targets: { calories: 2200, protein: 160, carbs: 240, fat: 75 },
     weeklyActuals: [
       { day: 'Mon', calories: 2150, protein: 155, carbs: 235, fat: 72, meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'] },
@@ -55,6 +57,7 @@ export const mockMacroMembers = [
     healthGoals: ['Healthy growth', 'Balanced nutrition'],
     trackMacros: true,
     allowPhotoMacroLogging: true,
+    isPrimary: false,
     targets: { calories: 1400, protein: 70, carbs: 180, fat: 50 },
     weeklyActuals: [
       { day: 'Mon', calories: 1350, protein: 65, carbs: 175, fat: 48, meals: ['Overnight oats', 'Turkey wrap', 'Pasta primavera'] },

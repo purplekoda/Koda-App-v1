@@ -31,7 +31,7 @@ export default function AppShell({ children, user, trackMacros, voiceSettings, c
       <Shell>
         <Sidebar user={user} trackMacros={trackMacros} />
         <MainContent>{children}</MainContent>
-        <BottomTabBar />
+        <BottomTabBar trackMacros={trackMacros} />
         <FloatingChat />
         <KodaChatButton initialPosition={chatButtonPosition} />
       </Shell>

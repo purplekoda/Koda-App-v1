@@ -2,7 +2,6 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react'
 import styled from 'styled-components'
-import AIBar from '@/components/ai/AIBar'
 import ScanEntry from '@/components/kitchen/ScanEntry'
 import ScanUpload from '@/components/kitchen/ScanUpload'
 import PantryItems from '@/components/kitchen/PantryItems'
@@ -140,8 +139,6 @@ export default function KitchenPageClient({
         <Title>Pantry scan</Title>
         <Subtitle>{screenSubtitles[screen]}</Subtitle>
       </PageHeader>
-
-      <AIBar placeholder={'What can I make with what\u2019s in my fridge?'} context="kitchen" />
 
       {screen === 'entry' && (
         <ScanEntry lastScan={lastScan} onStartScan={handleStartScan} />

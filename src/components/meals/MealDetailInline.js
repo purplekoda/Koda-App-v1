@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import styled, { keyframes } from 'styled-components'
-import { repeatMealAction, swapMeal, getWeekMealsAction } from '@/app/(app)/meals/actions'
+import { repeatMealAction, swapMeal, getWeekMealsAction, surpriseMeSideKodaAction, surpriseMeDessertKodaAction, surpriseMeSideWebAction, surpriseMeDessertWebAction, saveFeedbackAction } from '@/app/(app)/meals/actions'
 
 const mealColors = {
   breakfast: { bg: 'amberLight', accent: 'amber', text: 'amberDark' },
@@ -404,6 +404,155 @@ const SideInput = styled.input`
   }
 `
 
+const SurpriseMePill = styled.button`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 6px;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  background: ${({ $active }) => $active ? '#FFF7F5' : 'transparent'};
+  color: ${({ $active }) => $active ? '#D85A30' : 'inherit'};
+  border: 1px solid ${({ $active }) => $active ? '#D85A30' : 'transparent'};
+
+  &:hover {
+    background: #FFF7F5;
+    color: #D85A30;
+    border-color: #D85A30;
+  }
+`
+
+const SurpriseExpandArea = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+  padding-top: ${({ theme }) => theme.spacing.xs};
+`
+
+const SurpriseOptionRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const SurpriseOptionCard = styled.button`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 10px 10px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+  background: ${({ $active }) => $active ? '#FFF7F5' : ({ theme }) => theme.colors.borderLight};
+  border: 1.5px solid ${({ $active }) => $active ? '#D85A30' : ({ theme }) => theme.colors.border};
+`
+
+const SurpriseOptionTitle = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${({ $active }) => $active ? '#D85A30' : ({ theme }) => theme.colors.textPrimary};
+`
+
+const SurpriseOptionDesc = styled.span`
+  font-size: 10px;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`
+
+const SurpriseResultsGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const SurpriseResultCard = styled.button`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 10px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+  background: ${({ $active }) => $active ? '#FFF7F5' : ({ theme }) => theme.colors.surface};
+  border: 1.5px solid ${({ $active }) => $active ? '#D85A30' : ({ theme }) => theme.colors.border};
+`
+
+const SurpriseResultName = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ $active }) => $active ? '#D85A30' : ({ theme }) => theme.colors.textPrimary};
+`
+
+const SurpriseResultDesc = styled.span`
+  font-size: 11px;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`
+
+const SurpriseResultMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+`
+
+const SurpriseResultMetaChip = styled.span`
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.borderLight};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+`
+
+const SurpriseIngredientChips = styled.div`
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+`
+
+const SurpriseIngredientChip = styled.span`
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.borderLight};
+  color: ${({ theme }) => theme.colors.textMuted};
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+`
+
+const SurpriseWebImage = styled.img`
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  display: block;
+`
+
+const SurpriseSourceLink = styled.a`
+  font-size: 10px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+`
+
+const SurpriseErrorText = styled.p`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.coral};
+  margin: 0;
+  text-align: center;
+`
+
 const ActionButton = styled.button`
   display: flex;
   align-items: center;
@@ -436,10 +585,52 @@ const ActionButton = styled.button`
   }
 `
 
+const ReasonPanel = styled(RepeatPanel)``
+
+const ReasonChipsRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`
+
+const ReasonChip = styled.button`
+  padding: 5px 12px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  background: ${({ $active, theme }) => $active ? theme.colors.purple : theme.colors.surface};
+  color: ${({ $active, theme }) => $active ? 'white' : theme.colors.textSecondary};
+  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.purple : theme.colors.border};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.purple};
+    color: ${({ theme }) => theme.colors.purple};
+  }
+`
+
+const SkipChip = styled(ReasonChip)`
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textMuted};
+  border-style: dashed;
+`
+
 const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+
+const SWAP_REASONS = [
+  'Not my taste',
+  'Has an ingredient I don\'t like',
+  'Too complex',
+  'Takes too long',
+  'Already had this recently',
+  'No reason',
+]
 
 export default function MealDetailInline({ meal, onClose, onSwap, onAddToGrocery, onRemove, onRepeat, weekOffset = 0, onSidePickerOpen, onDessertPickerOpen, sideType: propSideType, dessertType }) {
   const [repeatOpen, setRepeatOpen] = useState(false)
+  const [swapStep, setSwapStep] = useState(null) // null | 'reason' | 'ingredient'
+  const [selectedSwapReason, setSelectedSwapReason] = useState(null)
   const [repeatMode, setRepeatMode] = useState('pick') // 'pick' | 'next'
   const [selectedDays, setSelectedDays] = useState([])
   const [nextX, setNextX] = useState(null)
@@ -449,6 +640,15 @@ export default function MealDetailInline({ meal, onClose, onSwap, onAddToGrocery
   const [extraOpen, setExtraOpen] = useState(null)
   const [sideName, setSideName] = useState('')
   const [isSavingSide, startSideTransition] = useTransition()
+
+  // Surprise Me state
+  const [surpriseOpen, setSurpriseOpen] = useState(false)
+  const [surpriseOptionMode, setSurpriseOptionMode] = useState(null) // 'koda' | 'web'
+  const [surprisePreference, setSurprisePreference] = useState('')
+  const [surpriseResults, setSurpriseResults] = useState(null)
+  const [surpriseError, setSurpriseError] = useState(null)
+  const [selectedSurpriseIdx, setSelectedSurpriseIdx] = useState(null)
+  const [isSurprising, startSurpriseTransition] = useTransition()
 
   if (!meal) return null
 
@@ -521,17 +721,28 @@ export default function MealDetailInline({ meal, onClose, onSwap, onAddToGrocery
     : null
   )
 
+  function resetSurprise() {
+    setSurpriseOpen(false)
+    setSurpriseOptionMode(null)
+    setSurprisePreference('')
+    setSurpriseResults(null)
+    setSurpriseError(null)
+    setSelectedSurpriseIdx(null)
+  }
+
   function openExtra(which, e) {
     e.stopPropagation()
     setExtraOpen(which)
     setSideName('')
     setRepeatOpen(false)
+    resetSurprise()
   }
 
   function closeExtra(e) {
     e?.stopPropagation()
     setExtraOpen(null)
     setSideName('')
+    resetSurprise()
   }
 
   const activeExtraType = extraOpen === 'side' ? sideType : extraOpen === 'dessert' ? dessertType : null
@@ -543,6 +754,56 @@ export default function MealDetailInline({ meal, onClose, onSwap, onAddToGrocery
     if (!name || isSavingSide || !activeExtraType) return
     startSideTransition(async () => {
       const result = await swapMeal(meal.day, activeExtraType, name)
+      if (result.success) {
+        setExtraOpen(null)
+        onClose()
+        if (onRepeat) {
+          if (result.data?.meals) {
+            onRepeat(result.data.meals)
+          } else {
+            const weekResult = await getWeekMealsAction(weekOffset)
+            if (weekResult.success && weekResult.data?.meals) onRepeat(weekResult.data.meals)
+          }
+        }
+      }
+    })
+  }
+
+  function handleSurpriseSearch(e) {
+    e?.stopPropagation()
+    if (!surpriseOptionMode || isSurprising) return
+    startSurpriseTransition(async () => {
+      setSurpriseResults(null)
+      setSurpriseError(null)
+      setSelectedSurpriseIdx(null)
+      try {
+        let result
+        if (surpriseOptionMode === 'koda') {
+          result = extraOpen === 'dessert'
+            ? await surpriseMeDessertKodaAction(meal.name, surprisePreference)
+            : await surpriseMeSideKodaAction(meal.name, surprisePreference)
+        } else {
+          result = extraOpen === 'dessert'
+            ? await surpriseMeDessertWebAction(meal.name, surprisePreference)
+            : await surpriseMeSideWebAction(meal.name, surprisePreference)
+        }
+        if (result.success) {
+          setSurpriseResults(result.data.suggestions ?? result.data.recipes ?? [])
+        } else {
+          setSurpriseError(result.error || 'Something went wrong. Try again!')
+        }
+      } catch {
+        setSurpriseError('Something went wrong. Try again!')
+      }
+    })
+  }
+
+  function handleSurpriseAdd(e) {
+    e?.stopPropagation()
+    if (selectedSurpriseIdx == null || !activeExtraType) return
+    const selected = surpriseResults[selectedSurpriseIdx]
+    startSideTransition(async () => {
+      const result = await swapMeal(meal.day, activeExtraType, selected.name)
       if (result.success) {
         setExtraOpen(null)
         onClose()
@@ -656,14 +917,116 @@ export default function MealDetailInline({ meal, onClose, onSwap, onAddToGrocery
                 <SideOptionButton onClick={() => activePickerOpen('ai')}>
                   ✨ Koda
                 </SideOptionButton>
+                <SurpriseMePill
+                  $active={surpriseOpen}
+                  onClick={(e) => { e.stopPropagation(); setSurpriseOpen(v => !v); if (surpriseOpen) resetSurprise() }}
+                >
+                  🎉 Surprise Me
+                </SurpriseMePill>
               </SideOptionsRow>
             )}
+
+            {surpriseOpen && (
+              <SurpriseExpandArea onClick={(e) => e.stopPropagation()}>
+                <SideInput
+                  type="text"
+                  placeholder="Any preferences? e.g. something light, no nuts, spicy..."
+                  value={surprisePreference}
+                  onChange={(e) => setSurprisePreference(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  disabled={isSurprising}
+                />
+                {!surpriseResults && (
+                  <SurpriseOptionRow>
+                    <SurpriseOptionCard
+                      $active={surpriseOptionMode === 'koda'}
+                      onClick={(e) => { e.stopPropagation(); setSurpriseOptionMode('koda') }}
+                    >
+                      <SurpriseOptionTitle $active={surpriseOptionMode === 'koda'}>✨ Koda creates</SurpriseOptionTitle>
+                      <SurpriseOptionDesc>Koda generates a suggestion that complements your meal.</SurpriseOptionDesc>
+                    </SurpriseOptionCard>
+                    <SurpriseOptionCard
+                      $active={surpriseOptionMode === 'web'}
+                      onClick={(e) => { e.stopPropagation(); setSurpriseOptionMode('web') }}
+                    >
+                      <SurpriseOptionTitle $active={surpriseOptionMode === 'web'}>🌐 Search the web</SurpriseOptionTitle>
+                      <SurpriseOptionDesc>Find highly rated recipes online.</SurpriseOptionDesc>
+                    </SurpriseOptionCard>
+                  </SurpriseOptionRow>
+                )}
+                {surpriseError && <SurpriseErrorText>{surpriseError}</SurpriseErrorText>}
+                {surpriseResults && surpriseResults.length > 0 && (
+                  <SurpriseResultsGrid>
+                    {surpriseResults.map((item, i) => {
+                      const isActive = selectedSurpriseIdx === i
+                      const totalTime = (item.prep_time_minutes || 0) + (item.cook_time_minutes || 0)
+                      const isWeb = item.review_count != null
+                      return (
+                        <SurpriseResultCard
+                          key={i}
+                          $active={isActive}
+                          onClick={(e) => { e.stopPropagation(); setSelectedSurpriseIdx(isActive ? null : i) }}
+                        >
+                          {isWeb && item.image_url && (
+                            <SurpriseWebImage src={item.image_url} alt={item.name} />
+                          )}
+                          <SurpriseResultName $active={isActive}>{item.name}</SurpriseResultName>
+                          {item.description && <SurpriseResultDesc>{item.description}</SurpriseResultDesc>}
+                          <SurpriseResultMeta>
+                            {totalTime > 0 && <SurpriseResultMetaChip>{totalTime} min</SurpriseResultMetaChip>}
+                            {item.rating != null && <SurpriseResultMetaChip>{'★'} {item.rating.toFixed(1)}</SurpriseResultMetaChip>}
+                            {item.review_count != null && <SurpriseResultMetaChip>{item.review_count.toLocaleString()} reviews</SurpriseResultMetaChip>}
+                            {item.source_url && (
+                              <SurpriseSourceLink
+                                href={item.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {(() => { try { return new URL(item.source_url).hostname.replace(/^www\./, '') } catch { return item.source_url } })()}
+                              </SurpriseSourceLink>
+                            )}
+                          </SurpriseResultMeta>
+                          {Array.isArray(item.key_ingredients) && item.key_ingredients.length > 0 && (
+                            <SurpriseIngredientChips>
+                              {item.key_ingredients.map((ing, j) => (
+                                <SurpriseIngredientChip key={j}>{ing}</SurpriseIngredientChip>
+                              ))}
+                            </SurpriseIngredientChips>
+                          )}
+                        </SurpriseResultCard>
+                      )
+                    })}
+                  </SurpriseResultsGrid>
+                )}
+              </SurpriseExpandArea>
+            )}
+
             <RepeatConfirmButton
               $type={meal.type}
-              disabled={!sideName.trim() || isSavingSide}
-              onClick={handleExtraConfirm}
+              disabled={
+                surpriseOpen
+                  ? (surpriseResults != null
+                      ? (selectedSurpriseIdx == null || isSavingSide)
+                      : (!surpriseOptionMode || isSurprising))
+                  : (!sideName.trim() || isSavingSide)
+              }
+              onClick={
+                surpriseOpen
+                  ? (surpriseResults != null ? handleSurpriseAdd : handleSurpriseSearch)
+                  : handleExtraConfirm
+              }
             >
-              {isSavingSide ? 'Saving...' : extraOpen === 'dessert' ? 'Add dessert' : 'Add side'}
+              {surpriseOpen
+                ? (isSurprising
+                    ? 'Finding...'
+                    : isSavingSide
+                      ? 'Saving...'
+                      : surpriseResults != null
+                        ? (extraOpen === 'dessert' ? 'Add this dessert' : 'Add this side')
+                        : 'Find me something')
+                : (isSavingSide ? 'Saving...' : extraOpen === 'dessert' ? 'Add dessert' : 'Add side')
+              }
             </RepeatConfirmButton>
           </RepeatPanel>
         ) : repeatOpen ? (
@@ -737,12 +1100,98 @@ export default function MealDetailInline({ meal, onClose, onSwap, onAddToGrocery
               {isRepeating ? 'Repeating...' : 'Repeat'}
             </RepeatConfirmButton>
           </RepeatPanel>
+        ) : swapStep === 'reason' ? (
+          <ReasonPanel onClick={(e) => e.stopPropagation()}>
+            <RepeatTitleRow>
+              <RepeatTitle>Why are you swapping?</RepeatTitle>
+              <RepeatCancelLink onClick={(e) => { e.stopPropagation(); setSwapStep(null) }}>{'\u2715'}</RepeatCancelLink>
+            </RepeatTitleRow>
+            <ReasonChipsRow>
+              {SWAP_REASONS.map((reason) => (
+                <ReasonChip
+                  key={reason}
+                  $active={selectedSwapReason === reason}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (reason === "Has an ingredient I don't like" && recipeIngredients.length > 0) {
+                      setSelectedSwapReason(reason)
+                      setSwapStep('ingredient')
+                    } else {
+                      const weekStart = new Date().toISOString().split('T')[0]
+                      saveFeedbackAction({
+                        mealName: meal.name,
+                        swapReason: reason,
+                        ingredients: recipeIngredients.map(i => typeof i === 'string' ? i : i.name),
+                        weekStart,
+                      }).catch(() => {})
+                      onSwap()
+                    }
+                  }}
+                >
+                  {reason}
+                </ReasonChip>
+              ))}
+            </ReasonChipsRow>
+          </ReasonPanel>
+        ) : swapStep === 'ingredient' ? (
+          <ReasonPanel onClick={(e) => e.stopPropagation()}>
+            <RepeatTitleRow>
+              <RepeatTitle>Which ingredient?</RepeatTitle>
+              <RepeatCancelLink onClick={(e) => { e.stopPropagation(); setSwapStep('reason') }}>{'\u2715'}</RepeatCancelLink>
+            </RepeatTitleRow>
+            <ReasonChipsRow>
+              {recipeIngredients.map((ing, i) => {
+                const ingName = typeof ing === 'string' ? ing : ing.name
+                return (
+                  <ReasonChip
+                    key={i}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const weekStart = new Date().toISOString().split('T')[0]
+                      saveFeedbackAction({
+                        mealName: meal.name,
+                        swapReason: selectedSwapReason,
+                        ingredients: [ingName],
+                        weekStart,
+                      }).catch(() => {})
+                      onSwap()
+                    }}
+                  >
+                    {ingName}
+                  </ReasonChip>
+                )
+              })}
+              <SkipChip
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const weekStart = new Date().toISOString().split('T')[0]
+                  saveFeedbackAction({
+                    mealName: meal.name,
+                    swapReason: selectedSwapReason,
+                    ingredients: [],
+                    weekStart,
+                  }).catch(() => {})
+                  onSwap()
+                }}
+              >
+                Skip
+              </SkipChip>
+            </ReasonChipsRow>
+          </ReasonPanel>
         ) : (
           <Actions>
             <ActionButton onClick={(e) => openRepeat(e)}>
               {'\u21BB'} Repeat
             </ActionButton>
-            <ActionButton onClick={(e) => { e.stopPropagation(); onSwap() }}>
+            <ActionButton onClick={(e) => {
+              e.stopPropagation()
+              if (meal.suggestedByKoda) {
+                setSwapStep('reason')
+                setSelectedSwapReason(null)
+              } else {
+                onSwap()
+              }
+            }}>
               {'\u21C4'} Swap
             </ActionButton>
             <ActionButton $variant="danger" onClick={(e) => { e.stopPropagation(); onRemove() }}>

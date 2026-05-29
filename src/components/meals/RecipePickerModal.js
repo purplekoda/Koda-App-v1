@@ -32,7 +32,7 @@ const Overlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1300;
   padding: ${({ theme }) => theme.spacing.lg};
   animation: ${fadeIn} 0.15s ease;
 `

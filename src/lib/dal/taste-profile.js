@@ -59,6 +59,8 @@ export async function analyzeAndUpdateTasteProfile(userId, recipe) {
       favorite_recipes: [],
       source_websites: [],
       recipe_count: 0,
+      rejected_meals: [],
+      disliked_ingredients: [],
     }
 
     const tags = (recipe.tags || []).map(t => t.toLowerCase())
@@ -145,6 +147,12 @@ export function buildTasteProfilePrompt(profile) {
   if (profile.avoided_ingredients?.length) {
     lines.push(`AVOID these ingredients (user has removed or skipped them): ${profile.avoided_ingredients.join(', ')}`)
   }
+  if (profile.rejected_meals?.length) {
+    lines.push(`AVOID these meals (household has rejected them before): ${profile.rejected_meals.join(', ')}`)
+  }
+  if (profile.disliked_ingredients?.length) {
+    lines.push(`AVOID recipes that use these disliked ingredients as primary ingredients: ${profile.disliked_ingredients.join(', ')}`)
+  }
 
   lines.push('Find recipes that are similar in style and feel to the ones they already love.')
   return lines.join('\n')
@@ -159,4 +167,81 @@ export function getFrequentWebsites(profile) {
   // In our simplified model, we just return the list. The action calling this
   // counts recipe sources from the DB for exact counts.
   return profile.source_websites
+}
+
+/**
+ * Add a meal name to the rejected_meals list, capped at 50 entries (oldest removed first).
+ */
+export async function updateRejectedMeals(userId, mealName) {
+  try {
+    const profile = await getTasteProfile(userId) || {}
+    const existing = profile.rejected_meals || []
+    if (existing.includes(mealName)) return
+    const updated = [...existing, mealName].slice(-50)
+    await saveTasteProfile(userId, { rejected_meals: updated })
+  } catch {
+    // best-effort
+  }
+}
+
+/**
+ * Add an ingredient to the disliked_ingredients list if not already present, capped at 30.
+ */
+export async function updateDislikedIngredients(userId, ingredient) {
+  try {
+    const profile = await getTasteProfile(userId) || {}
+    const existing = profile.disliked_ingredients || []
+    if (existing.includes(ingredient)) return
+    const updated = [...existing, ingredient].slice(-30)
+    await saveTasteProfile(userId, { disliked_ingredients: updated })
+  } catch {
+    // best-effort
+  }
+}
+
+/**
+ * Build an additional prompt section from learned behavioral feedback.
+ * Returns empty string if there is nothing to surface.
+ *
+ * @param {object|null} profile  - taste profile object
+ * @param {Array<{mealName, rating}>} recentFeedback
+ */
+export function buildTasteLearningPrompt(profile, recentFeedback = []) {
+  const rejectedMeals = profile?.rejected_meals || []
+  const dislikedIngredients = profile?.disliked_ingredients || []
+  const thumbsUp = recentFeedback.filter(f => f.rating === 'thumbs_up').map(f => f.mealName)
+  const thumbsDown = recentFeedback.filter(f => f.rating === 'thumbs_down').map(f => f.mealName)
+
+  if (!rejectedMeals.length && !dislikedIngredients.length && !thumbsUp.length && !thumbsDown.length) {
+    return ''
+  }
+
+  const lines = [
+    '',
+    'LEARNED PREFERENCES FROM PAST BEHAVIOR:',
+  ]
+
+  if (rejectedMeals.length) {
+    lines.push(`Meals this household has rejected before: ${rejectedMeals.join(', ')}`)
+  }
+  if (dislikedIngredients.length) {
+    lines.push(`Ingredients this household dislikes: ${dislikedIngredients.join(', ')}`)
+  }
+  if (thumbsUp.length) {
+    lines.push(`Recently thumbs-upped meals: ${thumbsUp.join(', ')}`)
+  }
+  if (thumbsDown.length) {
+    lines.push(`Recently thumbs-downed meals: ${thumbsDown.join(', ')}`)
+  }
+
+  lines.push(
+    '',
+    'INSTRUCTIONS:',
+    'Never suggest any meal that appears in the rejected meals list.',
+    'Never suggest any recipe that contains an ingredient in the disliked ingredients list as a primary ingredient.',
+    'When you see thumbs-up meals, note the cuisine type and cooking style and lean toward similar suggestions.',
+    'When you see thumbs-down meals, avoid that cuisine type and cooking style unless the household has explicitly listed it as a favorite cuisine.',
+  )
+
+  return lines.join('\n')
 }

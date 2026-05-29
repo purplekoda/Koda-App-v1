@@ -275,6 +275,60 @@ export async function saveCommittedScanItems(userId, scanItems, manualItems, del
 }
 
 /**
+ * Add a pantry item from a receipt, with dedup check.
+ * If an item with the same name was added in the last 7 days, returns existing without creating duplicate.
+ * Returns { item, wasNew: bool }
+ */
+export async function addPantryItemFromReceipt(userId, item, receiptId) {
+  if (isMockMode()) {
+    const { findMockPantryItemByNameRecent, addMockPantryItemFromReceipt } = await import('./mock-store')
+    const existing = await findMockPantryItemByNameRecent(item.ingredient_name)
+    if (existing) return { item: existing, wasNew: false }
+    const newItem = await addMockPantryItemFromReceipt(
+      { ...item, source: 'receipt' },
+      receiptId
+    )
+    return { item: newItem, wasNew: true }
+  }
+
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+
+  // Dedup: look for same name in last 7 days
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 7)
+  const { data: existing } = await supabase
+    .from('pantry')
+    .select('id, ingredient_name, expires_at')
+    .eq('user_id', userId)
+    .ilike('ingredient_name', item.ingredient_name)
+    .eq('is_depleted', false)
+    .gte('created_at', cutoff.toISOString())
+    .maybeSingle()
+
+  if (existing) return { item: existing, wasNew: false }
+
+  const { data, error } = await supabase
+    .from('pantry')
+    .insert({
+      user_id: userId,
+      ingredient_name: item.ingredient_name,
+      quantity: item.quantity ?? null,
+      unit: item.unit ?? null,
+      category: item.category || 'Other',
+      expires_at: item.expires_at ?? null,
+      source: 'receipt',
+      source_receipt_id: receiptId ?? null,
+      is_depleted: false,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error('Failed to add pantry item from receipt')
+  return { item: data, wasNew: true }
+}
+
+/**
  * Replace all scan-sourced pantry items with the latest scan results.
  * Deletes previous `source = 'scan'` rows and inserts fresh ones.
  * Derives expiry_date from daysLeft when available.

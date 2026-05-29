@@ -107,6 +107,23 @@ const FooterLink = styled(Link)`
   font-weight: 500;
 `
 
+const PasswordLabelRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+`
+
+const ForgotLink = styled(Link)`
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  color: ${({ theme }) => theme.colors.teal};
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -171,7 +188,10 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <Label htmlFor="password">Password</Label>
+            <PasswordLabelRow>
+              <Label htmlFor="password">Password</Label>
+              <ForgotLink href="/forgot-password">Forgot password?</ForgotLink>
+            </PasswordLabelRow>
             <InputField
               id="password"
               type="password"

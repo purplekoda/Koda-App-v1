@@ -398,6 +398,7 @@ export default function RecipeImportReview({
   const [name, setName] = useState(recipe.name || '')
   const [editingName, setEditingName] = useState(false)
   const [imageUrl, setImageUrl] = useState(recipe.image_url || null)
+  const [photoPath, setPhotoPath] = useState(recipe.photo_path || null)
   const [showPhotoOptions, setShowPhotoOptions] = useState(!recipe.image_url)
   const [prepTime, setPrepTime] = useState(recipe.prep_time_minutes ?? '')
   const [editingPrep, setEditingPrep] = useState(false)
@@ -450,6 +451,7 @@ export default function RecipeImportReview({
       } else {
         setImageUrl(dataUrl)
       }
+      setPhotoPath(null)
       setShowPhotoOptions(false)
       URL.revokeObjectURL(img.src)
     }
@@ -463,6 +465,7 @@ export default function RecipeImportReview({
       const result = await onGenerateImage(name.trim(), recipe.description || '')
       if (result.success && result.data?.image_url) {
         setImageUrl(result.data.image_url)
+        setPhotoPath(result.data.photo_path || null)
         setShowPhotoOptions(false)
       } else {
         setError(result.error || 'Could not generate photo.')
@@ -523,6 +526,8 @@ export default function RecipeImportReview({
       servings: servings === '' ? null : Number(servings),
       tags: recipe.tags || [],
       image_url: imageUrl || null,
+      photo_path: photoPath || null,
+      photo_source: photoPath ? 'supabase' : (imageUrl ? 'external' : null),
       source: recipe.source || null,
       imported_from: recipe.imported_from || null,
       imported_at: recipe.imported_at || null,

@@ -8,10 +8,10 @@ import useWakeLock from '@/hooks/useWakeLock'
 import useCookingAssistant, { parseSteps } from '@/hooks/useCookingAssistant'
 import RecipeForm from '@/components/recipes/RecipeForm'
 import Modal from '@/components/recipes/Modal'
-import IngredientStoreAssignment from '@/components/recipes/IngredientStoreAssignment'
 import NutritionPanel from '@/components/recipes/NutritionPanel'
 import { checkFaithConflicts, getAlcoholSubstitutions, getSubstitutionLabel } from '@/lib/faith-conflict-check'
 import { updateRecipeAction, deleteRecipeAction, generateRecipeImageAction, fetchNutritionAction } from '../actions'
+import { sendIngredientsToGroceryAction } from './actions'
 
 const BackLink = styled(Link)`
   display: inline-flex;
@@ -87,6 +87,15 @@ const DangerButton = styled(Button)`
 
   &:hover {
     background: ${({ theme }) => theme.colors.coralLight};
+  }
+`
+
+const GroceryButton = styled(Button)`
+  color: ${({ theme }) => theme.colors.teal};
+  border-color: ${({ theme }) => theme.colors.teal};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.tealLight};
   }
 `
 
@@ -715,12 +724,13 @@ const WakeChip = styled.div`
   }
 `
 
-export default function RecipeDetailClient({ initialRecipe, groceryPreferences, faithPractices }) {
+export default function RecipeDetailClient({ initialRecipe, faithPractices }) {
   const router = useRouter()
   const [recipe, setRecipe] = useState(initialRecipe)
   const [editOpen, setEditOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const [isPending, startTransition] = useTransition()
+  const [isSendingGrocery, setIsSendingGrocery] = useState(false)
   const [nutrition, setNutrition] = useState(initialRecipe.nutrition || null)
   const [nutritionLoading, setNutritionLoading] = useState(false)
   const [nutritionError, setNutritionError] = useState(false)
@@ -920,6 +930,25 @@ export default function RecipeDetailClient({ initialRecipe, groceryPreferences, 
     })
   }
 
+  async function handleSendToGrocery() {
+    console.log('[handleSendToGrocery] fired, ingredients:', recipe.ingredients)
+    setIsSendingGrocery(true)
+    try {
+      const result = await sendIngredientsToGroceryAction(recipe.id, recipe.ingredients || [])
+      console.log('[handleSendToGrocery] result:', result)
+      if (result.success) {
+        showToast(`${result.data.addedCount} ingredient${result.data.addedCount !== 1 ? 's' : ''} added to your grocery list`)
+      } else {
+        showToast(result.error || 'Could not add ingredients to grocery list')
+      }
+    } catch (err) {
+      console.error('[handleSendToGrocery] unexpected error:', err)
+      showToast('Could not add ingredients to grocery list')
+    } finally {
+      setIsSendingGrocery(false)
+    }
+  }
+
   const prep = recipe.prep_time_minutes
   const cook = recipe.cook_time_minutes
   const total = (Number(prep) || 0) + (Number(cook) || 0)
@@ -979,6 +1008,9 @@ export default function RecipeDetailClient({ initialRecipe, groceryPreferences, 
               )}
             </TitleBlock>
             <Actions>
+              <GroceryButton onClick={handleSendToGrocery} disabled={isSendingGrocery}>
+                {isSendingGrocery ? 'Adding...' : 'Add to grocery list'}
+              </GroceryButton>
               <Button onClick={handleShare}>Share</Button>
               <Button onClick={() => setEditOpen(true)} disabled={isPending}>Edit</Button>
               <DangerButton onClick={handleDelete} disabled={isPending}>Delete</DangerButton>
@@ -1104,7 +1136,6 @@ export default function RecipeDetailClient({ initialRecipe, groceryPreferences, 
                   </IngredientItem>
                 ))}
               </IngredientList>
-              <IngredientStoreAssignment recipe={recipe} groceryPreferences={groceryPreferences} />
             </Section>
           )}
 

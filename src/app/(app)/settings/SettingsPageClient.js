@@ -1,9 +1,10 @@
 'use client'
 
-import { startTransition } from 'react'
+import { startTransition, useState } from 'react'
 import styled from 'styled-components'
 import Link from 'next/link'
 import { logout } from '@/app/(auth)/actions'
+import { migrateRecipePhotosAction } from './actions'
 import {
   COOK_TIME_OPTIONS,
   DAY_OPTIONS,
@@ -138,6 +139,43 @@ const Chevron = styled.span`
   flex-shrink: 0;
 `
 
+const MigrateRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.lg};
+  min-height: 60px;
+  border-top: 0.5px solid ${({ theme }) => theme.colors.borderLight};
+`
+
+const MigrateBtn = styled.button`
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  font-weight: 500;
+  border-radius: ${({ theme }) => theme.radii.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.borderLight};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const MigrateStatus = styled.div`
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  color: ${({ $ok, theme }) => $ok ? theme.colors.success || '#16a34a' : theme.colors.error || '#dc2626'};
+  margin-top: 2px;
+`
+
 // ── Helpers ────────────────────────────────────────────
 
 function summarizeArray(arr, max = 2) {
@@ -208,6 +246,12 @@ export default function SettingsPageClient({
 
   const cuisineSummary = summarizeArray(tasteProfile?.cuisine_types)
 
+  const dislikedIngredientsSummary = (() => {
+    const list = tasteProfile?.disliked_ingredients || []
+    if (list.length === 0) return null
+    return `${list.length} ingredient${list.length !== 1 ? 's' : ''}`
+  })()
+
   const adventureSummary = op.adventurousness
     ? labelFor(op.adventurousness, ADVENTUROUSNESS_OPTIONS)
     : null
@@ -261,6 +305,28 @@ export default function SettingsPageClient({
     startTransition(() => { logout() })
   }
 
+  const [migrateStatus, setMigrateStatus] = useState(null)
+  const [migrating, setMigrating] = useState(false)
+
+  async function handleMigratePhotos() {
+    if (!window.confirm('Download all external recipe photos into your private storage? This may take a minute.')) return
+    setMigrating(true)
+    setMigrateStatus(null)
+    try {
+      const result = await migrateRecipePhotosAction()
+      if (result.success) {
+        const { migrated, failed, skipped } = result.data
+        setMigrateStatus({ ok: true, message: `Done: ${migrated} migrated, ${failed} failed, ${skipped} skipped.` })
+      } else {
+        setMigrateStatus({ ok: false, message: result.error || 'Migration failed.' })
+      }
+    } catch {
+      setMigrateStatus({ ok: false, message: 'Migration failed.' })
+    } finally {
+      setMigrating(false)
+    }
+  }
+
   // ── Render ─────────────────────────────────────────
 
   return (
@@ -292,6 +358,7 @@ export default function SettingsPageClient({
         <CardGroup>
           <SettingsCard href="/settings/dietary-restrictions" icon="&#x1F957;" bg="#E1F5EE" title="Dietary restrictions" summary={dietarySummary} />
           <SettingsCard href="/settings/cuisines" icon="&#x1F30D;" bg="#DBEAFE" title="Favorite cuisines" summary={cuisineSummary} />
+          <SettingsCard href="/settings/disliked-ingredients" icon="&#x1F6AB;" bg="#FEE2E2" title="Ingredients I don't like" summary={dislikedIngredientsSummary} />
           <SettingsCard href="/settings/recipe-style" icon="&#x1F680;" bg="#EDE9FE" title="Recipe style" summary={adventureSummary} />
           <SettingsCard href="/settings/meal-prep-style" icon="&#x1F4E6;" bg="#FEF3C7" title="Meal prep style" summary={mealPrepSummary} />
           <SettingsCard href="/settings/frustrations" icon="&#x1F3AF;" bg="#FEE2E2" title="Biggest frustrations" summary={frustrationSummary} />
@@ -313,6 +380,7 @@ export default function SettingsPageClient({
         <CardGroup>
           <SettingsCard href="/settings/health-goals" icon="&#x1F4AA;" bg="#EDE9FE" title="Health goals and macros" summary={healthSummary} />
           <SettingsCard href="/settings/macro-logging" icon="&#x1F4F7;" bg="#E1F5EE" title="Photo macro logging" summary="Per-member photo logging controls" />
+          <SettingsCard href="/settings/macro-targets" icon="&#x1F3AF;" bg="#E1F5EE" title="Macro targets" summary="Daily calorie and macro goals per member" />
         </CardGroup>
       </SectionBlock>
 
@@ -345,6 +413,26 @@ export default function SettingsPageClient({
               <CardSummary>Sign out of your account</CardSummary>
             </CardBody>
           </CardButton>
+        </CardGroup>
+      </SectionBlock>
+
+      {/* ── Developer ── */}
+      <SectionBlock>
+        <SectionLabel>Developer</SectionLabel>
+        <CardGroup>
+          <MigrateRow>
+            <CardIcon $bg="#F3F4F6">&#x1F5BC;&#xFE0F;</CardIcon>
+            <CardBody>
+              <CardTitle>Migrate recipe photos to secure storage</CardTitle>
+              <CardSummary>Downloads external recipe photos into your private storage so they never break.</CardSummary>
+              {migrateStatus && (
+                <MigrateStatus $ok={migrateStatus.ok}>{migrateStatus.message}</MigrateStatus>
+              )}
+            </CardBody>
+            <MigrateBtn type="button" onClick={handleMigratePhotos} disabled={migrating}>
+              {migrating ? 'Running…' : 'Run'}
+            </MigrateBtn>
+          </MigrateRow>
         </CardGroup>
       </SectionBlock>
     </PageWrapper>

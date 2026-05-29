@@ -85,6 +85,8 @@ export const FRUSTRATION_OPTIONS = [
 
 export const BUDGET_PRESETS = [75, 100, 150, 200, 300]
 
+export const MONTHLY_BUDGET_PRESETS = [300, 400, 500, 600, 800]
+
 export const SHOPPING_STYLE_OPTIONS = [
   { value: 'deal_hunter', label: 'I shop around for the best deals', subtitle: "I'll visit multiple stores if it saves money", icon: '\uD83C\uDFF7\uFE0F' },
   { value: 'convenience', label: 'I shop at the same stores for convenience', subtitle: 'Good deals are nice but not worth the extra trips', icon: '\uD83D\uDED2' },

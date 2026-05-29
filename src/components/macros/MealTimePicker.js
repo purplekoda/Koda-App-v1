@@ -4,12 +4,20 @@ import { useState } from 'react'
 import styled from 'styled-components'
 
 const MEAL_TIMES = [
-  { value: 'breakfast_addition', label: 'Breakfast addition' },
-  { value: 'morning_snack', label: 'Morning snack' },
-  { value: 'lunch_addition', label: 'Lunch addition' },
-  { value: 'afternoon_snack', label: 'Afternoon snack' },
-  { value: 'evening_snack', label: 'Evening snack' },
+  { value: 'breakfast', label: 'Breakfast' },
+  { value: 'lunch', label: 'Lunch' },
+  { value: 'dinner', label: 'Dinner' },
+  { value: 'snack', label: 'Snack' },
 ]
+
+function getDefaultMealTime() {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 10) return 'breakfast'
+  if (hour >= 10 && hour < 14) return 'lunch'
+  if (hour >= 14 && hour < 18) return 'snack'
+  if (hour >= 18 && hour < 22) return 'dinner'
+  return 'snack'
+}
 
 const Wrapper = styled.div`
   padding: ${({ theme }) => theme.spacing.xl};
@@ -103,7 +111,7 @@ const CancelButton = styled.button`
 `
 
 export default function MealTimePicker({ onSelect, onCancel }) {
-  const [selected, setSelected] = useState(null)
+  const [selected, setSelected] = useState(getDefaultMealTime)
 
   return (
     <Wrapper>

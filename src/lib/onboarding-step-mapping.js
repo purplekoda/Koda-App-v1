@@ -107,6 +107,8 @@ export function partialDataToFormState(partialData, initialData = {}) {
 
     // Step 8 — Budget
     budget: d.weekly_budget || init.cooking_preferences?.weekly_budget || 0,
+    monthlyBudget: d.monthly_budget || init.cooking_preferences?.monthly_budget || 0,
+    splitMonthly: d.split_monthly_to_weekly || init.cooking_preferences?.split_monthly_to_weekly || false,
     budgetPriorities: d.budget_priorities || init.budget_priorities || [],
     shoppingStyle: d.shopping_style || init.shopping_style || null,
     deliveryService: d.preferred_delivery_service || init.preferred_delivery_service || null,
@@ -144,6 +146,8 @@ export function formStateToPartialData(formState) {
     meal_prep_style: formState.mealPrepStyle,
     cooking_frustrations: formState.frustrations,
     weekly_budget: formState.budget,
+    monthly_budget: formState.monthlyBudget,
+    split_monthly_to_weekly: formState.splitMonthly,
     budget_priorities: formState.budgetPriorities,
     shopping_style: formState.shoppingStyle,
     preferred_delivery_service: formState.deliveryService,

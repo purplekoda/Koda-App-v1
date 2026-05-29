@@ -78,6 +78,13 @@ const RecipeBadge = styled.span`
   white-space: nowrap;
 `
 
+const CostBadge = styled.span`
+  display: block;
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-top: 3px;
+`
+
 const Thumbnail = styled.div`
   width: 36px;
   height: 36px;
@@ -136,6 +143,7 @@ export default function MealCard({
   imageUrl,
   onSlotClick,
   day,
+  estimatedCost,
 }) {
   function handleClick() {
     if (onSlotClick) {
@@ -162,6 +170,9 @@ export default function MealCard({
           <MealName>{name}</MealName>
           {recipeId && (
             <RecipeBadge>recipe linked</RecipeBadge>
+          )}
+          {estimatedCost != null && (
+            <CostBadge>${Number(estimatedCost).toFixed(2)}</CostBadge>
           )}
         </CardText>
         {recipeId && imageUrl && (

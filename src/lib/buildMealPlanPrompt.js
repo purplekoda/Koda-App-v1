@@ -17,6 +17,28 @@ Pantry photo integration: When the user takes a photo of their pantry, analyze t
 
 ⚠ Always flag partial ingredient usage on the meal plan card so the user understands the AI's reasoning.`
 
+// ── Main Dish Rule (static) ──────────────────────────
+const MAIN_DISH_RULE = `
+MAIN DISH AND SIDE DISH RULES — READ THIS BEFORE PLANNING ANY MEAL:
+
+Every breakfast, lunch, and dinner slot in the meal plan MUST be filled with a complete main dish only. A main dish is defined as a single recipe that serves as the primary protein and calorie source for that meal — for example oatmeal, scrambled eggs, a pasta dish, a sheet pan chicken dinner, a beef stir fry, a salmon fillet, a casserole, a burger, a burrito bowl, or a hearty soup or stew.
+
+NEVER assign any of the following to a breakfast, lunch, or dinner meal slot — they are side dishes and accompaniments only:
+- Salads served as a standalone meal (unless it is a hearty protein salad such as a chicken Caesar or tuna salad that clearly functions as a complete meal)
+- Roasted vegetables, steamed vegetables, sautéed vegetables, or any vegetable side dish
+- Rice alone, pasta alone, or any plain grain without a protein and sauce
+- Bread, rolls, biscuits, or any baked good that functions as a side
+- Soup served as a starter rather than a hearty main course
+- Dips, spreads, or appetizers
+- Fruit salads or simple fruit plates
+- Any dish whose name or description includes the words "side dish", "side", "accompaniment", or "goes well with"
+
+If a dish is a side dish it belongs in the accompaniments section — not in a meal slot. The accompaniments section appears separately under each meal after the main dish is confirmed.
+
+Validation rule: Before assigning any recipe to a meal slot internally ask yourself — "Could this feed one person as their complete meal?" If the honest answer is no it is a side dish. Do not assign it to a meal slot.
+
+Accompaniments rule: After a main dish is assigned to a meal slot Koda may suggest side dishes and accompaniments separately. Sides are always additive — they are never a substitute for the main dish. If the user asks for sides use the Surprise Me sides flow or the Add a side panel. Never fill a main meal slot with a side dish even if the user asks for "something light" — instead suggest a light main dish such as a soup, a salad with protein, or a light grain bowl that qualifies as a complete meal.`
+
 // ── Section 6: Three Meal Planning Options (static) ──────
 const MEAL_PLANNING_OPTIONS = `
 THREE MEAL PLANNING OPTIONS:
@@ -34,8 +56,9 @@ Multi-select combination rule: When multiple options are selected, use saved rec
 const SURPRISE_ME_INSTRUCTIONS = `
 SURPRISE ME FEATURE:
 When the user taps Surprise Me they are first asked to choose one of two paths:
-Path A — Use what I already have: Find a currently viral or highly popular recipe that can be made primarily using ingredients already in the user's pantry and ingredients already planned for purchase this week. The recipe should feel exciting and new but require minimal or no additional shopping. Prioritize recipes where at least 70 percent of the ingredients are already available. Flag any additional ingredients needed.
-Path B — Something new and popular: Find a currently viral recipe from TikTok or a highly popular recipe trending online that sounds exciting and delicious regardless of what is already in the pantry. The user understands they may need to shop for some or all of the ingredients. Return the recipe name, a short fun description of why it is trending, cook time, servings, star rating, view or share count, and a clear list of what they would need to buy. Still apply dietary restrictions and faith-based guidelines.
+Path A — Use what I already have: Find a currently viral or highly popular recipe that can be made primarily using ingredients already in the user's pantry and ingredients already planned for purchase this week. The recipe should feel exciting and new but require minimal or no additional shopping. Prioritize recipes where at least 70 percent of the ingredients are already available. Flag any additional ingredients needed. The suggestion must be a complete main dish only — never a side dish, salad, appetizer, bread, or accompaniment.
+Path B — Something new and popular: Find a currently viral recipe from TikTok or a highly popular recipe trending online that sounds exciting and delicious regardless of what is already in the pantry. The user understands they may need to shop for some or all of the ingredients. Return the recipe name, a short fun description of why it is trending, cook time, servings, star rating, view or share count, and a clear list of what they would need to buy. Still apply dietary restrictions and faith-based guidelines. The suggestion must be a complete main dish only — never a side dish, salad, appetizer, bread, or accompaniment.
+Main dish rule: When selecting a Surprise Me meal always return a complete main dish only. A main dish is a single recipe that serves as the primary protein and calorie source for a meal — for example a pasta dish, a sheet pan chicken dinner, a beef stir fry, a salmon fillet, a casserole, or a burger. Never return a side dish, a salad, an appetizer, a soup alone, a bread, a vegetable dish, or any item that would typically be served alongside a main course rather than as the meal itself. If the user wants sides Koda will suggest accompaniments separately after the main dish is chosen.
 ⚠ Always ask the user to choose between Path A and Path B before generating the suggestion. Never skip this choice.`
 
 // ── Section 8: Filling Blank Meal Slots (static) ────────
@@ -333,6 +356,19 @@ export async function buildMealPlanPrompt(userId) {
     // Taste profile data is best-effort
   }
 
+  // ── Taste learning / behavioral feedback ────────────
+  let tasteLearningLines = []
+  try {
+    const { getTasteProfile, buildTasteLearningPrompt } = await import('@/lib/dal/taste-profile')
+    const { getRecentRatings } = await import('@/lib/dal/meal-feedback')
+    const profile = await getTasteProfile(userId)
+    const recentFeedback = await getRecentRatings(userId, 30)
+    const learningPrompt = buildTasteLearningPrompt(profile, recentFeedback)
+    if (learningPrompt) tasteLearningLines.push(learningPrompt)
+  } catch {
+    // best-effort
+  }
+
   // ── Budget awareness (Section 5) ───────────────────
   let budgetLines = []
   try {
@@ -521,7 +557,7 @@ export async function buildMealPlanPrompt(userId) {
 
   // ── Build the final prompt ─────────────────────────
   // Section 1: Foundation instructions always come first
-  const lines = [FOUNDATION_INSTRUCTIONS]
+  const lines = [FOUNDATION_INSTRUCTIONS, MAIN_DISH_RULE]
 
   // Pantry contents
   if (pantryItems.length > 0) {
@@ -610,6 +646,11 @@ export async function buildMealPlanPrompt(userId) {
   // Section 3: Taste profile
   if (tasteLines.length > 0) {
     lines.push(...tasteLines)
+  }
+
+  // Taste learning / behavioral feedback
+  if (tasteLearningLines.length > 0) {
+    lines.push(...tasteLearningLines)
   }
 
   // Section 4: Grocery store and shopping style

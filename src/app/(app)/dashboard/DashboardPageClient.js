@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useState, useTransition, useCallback, useRef } from 'react'
 import styled from 'styled-components'
 import MobileTopBar from '@/components/dashboard/MobileTopBar'
 import DashboardGreeting from '@/components/dashboard/DashboardGreeting'
@@ -16,7 +16,25 @@ import RecipeSuggestionsWidget from '@/components/dashboard/RecipeSuggestionsWid
 import BudgetTrackerWidget from '@/components/dashboard/BudgetTrackerWidget'
 import MacroSummaryWidget from '@/components/dashboard/MacroSummaryWidget'
 import CustomizeDashboardSheet from '@/components/dashboard/CustomizeDashboardSheet'
+import MealRatingCards from '@/components/dashboard/MealRatingCards'
+import { HIDDEN_SECTION_IDS } from '@/data/dashboard-sections'
 import { toggleTodo, updateDashboardSections } from './actions'
+
+const Toast = styled.div`
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: ${({ theme }) => theme.colors.textPrimary};
+  color: white;
+  padding: 12px 24px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1100;
+  box-shadow: ${({ theme }) => theme.shadows.elevated};
+  white-space: nowrap;
+`
 
 const SectionWrapper = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xl};
@@ -57,12 +75,22 @@ export default function DashboardPageClient({
   macroMembers,
   dinnerIdeas,
   cookingPreferences,
+  yesterdayKodaMeals = [],
 }) {
   const [view, setView] = useState('daily')
   const [todos, setTodos] = useState(initialTodos)
   const [isPending, startTransition] = useTransition()
   const [sections, setSections] = useState(initialSections)
   const [showCustomize, setShowCustomize] = useState(false)
+  const [toast, setToast] = useState(null)
+  const toastRef = useRef(null)
+  const prevSectionsRef = useRef(null)
+
+  function showToast(msg) {
+    if (toastRef.current) clearTimeout(toastRef.current)
+    setToast(msg)
+    toastRef.current = setTimeout(() => setToast(null), 3000)
+  }
 
   function handleToggleTodo(todoId) {
     // Optimistic update
@@ -84,16 +112,23 @@ export default function DashboardPageClient({
   }
 
   const handleSectionsUpdate = useCallback((newSections) => {
-    setSections(newSections)
+    setSections(prev => {
+      prevSectionsRef.current = prev
+      return newSections
+    })
     startTransition(async () => {
-      await updateDashboardSections(newSections)
+      const result = await updateDashboardSections(newSections)
+      if (!result.success) {
+        setSections(prevSectionsRef.current)
+        showToast(result.error || 'Could not save layout. Try again.')
+      }
     })
   }, [startTransition])
 
   // Sort visible sections by sort_order
   const visibleSections = [...sections]
     .sort((a, b) => a.sort_order - b.sort_order)
-    .filter(s => s.is_visible)
+    .filter(s => s.is_visible && !HIDDEN_SECTION_IDS.has(s.section_id))
 
   function renderSection(sectionId) {
     switch (sectionId) {
@@ -145,6 +180,20 @@ export default function DashboardPageClient({
         onCustomize={() => setShowCustomize(true)}
       />
 
+      {/* Meal rating cards for yesterday's Koda-suggested meals */}
+      {yesterdayKodaMeals && yesterdayKodaMeals.length > 0 && (
+        <SectionWrapper>
+          <MealRatingCards
+            meals={yesterdayKodaMeals}
+            onRated={(mealName, rating) => {
+              if (rating === 'thumbs_down') {
+                showToast('Thanks — Koda will remember that!')
+              }
+            }}
+          />
+        </SectionWrapper>
+      )}
+
       {/* Dynamic sections */}
       {visibleSections.map(section => (
         <SectionWrapper key={section.section_id}>
@@ -160,6 +209,8 @@ export default function DashboardPageClient({
           onUpdate={handleSectionsUpdate}
         />
       )}
+
+      {toast && <Toast>{toast}</Toast>}
     </>
   )
 }

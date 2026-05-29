@@ -19,7 +19,7 @@ export async function generateMacroInsight(memberId) {
   const rate = aiLimiter.check(user.id)
   if (!rate.success) return fail('Too many requests. Please wait a moment.')
 
-  const members = await getMacroMembers(null)
+  const members = await getMacroMembers(user.id)
   const member = members.find(m => m.id === memberId)
   if (!member) return fail('Member not found')
 
@@ -191,5 +191,150 @@ export async function fetchMonthlyExtras(memberId, year, month) {
   } catch (err) {
     console.error('[fetchMonthlyExtras] error:', err?.message || err)
     return fail('Could not load history.')
+  }
+}
+
+/**
+ * Save macro targets for a household member.
+ */
+export async function saveMacroTargetsAction(data) {
+  try {
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    if (!data.member_id) return fail('Member ID required.')
+
+    const targets = {
+      member_id: data.member_id,
+      track_macros: Boolean(data.track_macros),
+      daily_calorie_target: Math.max(0, parseInt(data.daily_calorie_target || 0, 10)),
+      daily_protein_target: Math.max(0, parseInt(data.daily_protein_target || 0, 10)),
+      daily_carb_target: Math.max(0, parseInt(data.daily_carb_target || 0, 10)),
+      daily_fat_target: Math.max(0, parseInt(data.daily_fat_target || 0, 10)),
+      macro_meal_distribution: data.macro_meal_distribution || { breakfast: 25, lunch: 35, dinner: 40 },
+    }
+
+    const { saveMacroTargets } = await import('@/lib/dal/macros')
+    await saveMacroTargets(user.id, targets)
+    return ok(targets)
+  } catch (err) {
+    console.error('[saveMacroTargets] error:', err?.message || err)
+    return fail('Could not save macro targets.')
+  }
+}
+
+/**
+ * Use Gemini to calculate suggested macro targets based on user goals.
+ * Accepts: { goal, activity, weight_optional }
+ */
+export async function calculateMacroTargetsAction({ goal, activity, weight_optional }) {
+  try {
+    const user = await requireUser()
+    const rate = aiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    const apiKey = process.env.GOOGLE_AI_API_KEY
+    if (!apiKey) {
+      // Sensible defaults when no API key
+      const defaults = {
+        'lose weight': { calories: 1600, protein: 130, carbs: 160, fat: 55 },
+        'maintain': { calories: 2000, protein: 150, carbs: 220, fat: 65 },
+        'build muscle': { calories: 2400, protein: 190, carbs: 260, fat: 75 },
+        'improve energy': { calories: 1900, protein: 140, carbs: 210, fat: 65 },
+      }
+      const targets = defaults[goal] || defaults['maintain']
+      return ok({ ...targets, reasoning: 'Suggested targets based on your goal. You can adjust these anytime.' })
+    }
+
+    const { GoogleGenAI } = await import('@google/genai')
+    const ai = new GoogleGenAI({ apiKey })
+
+    const prompt = [
+      `Calculate daily macro targets for someone with these preferences:`,
+      `- Main goal: ${goal}`,
+      `- Activity level: ${activity}`,
+      weight_optional ? `- Weight: ${weight_optional}` : `- Weight: not provided`,
+      ``,
+      `Return ONLY a JSON object with: calories (integer), protein (integer in grams), carbs (integer in grams), fat (integer in grams), reasoning (1 sentence explaining the recommendations).`,
+      `Be practical and evidence-based. Protein should be adequate for goals (at least 0.8g/lb body weight for muscle building if weight given).`,
+    ].join('\n')
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: prompt,
+      config: { responseMimeType: 'application/json' },
+    })
+
+    const parsed = JSON.parse(response.text)
+    return ok({
+      calories: Math.round(parsed.calories || 2000),
+      protein: Math.round(parsed.protein || 150),
+      carbs: Math.round(parsed.carbs || 200),
+      fat: Math.round(parsed.fat || 65),
+      reasoning: parsed.reasoning || 'Targets calculated based on your goals.',
+    })
+  } catch (err) {
+    console.error('[calculateMacroTargets] error:', err?.message || err)
+    return fail('Could not calculate targets. Please enter them manually.')
+  }
+}
+
+/**
+ * Estimate macros for a food name/description using Gemini.
+ * Returns { calories, protein, carbs, fat, serving_description, confidence, notes }
+ */
+export async function estimateFoodMacros({ food_name, serving }) {
+  try {
+    const user = await requireUser()
+    const rate = aiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    const query = [food_name, serving].filter(Boolean).join(', ')
+    if (!query.trim()) return fail('Enter a food name first.')
+
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      return ok({
+        calories: 200, protein: 10, carbs: 25, fat: 8,
+        serving_description: serving || '1 serving',
+        confidence: 'low',
+        notes: 'Gemini not configured — placeholder values.',
+      })
+    }
+
+    const { GoogleGenAI } = await import('@google/genai')
+    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
+
+    const prompt = `Estimate the nutritional content of: "${query}".
+Return ONLY a JSON object with these fields:
+- calories: integer
+- protein: number (grams, one decimal)
+- carbs: number (grams, one decimal)
+- fat: number (grams, one decimal)
+- serving_description: string describing the portion assumed
+- confidence: "high", "medium", or "low"
+- notes: one short sentence explaining your estimate
+
+Base estimates on typical preparation and standard portion sizes. Never return null for macro values.`
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: prompt,
+      config: { responseMimeType: 'application/json' },
+    })
+
+    const parsed = JSON.parse(response.text)
+    return ok({
+      calories: Math.round(parsed.calories || 0),
+      protein: Math.round((parsed.protein || 0) * 10) / 10,
+      carbs: Math.round((parsed.carbs || 0) * 10) / 10,
+      fat: Math.round((parsed.fat || 0) * 10) / 10,
+      serving_description: parsed.serving_description || serving || '1 serving',
+      confidence: parsed.confidence || 'medium',
+      notes: parsed.notes || '',
+    })
+  } catch (err) {
+    console.error('[estimateFoodMacros] error:', err?.message || err)
+    return fail('Could not estimate macros. Try entering them manually.')
   }
 }

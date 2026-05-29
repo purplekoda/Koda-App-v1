@@ -6,6 +6,7 @@ import { apiLimiter, aiLimiter } from '@/lib/rate-limit'
 import { ok, fail } from '@/lib/action-result'
 import { validateRecipe } from '@/lib/validators'
 import { sanitizeString, sanitizeEnum } from '@/lib/sanitize'
+import { uploadRecipeImage, downloadExternalImageToStorage } from '@/lib/storage'
 import {
   createRecipe,
   updateRecipe,
@@ -34,6 +35,26 @@ export async function createRecipeAction(formData) {
     // Normalize instructions into clean numbered steps
     if (validation.data.instructions) {
       validation.data.instructions = await normalizeInstructions(validation.data.instructions)
+    }
+
+    // Photo storage: if photo_path was pre-uploaded, strip the transient signed URL.
+    // If an external image_url came from web search results, try to download it now.
+    if (validation.data.photo_path) {
+      validation.data.image_url = null
+      validation.data.photo_source = 'supabase'
+    } else if (
+      validation.data.image_url &&
+      !validation.data.image_url.startsWith('data:image/') &&
+      (validation.data.image_url.startsWith('https://') || validation.data.image_url.startsWith('http://'))
+    ) {
+      const stored = await downloadExternalImageToStorage(validation.data.image_url, user.id)
+      if (stored) {
+        validation.data.photo_path = stored.storagePath
+        validation.data.image_url = null
+        validation.data.photo_source = 'supabase'
+      } else {
+        validation.data.photo_source = 'external'
+      }
     }
 
     const { isMockMode } = await import('@/lib/dal/require-user')
@@ -100,6 +121,24 @@ export async function updateRecipeAction(recipeId, formData) {
     // Normalize instructions into clean numbered steps
     if (validation.data.instructions) {
       validation.data.instructions = await normalizeInstructions(validation.data.instructions)
+    }
+
+    if (validation.data.photo_path) {
+      validation.data.image_url = null
+      validation.data.photo_source = 'supabase'
+    } else if (
+      validation.data.image_url &&
+      !validation.data.image_url.startsWith('data:image/') &&
+      (validation.data.image_url.startsWith('https://') || validation.data.image_url.startsWith('http://'))
+    ) {
+      const stored = await downloadExternalImageToStorage(validation.data.image_url, user.id)
+      if (stored) {
+        validation.data.photo_path = stored.storagePath
+        validation.data.image_url = null
+        validation.data.photo_source = 'supabase'
+      } else {
+        validation.data.photo_source = 'external'
+      }
     }
 
     const recipe = await updateRecipe(user.id, recipeId, validation.data)
@@ -265,7 +304,6 @@ export async function scanRecipeAction(formData) {
   }
 }
 
-const RECIPE_IMAGE_BUCKET = 'recipe-images'
 const MAX_RECIPE_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB
 
 /**
@@ -369,32 +407,7 @@ async function extractRecipeImage(html, pageUrl, userId) {
     }
 
     // ── 4. Upload to Supabase Storage ─────────────────────────────────────────
-    try {
-      const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-      const supabase = await getSupabaseServerClient()
-
-      const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
-      const ext = extMap[contentType] ?? 'jpg'
-      const storagePath = `${userId}/${Date.now()}.${ext}`
-
-      const { error: uploadError } = await supabase.storage
-        .from(RECIPE_IMAGE_BUCKET)
-        .upload(storagePath, imgBuf, { contentType, upsert: false })
-
-      if (uploadError) {
-        console.error('[extractRecipeImage] Storage upload failed:', uploadError.message)
-        return null
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(RECIPE_IMAGE_BUCKET)
-        .getPublicUrl(storagePath)
-
-      return publicUrl
-    } catch (storageErr) {
-      console.error('[extractRecipeImage] Storage error:', storageErr?.message)
-      return null
-    }
+    return await uploadRecipeImage(imgBuf, contentType, userId)
   } catch (err) {
     console.error('[extractRecipeImage] error:', err?.message || err)
     return null
@@ -495,15 +508,16 @@ export async function importRecipeFromUrlAction(url) {
     const ingredientCount = (validation.data.ingredients || []).length
     const isPartial = ingredientCount < 3
 
-    // Pass userId so extractRecipeImage can upload to the user's Storage folder
-    const imageUrl = await extractRecipeImage(html, cleanUrl, user.id)
+    // Pass userId so extractRecipeImage can upload to the user's Storage folder.
+    // Returns { storagePath, signedUrl } or null.
+    const photoResult = await extractRecipeImage(html, cleanUrl, user.id)
 
     return ok({
       ...validation.data,
       source: cleanUrl,
       imported_from: platform,
       imported_at: new Date().toISOString(),
-      ...(imageUrl ? { image_url: imageUrl } : {}),
+      ...(photoResult ? { photo_path: photoResult.storagePath, photo_source: 'supabase', image_url: photoResult.signedUrl } : {}),
       ...(isPartial ? { _isPartial: true } : {}),
     })
   } catch (err) {
@@ -553,30 +567,10 @@ export async function importRecipeFromPhotoAction(formData) {
     const validation = validateRecipe(raw)
     if (!validation.valid) return fail('We couldn\u2019t identify a recipe from this photo \u2014 try a clearer image or a different angle.')
 
-    // Upload the first photo to Supabase Storage as the recipe image
-    let imageUrl = null
-    if (!isMockMode()) {
-      try {
-        const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-        const supabase = await getSupabaseServerClient()
-        const ext = images[0].mimeType === 'image/png' ? 'png' : 'jpg'
-        const storagePath = `${user.id}/${Date.now()}-photo.${ext}`
-        const imgBuf = Buffer.from(images[0].base64, 'base64')
-
-        const { error: uploadError } = await supabase.storage
-          .from(RECIPE_IMAGE_BUCKET)
-          .upload(storagePath, imgBuf, { contentType: images[0].mimeType, upsert: false })
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from(RECIPE_IMAGE_BUCKET)
-            .getPublicUrl(storagePath)
-          imageUrl = publicUrl
-        }
-      } catch {
-        // Photo upload failed — continue without image
-      }
-    }
+    // Upload the first photo to Supabase Storage as the recipe image.
+    // Returns { storagePath, signedUrl } or null.
+    const imgBuf = Buffer.from(images[0].base64, 'base64')
+    const photoResult = await uploadRecipeImage(imgBuf, images[0].mimeType, user.id, '-photo')
 
     const ingredientCount = (validation.data.ingredients || []).length
     const isPartial = ingredientCount < 3
@@ -585,7 +579,7 @@ export async function importRecipeFromPhotoAction(formData) {
       ...validation.data,
       imported_from: 'Photo',
       imported_at: new Date().toISOString(),
-      ...(imageUrl ? { image_url: imageUrl } : {}),
+      ...(photoResult ? { photo_path: photoResult.storagePath, photo_source: 'supabase', image_url: photoResult.signedUrl } : {}),
       ...(raw.confidence ? { _confidence: raw.confidence } : {}),
       ...(isPartial ? { _isPartial: true } : {}),
     })
@@ -639,29 +633,15 @@ export async function generateRecipeImageAction(recipeName, description) {
     const { generateRecipeImage } = await import('@/lib/gemini')
     const { imageBytes, mimeType } = await generateRecipeImage(cleanName, cleanDesc)
 
-    // Upload to Supabase Storage
-    const { getSupabaseServerClient } = await import('@/lib/supabase/server')
-    const supabase = await getSupabaseServerClient()
-
-    const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
-    const ext = extMap[mimeType] ?? 'png'
-    const storagePath = `${user.id}/${Date.now()}-ai.${ext}`
-
+    // Upload to Supabase Storage. signedUrl is short-lived for immediate display.
     const imgBuf = Buffer.from(imageBytes, 'base64')
-    const { error: uploadError } = await supabase.storage
-      .from(RECIPE_IMAGE_BUCKET)
-      .upload(storagePath, imgBuf, { contentType: mimeType, upsert: false })
+    const photoResult = await uploadRecipeImage(imgBuf, mimeType, user.id, '-ai')
 
-    if (uploadError) {
-      console.error('[generateRecipeImage] Upload failed:', uploadError.message)
+    if (!photoResult) {
       return fail('Generated photo but could not save it. Check that the recipe-images storage bucket exists.')
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from(RECIPE_IMAGE_BUCKET)
-      .getPublicUrl(storagePath)
-
-    return ok({ image_url: publicUrl })
+    return ok({ image_url: photoResult.signedUrl, photo_path: photoResult.storagePath, photo_source: 'supabase' })
   } catch (err) {
     console.error('[generateRecipeImage] error:', err?.message || err)
     return fail('Could not generate photo. Please try again.')

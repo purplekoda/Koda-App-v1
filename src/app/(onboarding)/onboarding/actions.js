@@ -275,12 +275,16 @@ export async function saveBudgetAction(formData) {
     const validation = validateBudgetStep(formData)
     if (!validation.valid) return fail(validation.errors.join(', '))
 
-    // weekly_budget goes into cooking_preferences JSONB
+    // weekly_budget and monthly_budget go into cooking_preferences JSONB
     const profileUpdates = { budget_priorities: validation.data.budget_priorities }
     const cookingPrefUpdates = {}
     if (validation.data.weekly_budget !== undefined) {
       cookingPrefUpdates.weekly_budget = validation.data.weekly_budget
     }
+    if (validation.data.monthly_budget !== undefined) {
+      cookingPrefUpdates.monthly_budget = validation.data.monthly_budget
+    }
+    cookingPrefUpdates.split_monthly_to_weekly = validation.data.split_monthly_to_weekly
 
     // Shopping style fields go directly on profile
     if (validation.data.shopping_style) {

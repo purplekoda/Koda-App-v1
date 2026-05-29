@@ -2,12 +2,12 @@
 
 import { useState, useTransition, useRef, useEffect, Fragment } from 'react'
 import styled, { keyframes } from 'styled-components'
-import AIBar from '@/components/ai/AIBar'
 import MealPlannerGrid from '@/components/meals/MealPlannerGrid'
 import FillWeekButton from '@/components/meals/FillWeekButton'
 import RecipePickerModal from '@/components/meals/RecipePickerModal'
-import { swapMeal, removeMeal, fillWeek, addToGrocery, aiFillWeekAction, getWeekMealsAction, webSearchSlotsAction, surpriseMeAction, surpriseMeBatchAction, getFavoriteWebsiteAction, searchRecipeSuggestionsAction, assignRecipeToSlot } from './actions'
+import { swapMeal, removeMeal, fillWeek, addToGrocery, aiFillWeekAction, getWeekMealsAction, webSearchSlotsAction, surpriseMeAction, surpriseMeBatchAction, getFavoriteWebsiteAction, searchRecipeSuggestionsAction, assignRecipeToSlot, generateMealPlanPreviewAction, savePlanningModeAction, saveMealPlanDraftAction, getMealPlanDraftAction, dismissMealPlanDraftAction } from './actions'
 import { createRecipeAction } from '../recipes/actions'
+import PlanningModeOverlay from '@/components/meals/PlanningModeOverlay'
 
 // ─── Page layout ──────────────────────────────────────────────────────────────
 
@@ -196,6 +196,17 @@ const DialogHint = styled.p`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 4px;
+`
+
+const PlannerSkipHint = styled.p`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  background: ${({ theme }) => theme.colors.surfaceAlt || '#F7F7FA'};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  padding: 8px 12px;
+  margin-top: 4px;
+  line-height: 1.5;
 `
 
 const InstructionsArea = styled.textarea`
@@ -448,11 +459,166 @@ const FilterDisclaimer = styled.div`
   border-left: 3px solid ${({ theme }) => theme.colors.purple};
 `
 
+const ChangeStoresLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.purple};
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+  margin-top: 4px;
+  display: inline-block;
+
+  &:hover { opacity: 0.8; }
+  &:disabled { opacity: 0.5; cursor: default; }
+`
+
+const StorePickerArea = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+`
+
+const StoreCheckRow = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  user-select: none;
+`
+
+const StorePickerTitle = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin-bottom: 2px;
+`
+
 const TimePerDayGrid = styled.div`
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 6px 10px;
   align-items: center;
+`
+
+// ─── Dual-thumb macro range slider ───────────────────────────────────────────
+
+const MacroSliderBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`
+
+const MacroSliderLabelRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+`
+
+const MacroSliderLabel = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const MacroSliderValue = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.purple};
+`
+
+const MacroSliderTrackWrap = styled.div`
+  position: relative;
+  height: 32px;
+  display: flex;
+  align-items: center;
+`
+
+const MacroSliderTrack = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: ${({ theme }) => theme.colors.borderLight || '#E8E8EE'};
+  border-radius: 3px;
+  pointer-events: none;
+`
+
+const MacroSliderFill = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: ${({ $color }) => $color || '#7C5CBF'};
+  border-radius: 3px;
+`
+
+const MacroRangeInput = styled.input`
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    border: 2.5px solid ${({ $color }) => $color || '#7C5CBF'};
+    cursor: pointer;
+    pointer-events: all;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+    transition: transform 0.1s;
+  }
+
+  &::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  &::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    border: 2.5px solid ${({ $color }) => $color || '#7C5CBF'};
+    cursor: pointer;
+    pointer-events: all;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+  }
+
+  &:disabled::-webkit-slider-thumb { opacity: 0.35; cursor: default; }
+  &:disabled::-moz-range-thumb { opacity: 0.35; cursor: default; }
+`
+
+const MacroSliderHint = styled.div`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  line-height: 1.4;
+`
+
+const MacroServingNote = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textMuted};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderLight};
+  margin-bottom: 2px;
 `
 
 const TimeDayLabel = styled.span`
@@ -1001,6 +1167,114 @@ const SurpriseCountValue = styled.span`
   text-align: center;
 `
 
+// ─── Meal type picker (top of plan-my-week dialog) ───────────────────────────
+
+const MealTypePicker = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+  padding-bottom: ${({ theme }) => theme.spacing.md};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  margin-bottom: 2px;
+`
+
+const MealTypePickerLabel = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+`
+
+const MealTypeBubbleRow = styled.div`
+  display: flex;
+  gap: 10px;
+`
+
+const MEAL_BUBBLE_COLORS = {
+  breakfast: { bg: '#FFF8E7', border: '#E8A930', active: '#E8A930', text: '#8A6200' },
+  lunch:     { bg: '#E8F7F5', border: '#3BA896', active: '#3BA896', text: '#1A6057' },
+  dinner:    { bg: '#F0EBFF', border: '#7C5CBF', active: '#7C5CBF', text: '#3D1F8A' },
+}
+
+const MealTypeBubble = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: ${({ $type, $active }) => $active ? MEAL_BUBBLE_COLORS[$type].active : MEAL_BUBBLE_COLORS[$type].bg};
+  color: ${({ $type, $active }) => $active ? 'white' : MEAL_BUBBLE_COLORS[$type].text};
+  border: 2px solid ${({ $type, $active }) => $active ? MEAL_BUBBLE_COLORS[$type].active : MEAL_BUBBLE_COLORS[$type].border};
+
+  &:hover {
+    background: ${({ $type, $active }) => $active ? MEAL_BUBBLE_COLORS[$type].active : `${MEAL_BUBBLE_COLORS[$type].border}22`};
+  }
+`
+
+const MealTypeBubbleDot = styled.span`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ $type, $active }) => $active ? 'rgba(255,255,255,0.7)' : MEAL_BUBBLE_COLORS[$type].active};
+  flex-shrink: 0;
+`
+
+const DinnerOptionsRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #F6F2FF;
+  border: 1px solid #C4B0E8;
+  border-radius: ${({ theme }) => theme.radii.md};
+`
+
+const DinnerOptionLabel = styled.label`
+  font-size: 12px;
+  font-weight: 600;
+  color: #5B3FA6;
+  white-space: nowrap;
+`
+
+const DinnerOptionSelect = styled.select`
+  font-size: 12px;
+  font-weight: 500;
+  color: #3D1F8A;
+  background: white;
+  border: 1.5px solid #C4B0E8;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  padding: 4px 8px;
+  cursor: pointer;
+  appearance: auto;
+
+  &:focus { outline: none; border-color: #7C5CBF; }
+`
+
+const DinnerDessertToggle = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: ${({ $active }) => $active ? '#7C5CBF' : 'white'};
+  color: ${({ $active }) => $active ? 'white' : '#5B3FA6'};
+  border: 1.5px solid ${({ $active }) => $active ? '#7C5CBF' : '#C4B0E8'};
+
+  &:hover {
+    background: ${({ $active }) => $active ? '#6A4BAD' : '#EDE8FB'};
+  }
+`
+
 const SurpriseResultsScroll = styled.div`
   display: flex;
   flex-direction: column;
@@ -1083,6 +1357,46 @@ const FavWebsiteBtn = styled.button`
   &:hover { opacity: 0.85; }
 `
 
+// ─── Draft banner ─────────────────────────────────────────────────────────────
+
+const DraftBanner = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: 12px 16px;
+  background: ${({ theme }) => theme.colors.purpleLight};
+  border: 1px solid ${({ theme }) => theme.colors.purpleMid};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+  flex-wrap: wrap;
+`
+
+const DraftBannerText = styled.span`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.purpleDark};
+  font-weight: 500;
+`
+
+const DraftBannerActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+  flex-shrink: 0;
+`
+
+const DraftBannerBtn = styled.button`
+  padding: 7px 16px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid ${({ $primary, theme }) => $primary ? theme.colors.purple : theme.colors.purpleMid};
+  background: ${({ $primary, theme }) => $primary ? theme.colors.purple : 'transparent'};
+  color: ${({ $primary, theme }) => $primary ? 'white' : theme.colors.purple};
+
+  &:hover { opacity: 0.85; }
+`
+
 // ─── Koda Plan button ────────────────────────────────────────────────────────
 
 const KodaPlanButton = styled.button`
@@ -1147,6 +1461,53 @@ function countStats(meals) {
   return { total, filled, empty: total - filled, needItems }
 }
 
+// ─── Dual-thumb range slider component ───────────────────────────────────────
+
+function MacroRangeSlider({ label, unit, min, max, step, values, onChange, disabled, color, hint }) {
+  const pctLeft = ((values[0] - min) / (max - min)) * 100
+  const pctRight = ((values[1] - min) / (max - min)) * 100
+  const displayLow = values[0] === min ? '0' : String(values[0])
+  const displayHigh = values[1] === max ? 'max' : String(values[1])
+  const rangeLabel = `${displayLow} – ${displayHigh} ${unit}`
+
+  return (
+    <MacroSliderBlock>
+      <MacroSliderLabelRow>
+        <MacroSliderLabel>{label}</MacroSliderLabel>
+        <MacroSliderValue>{rangeLabel}</MacroSliderValue>
+      </MacroSliderLabelRow>
+      <MacroSliderTrackWrap>
+        <MacroSliderTrack>
+          <MacroSliderFill $color={color} style={{ left: `${pctLeft}%`, right: `${100 - pctRight}%` }} />
+        </MacroSliderTrack>
+        <MacroRangeInput
+          type="range"
+          min={min} max={max} step={step}
+          value={values[0]}
+          $color={color}
+          disabled={disabled}
+          onChange={e => {
+            const v = Math.min(Number(e.target.value), values[1] - step)
+            onChange([v, values[1]])
+          }}
+        />
+        <MacroRangeInput
+          type="range"
+          min={min} max={max} step={step}
+          value={values[1]}
+          $color={color}
+          disabled={disabled}
+          onChange={e => {
+            const v = Math.max(Number(e.target.value), values[0] + step)
+            onChange([values[0], v])
+          }}
+        />
+      </MacroSliderTrackWrap>
+      {hint && <MacroSliderHint>{hint}</MacroSliderHint>}
+    </MacroSliderBlock>
+  )
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MealsPageClient({ initialMeals, swapSuggestions, recipes = [], cookingPreferences, groceryPreferences, collections = [], collectionLinks = [] }) {
@@ -1172,18 +1533,24 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
   const [aiFillOpen, setAiFillOpen] = useState(false)
   const [aiInstructions, setAiInstructions] = useState('')
   const [aiFillModes, setAiFillModes] = useState([])
+  const [replanAll, setReplanAll] = useState(false)
   const [isAiFilling, startAiTransition] = useTransition()
 
   // Planner filters
   const hasStores = (groceryPreferences?.store_list?.length > 0) || (groceryPreferences?.stores?.length > 0)
+  const allSavedStores = groceryPreferences?.store_list?.length > 0
+    ? groceryPreferences.store_list
+    : (groceryPreferences?.stores || []).map(s => ({ value: s, label: s }))
+  const [weekStores, setWeekStores] = useState(allSavedStores)
+  const [storePickerOpen, setStorePickerOpen] = useState(false)
   const [filterBudget, setFilterBudget] = useState(false)
   const [filterMacros, setFilterMacros] = useState(false)
   const [filterTime, setFilterTime] = useState(false)
   const [weeklyBudget, setWeeklyBudget] = useState(cookingPreferences?.weekly_budget || '')
-  const [macroProtein, setMacroProtein] = useState(cookingPreferences?.macro_protein || '')
-  const [macroCarbs, setMacroCarbs] = useState(cookingPreferences?.macro_carbs || '')
-  const [macroFat, setMacroFat] = useState(cookingPreferences?.macro_fat || '')
-  const [macroCalories, setMacroCalories] = useState(cookingPreferences?.macro_calories || '')
+  const [macroCaloriesRange, setMacroCaloriesRange] = useState([0, 800])
+  const [macroProteinRange, setMacroProteinRange] = useState([0, 40])
+  const [macroCarbsRange, setMacroCarbsRange] = useState([0, 100])
+  const [macroFatRange, setMacroFatRange] = useState([0, 50])
   const [timeMode, setTimeMode] = useState('same')  // 'same' | 'per-day'
   const [timeAll, setTimeAll] = useState(cookingPreferences?.time_preference || 'medium')
   const DAY_NAMES_LIST = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -1212,13 +1579,50 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
   const [surpriseMealTypes, setSurpriseMealTypes] = useState([])   // ['breakfast', 'lunch', 'dinner']
   const [surpriseCount, setSurpriseCount] = useState(3)
 
+  // Meal type picker state (top of plan-my-week dialog)
+  const [planMealTypes, setPlanMealTypes] = useState([])           // ['breakfast', 'lunch', 'dinner']
+  const [dinnerSides, setDinnerSides] = useState('0')              // '0' | '1' | '2'
+  const [dinnerDessert, setDinnerDessert] = useState(false)
+
   // Favorite website state
   const [favoriteWebsite, setFavoriteWebsite] = useState(null)
   const [favWebsiteDismissed, setFavWebsiteDismissed] = useState(false)
 
+  // Full-week pre-planning check
+  const [fullWeekPromptOpen, setFullWeekPromptOpen] = useState(false)
+
+  // Planning mode state
+  const [planningModeOpen, setPlanningModeOpen] = useState(false)
+  const [planningModeSlots, setPlanningModeSlots] = useState([])
+  const [isGeneratingPreview, startPreviewTransition] = useTransition()
+  const [isSavingPlan, startSavePlanTransition] = useTransition()
+  const [draftBannerVisible, setDraftBannerVisible] = useState(false)
+  const [draftBannerData, setDraftBannerData] = useState(null)
+  const [planningModeDraftPromptOpen, setPlanningModeDraftPromptOpen] = useState(false)
+
   useEffect(() => () => clearTimeout(toastTimeoutRef.current), [])
 
+  // Check for a saved draft on mount
+  useEffect(() => {
+    getMealPlanDraftAction().then(result => {
+      if (result.success && result.data?.draft) {
+        setDraftBannerData(result.data.draft)
+        setDraftBannerVisible(true)
+      }
+    })
+  }, [])
+
   const stats = countStats(meals)
+
+  function isMainWeekFull() {
+    const MAIN_TYPES = ['breakfast', 'lunch', 'dinner']
+    return meals.every(day =>
+      MAIN_TYPES.every(type => {
+        const meal = day.meals.find(m => m.type === type)
+        return meal && meal.name
+      })
+    )
+  }
 
   function showToast(message, isError = false) {
     clearTimeout(toastTimeoutRef.current)
@@ -1452,14 +1856,19 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
     const filters = {}
     if (filterBudget && weeklyBudget) {
       filters.weeklyBudget = Number(weeklyBudget)
-      filters.stores = groceryPreferences?.store_list || []
+      filters.stores = weekStores
     }
     if (filterMacros) {
-      filters.macros = {}
-      if (macroProtein) filters.macros.protein = Number(macroProtein)
-      if (macroCarbs) filters.macros.carbs = Number(macroCarbs)
-      if (macroFat) filters.macros.fat = Number(macroFat)
-      if (macroCalories) filters.macros.calories = Number(macroCalories)
+      filters.macros = {
+        caloriesMin: macroCaloriesRange[0],
+        caloriesMax: macroCaloriesRange[1],
+        proteinMin: macroProteinRange[0],
+        proteinMax: macroProteinRange[1],
+        carbsMin: macroCarbsRange[0],
+        carbsMax: macroCarbsRange[1],
+        fatMin: macroFatRange[0],
+        fatMax: macroFatRange[1],
+      }
     }
     if (filterTime) {
       if (timeMode === 'per-day') {
@@ -1470,7 +1879,7 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
       }
     }
 
-    startAiTransition(async () => {
+    startPreviewTransition(async () => {
       // If web-search is selected, fetch search results first to show picker
       if (hasWebSearch) {
         // Check for favorite website in parallel with the search
@@ -1500,31 +1909,13 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
         return
       }
 
-      // No web search — just run the AI fill directly
-      const result = await aiFillWeekAction(instructions, aiFillModes, weekOffset, filters)
+      // No web search — close dialog immediately so the loading screen shows
+      closeAiFillDialog()
+      const result = await generateMealPlanPreviewAction(instructions, aiFillModes, weekOffset, { ...filters, replanAll })
       if (result.success) {
-        if (result.data?.meals) setMeals(result.data.meals)
-        const count = result.data?.filledCount ?? 0
-        const unlinked = result.data?.unlinkedSlots || []
-
-        // If there are AI-generated ideas that need recipe linking, search for suggestions
-        if (unlinked.length > 0) {
-          showToast(`Koda filled ${count} meal${count !== 1 ? 's' : ''}. Finding recipes for ${unlinked.length} slot${unlinked.length !== 1 ? 's' : ''}\u2026`)
-          const suggestionsResult = await searchRecipeSuggestionsAction(unlinked, weekOffset)
-          if (suggestionsResult.success && suggestionsResult.data?.slotSuggestions?.length > 0) {
-            setRecipeSuggestions(suggestionsResult.data.slotSuggestions)
-            setRecipePicks({})
-            setPantryItemNames(suggestionsResult.data.pantryNames || [])
-          } else {
-            closeAiFillDialog()
-            showToast(`Koda filled ${count} meal${count !== 1 ? 's' : ''} for you!`)
-          }
-        } else {
-          closeAiFillDialog()
-          showToast(`Koda filled ${count} meal${count !== 1 ? 's' : ''} for you!`)
-        }
+        setPlanningModeSlots(result.data?.previewSlots || [])
+        setPlanningModeOpen(true)
       } else {
-        closeAiFillDialog()
         showToast(result.error || 'Planning failed. Please try again.', true)
       }
     })
@@ -1534,9 +1925,14 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
     setAiFillOpen(false)
     setAiInstructions('')
     setAiFillModes([])
+    setReplanAll(false)
     setFilterBudget(false)
     setFilterMacros(false)
     setFilterTime(false)
+    setMacroCaloriesRange([0, 800])
+    setMacroProteinRange([0, 40])
+    setMacroCarbsRange([0, 100])
+    setMacroFatRange([0, 50])
     setWebSearchResults(null)
     setWebSearchPicks({})
     setRecipeSuggestions(null)
@@ -1550,7 +1946,61 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
     setSurpriseSlot(null)
     setSurpriseMealTypes([])
     setSurpriseCount(3)
+    setPlanMealTypes([])
+    setDinnerSides('0')
+    setDinnerDessert(false)
     setFavWebsiteDismissed(false)
+  }
+
+  // ─── Planning Mode handlers ───────────────────────────────────────────────
+
+  function handleSavePlan(slotsWithChecked) {
+    startSavePlanTransition(async () => {
+      const result = await savePlanningModeAction(slotsWithChecked, weekOffset)
+      if (result.success) {
+        const weekResult = await getWeekMealsAction(weekOffset)
+        if (weekResult.success) setMeals(weekResult.data.meals)
+        setPlanningModeOpen(false)
+        setPlanningModeSlots([])
+        showToast('Your week is saved — grocery list updated!')
+      } else {
+        showToast(result.error || 'Failed to save plan. Please try again.', true)
+      }
+    })
+  }
+
+  function handlePlanningModeClose() {
+    setPlanningModeDraftPromptOpen(true)
+  }
+
+  function handleSaveDraft() {
+    startTransition(async () => {
+      await saveMealPlanDraftAction(planningModeSlots, weekOffset)
+      setPlanningModeDraftPromptOpen(false)
+      setPlanningModeOpen(false)
+      setPlanningModeSlots([])
+      showToast('Draft saved!')
+    })
+  }
+
+  function handleDiscardPlan() {
+    setPlanningModeDraftPromptOpen(false)
+    setPlanningModeOpen(false)
+    setPlanningModeSlots([])
+  }
+
+  function handleResumeDraft() {
+    if (draftBannerData?.draft_data?.previewSlots) {
+      setPlanningModeSlots(draftBannerData.draft_data.previewSlots)
+      setPlanningModeOpen(true)
+      setDraftBannerVisible(false)
+      dismissMealPlanDraftAction()
+    }
+  }
+
+  function handleDismissDraft() {
+    setDraftBannerVisible(false)
+    startTransition(() => dismissMealPlanDraftAction())
   }
 
   function handleWebSearchPick(slotKey, recipeIndex) {
@@ -1770,16 +2220,20 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
         </div>
         <HeaderActions>
           <KodaPlanButton
-            onClick={() => setAiFillOpen(true)}
-            disabled={isAiFilling}
+            onClick={() => {
+              if (isMainWeekFull()) {
+                setFullWeekPromptOpen(true)
+              } else {
+                setAiFillOpen(true)
+              }
+            }}
+            disabled={isAiFilling || isGeneratingPreview}
           >
             <AIDot />
             Koda, plan my week
           </KodaPlanButton>
         </HeaderActions>
       </PageHeader>
-
-      <AIBar placeholder={'What should we have for dinner tonight?'} context="meals" />
 
       <WeekNav>
         <NavButton onClick={() => handleWeekChange(-1)} disabled={isLoadingWeek}>{'\u2039'}</NavButton>
@@ -1805,6 +2259,16 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
           </StatChip>
         )}
       </StatsRow>
+
+      {draftBannerVisible && (
+        <DraftBanner>
+          <DraftBannerText>You have an unsaved draft plan — resume it?</DraftBannerText>
+          <DraftBannerActions>
+            <DraftBannerBtn $primary onClick={handleResumeDraft}>Resume</DraftBannerBtn>
+            <DraftBannerBtn onClick={handleDismissDraft}>Dismiss</DraftBannerBtn>
+          </DraftBannerActions>
+        </DraftBanner>
+      )}
 
       <MealPlannerGrid
         meals={meals}
@@ -2054,6 +2518,58 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
               </DialogBody>
             ) : (
               <DialogBody as="form" onSubmit={handleAiFillSubmit}>
+                <MealTypePicker>
+                  <MealTypePickerLabel>What are you planning?</MealTypePickerLabel>
+                  <MealTypeBubbleRow>
+                    {[
+                      { key: 'breakfast', label: 'Breakfast', icon: '🍳' },
+                      { key: 'lunch',     label: 'Lunch',     icon: '🥗' },
+                      { key: 'dinner',    label: 'Dinner',    icon: '🍽️' },
+                    ].map(({ key, label, icon }) => {
+                      const active = planMealTypes.includes(key)
+                      return (
+                        <MealTypeBubble
+                          key={key}
+                          type="button"
+                          $type={key}
+                          $active={active}
+                          onClick={() => setPlanMealTypes(prev =>
+                            prev.includes(key) ? prev.filter(t => t !== key) : [...prev, key]
+                          )}
+                          disabled={isAiFilling}
+                        >
+                          <MealTypeBubbleDot $type={key} $active={active} />
+                          {icon} {label}
+                        </MealTypeBubble>
+                      )
+                    })}
+                  </MealTypeBubbleRow>
+
+                  {planMealTypes.includes('dinner') && (
+                    <DinnerOptionsRow>
+                      <DinnerOptionLabel htmlFor="dinner-sides">Sides:</DinnerOptionLabel>
+                      <DinnerOptionSelect
+                        id="dinner-sides"
+                        value={dinnerSides}
+                        onChange={(e) => setDinnerSides(e.target.value)}
+                        disabled={isAiFilling}
+                      >
+                        <option value="0">No sides</option>
+                        <option value="1">1 side</option>
+                        <option value="2">2 sides</option>
+                      </DinnerOptionSelect>
+                      <DinnerDessertToggle
+                        type="button"
+                        $active={dinnerDessert}
+                        onClick={() => setDinnerDessert(d => !d)}
+                        disabled={isAiFilling}
+                      >
+                        {dinnerDessert ? '✓' : ''} {'🍰'} Dessert
+                      </DinnerDessertToggle>
+                    </DinnerOptionsRow>
+                  )}
+                </MealTypePicker>
+
                 <OptionCardsGrid>
                   <OptionCard
                     type="button"
@@ -2198,63 +2714,90 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
                         </FilterDisclaimer>
                       )}
                       {hasStores && (
-                        <FilterDisclaimer>
-                          Koda will reference deals at your saved stores: {(groceryPreferences?.store_list || []).map(s => s.label || s.value).join(', ') || groceryPreferences?.stores?.join(', ')}
-                        </FilterDisclaimer>
+                        <>
+                          <FilterDisclaimer>
+                            Koda will reference deals at your saved stores: {weekStores.length > 0 ? weekStores.map(s => s.label || s.value).join(', ') : 'none selected'}
+                          </FilterDisclaimer>
+                          <ChangeStoresLink
+                            type="button"
+                            onClick={() => setStorePickerOpen(o => !o)}
+                            disabled={isAiFilling}
+                          >
+                            {storePickerOpen ? 'Done choosing stores' : 'Change stores for this week'}
+                          </ChangeStoresLink>
+                          {storePickerOpen && (
+                            <StorePickerArea>
+                              <StorePickerTitle>Choose which stores Koda should pull from this week</StorePickerTitle>
+                              {allSavedStores.map(store => {
+                                const isSelected = weekStores.some(s => s.value === store.value)
+                                return (
+                                  <StoreCheckRow key={store.value}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      disabled={isAiFilling}
+                                      onChange={() => {
+                                        setWeekStores(prev =>
+                                          isSelected
+                                            ? prev.filter(s => s.value !== store.value)
+                                            : [...prev, store]
+                                        )
+                                      }}
+                                    />
+                                    {store.label || store.value}
+                                  </StoreCheckRow>
+                                )
+                              })}
+                            </StorePickerArea>
+                          )}
+                        </>
                       )}
                     </FilterExpandedArea>
                   )}
 
                   {filterMacros && (
                     <FilterExpandedArea>
-                      <FilterRow>
-                        <FilterLabel>Calories</FilterLabel>
-                        <FilterInput
-                          type="number"
-                          placeholder="2000"
-                          value={macroCalories}
-                          onChange={(e) => setMacroCalories(e.target.value)}
-                          disabled={isAiFilling}
-                          min={0}
-                        />
-                        <FilterUnit>kcal/day</FilterUnit>
-                      </FilterRow>
-                      <FilterRow>
-                        <FilterLabel>Protein</FilterLabel>
-                        <FilterInput
-                          type="number"
-                          placeholder="150"
-                          value={macroProtein}
-                          onChange={(e) => setMacroProtein(e.target.value)}
-                          disabled={isAiFilling}
-                          min={0}
-                        />
-                        <FilterUnit>g/day</FilterUnit>
-                      </FilterRow>
-                      <FilterRow>
-                        <FilterLabel>Carbs</FilterLabel>
-                        <FilterInput
-                          type="number"
-                          placeholder="200"
-                          value={macroCarbs}
-                          onChange={(e) => setMacroCarbs(e.target.value)}
-                          disabled={isAiFilling}
-                          min={0}
-                        />
-                        <FilterUnit>g/day</FilterUnit>
-                      </FilterRow>
-                      <FilterRow>
-                        <FilterLabel>Fat</FilterLabel>
-                        <FilterInput
-                          type="number"
-                          placeholder="60"
-                          value={macroFat}
-                          onChange={(e) => setMacroFat(e.target.value)}
-                          disabled={isAiFilling}
-                          min={0}
-                        />
-                        <FilterUnit>g/day</FilterUnit>
-                      </FilterRow>
+                      <MacroServingNote>Per serving targets</MacroServingNote>
+                      <MacroRangeSlider
+                        label="Calories"
+                        unit="kcal"
+                        min={0} max={1500} step={25}
+                        values={macroCaloriesRange}
+                        onChange={setMacroCaloriesRange}
+                        disabled={isAiFilling}
+                        color="#E8A930"
+                        hint="Stay under the upper end — ideal for calorie-conscious meals"
+                      />
+                      <MacroRangeSlider
+                        label="Protein"
+                        unit="g"
+                        min={0} max={150} step={5}
+                        values={macroProteinRange}
+                        onChange={setMacroProteinRange}
+                        disabled={isAiFilling}
+                        color="#3BA896"
+                        hint="Aim for at least the lower end per serving"
+                      />
+                      <MacroRangeSlider
+                        label="Carbs"
+                        unit="g"
+                        min={0} max={200} step={5}
+                        values={macroCarbsRange}
+                        onChange={setMacroCarbsRange}
+                        disabled={isAiFilling}
+                        color="#7C5CBF"
+                        hint="Keep carbs under the upper end per serving"
+                      />
+                      <MacroRangeSlider
+                        label="Fat"
+                        unit="g"
+                        min={0} max={100} step={2}
+                        values={macroFatRange}
+                        onChange={setMacroFatRange}
+                        disabled={isAiFilling}
+                        color="#D85A30"
+                        hint="Keep fat under the upper end per serving"
+                      />
                     </FilterExpandedArea>
                   )}
 
@@ -2327,6 +2870,9 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
                   onChange={(e) => setAiInstructions(e.target.value)}
                   disabled={isAiFilling}
                 />
+                <PlannerSkipHint>
+                  💡 Don&apos;t want Koda to fill a specific meal slot? Go back and add something to that day manually — Koda will skip any slots that already have a meal.
+                </PlannerSkipHint>
                 <DialogFooter>
                   <CancelButton
                     type="button"
@@ -2337,12 +2883,12 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
                   </CancelButton>
                   <FillButton
                     type="submit"
-                    $loading={isAiFilling}
+                    $loading={isAiFilling || isGeneratingPreview}
                     $disabled={aiFillModes.length === 0 || (aiFillModes.includes('surprise') && aiFillModes.length === 1 && surpriseMealTypes.length === 0)}
-                    disabled={isAiFilling || aiFillModes.length === 0 || (aiFillModes.includes('surprise') && aiFillModes.length === 1 && surpriseMealTypes.length === 0)}
+                    disabled={isAiFilling || isGeneratingPreview || aiFillModes.length === 0 || (aiFillModes.includes('surprise') && aiFillModes.length === 1 && surpriseMealTypes.length === 0)}
                     style={aiFillModes.includes('surprise') && aiFillModes.length === 1 ? { background: '#D85A30', borderColor: '#D85A30' } : undefined}
                   >
-                    {isAiFilling ? 'Koda is planning\u2026' : aiFillModes.includes('surprise') && aiFillModes.length === 1 ? `Surprise me with ${surpriseCount}!` : 'Plan my week'}
+                    {(isAiFilling || isGeneratingPreview) ? 'Koda is planning\u2026' : aiFillModes.includes('surprise') && aiFillModes.length === 1 ? `Surprise me with ${surpriseCount}!` : 'Plan my week'}
                   </FillButton>
                 </DialogFooter>
               </DialogBody>
@@ -2446,6 +2992,68 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
             </PreviewFooter>
           </PreviewCard>
         </PreviewOverlay>
+      )}
+
+      <PlanningModeOverlay
+        isOpen={planningModeOpen}
+        isGenerating={isGeneratingPreview}
+        slots={planningModeSlots}
+        weekOffset={weekOffset}
+        recipes={recipes}
+        collections={collections}
+        collectionLinks={collectionLinks}
+        isSaving={isSavingPlan}
+        onSave={handleSavePlan}
+        onStartOver={handleDiscardPlan}
+        onClose={handlePlanningModeClose}
+      />
+
+      {fullWeekPromptOpen && (
+        <SavePromptOverlay onClick={(e) => e.target === e.currentTarget && setFullWeekPromptOpen(false)}>
+          <SavePromptCard>
+            <SavePromptTitle>Your week is already fully planned.</SavePromptTitle>
+            <SavePromptDesc>What would you like to do?</SavePromptDesc>
+            <SavePromptActions>
+              <SavePromptBtn
+                onClick={() => {
+                  setFullWeekPromptOpen(false)
+                  showToast('Tap any meal slot on the planner to swap it out.')
+                }}
+              >
+                Swap just a few days
+              </SavePromptBtn>
+              <SavePromptBtn
+                $primary
+                onClick={() => {
+                  setFullWeekPromptOpen(false)
+                  setReplanAll(true)
+                  setAiFillOpen(true)
+                }}
+              >
+                Replan the whole week
+              </SavePromptBtn>
+            </SavePromptActions>
+          </SavePromptCard>
+        </SavePromptOverlay>
+      )}
+
+      {planningModeDraftPromptOpen && (
+        <SavePromptOverlay onClick={(e) => e.target === e.currentTarget && handleDiscardPlan()}>
+          <SavePromptCard>
+            <SavePromptTitle>Save as a draft?</SavePromptTitle>
+            <SavePromptDesc>
+              You can come back to this plan later and finish reviewing it before saving to your week.
+            </SavePromptDesc>
+            <SavePromptActions>
+              <SavePromptBtn onClick={handleDiscardPlan}>
+                Discard
+              </SavePromptBtn>
+              <SavePromptBtn $primary onClick={handleSaveDraft}>
+                Save draft
+              </SavePromptBtn>
+            </SavePromptActions>
+          </SavePromptCard>
+        </SavePromptOverlay>
       )}
 
       {toast && <Toast $error={toast.isError}>{toast.message}</Toast>}

@@ -24,11 +24,14 @@ export default async function MacrosPage() {
     console.error('[MacrosPage] Failed to load data:', err?.message)
   }
 
+  const primaryMemberId = members.find(m => m.isPrimary)?.id ?? members[0]?.id ?? null
+
   return (
     <MacrosPageClient
       members={members}
       todayIndex={getTodayIndex()}
       extrasMap={extrasMap}
+      primaryMemberId={primaryMemberId}
     />
   )
 }

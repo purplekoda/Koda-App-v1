@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/signup', '/callback']
+const PUBLIC_ROUTES = ['/login', '/signup', '/callback', '/forgot-password', '/reset-password']
 
 // Routes that authenticated users shouldn't see (redirect to dashboard)
-const AUTH_ROUTES = ['/login', '/signup']
+const AUTH_ROUTES = ['/login', '/signup', '/forgot-password']
 
 // Allowed redirect destinations — prevents open redirect via ?redirect= param
 const ALLOWED_REDIRECT_PATHS = new Set([

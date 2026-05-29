@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SettingsStepLayout from '@/components/settings/SettingsStepLayout'
 import InviteFamilyStep from '@/components/onboarding/steps/InviteFamilyStep'
@@ -9,7 +9,7 @@ import { PERMISSION_GROUPS } from '@/data/onboarding-options'
 
 export default function InviteFamilySettingsClient({ members }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState(null)
   const [invite, setInvite] = useState(null)
 
@@ -19,12 +19,18 @@ export default function InviteFamilySettingsClient({ members }) {
   )
   const [permissions, setPermissions] = useState(defaultPerms)
 
-  function handleCreateInvite() {
-    startTransition(async () => {
+  async function handleCreateInvite() {
+    setIsPending(true)
+    setError(null)
+    try {
       const result = await createInviteAction()
       if (result.success) setInvite(result.data)
       else setError(result.error)
-    })
+    } catch {
+      setError('Could not create invite. Please try again.')
+    } finally {
+      setIsPending(false)
+    }
   }
 
   return (

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import styled from 'styled-components'
-import { SECTION_DEFS } from '@/data/dashboard-sections'
+import { SECTION_DEFS, HIDDEN_SECTION_IDS } from '@/data/dashboard-sections'
 
 /* ── Overlay & Sheet ── */
 
@@ -160,19 +160,21 @@ function getSectionDef(sectionId) {
 
 export default function CustomizeDashboardSheet({ sections, onClose, onUpdate }) {
   const [items, setItems] = useState(() =>
-    [...sections].sort((a, b) => a.sort_order - b.sort_order)
+    [...sections]
+      .filter(s => !HIDDEN_SECTION_IDS.has(s.section_id))
+      .sort((a, b) => a.sort_order - b.sort_order)
   )
   const [dragIdx, setDragIdx] = useState(null)
   const dragOverIdx = useRef(null)
+  const itemsRef = useRef(items)
+  useEffect(() => { itemsRef.current = items }, [items])
 
   const handleToggle = useCallback((sectionId) => {
-    setItems(prev => {
-      const next = prev.map(s =>
-        s.section_id === sectionId ? { ...s, is_visible: !s.is_visible } : s
-      )
-      onUpdate(next.map((s, i) => ({ ...s, sort_order: i })))
-      return next
-    })
+    const next = itemsRef.current.map(s =>
+      s.section_id === sectionId ? { ...s, is_visible: !s.is_visible } : s
+    )
+    setItems(next)
+    onUpdate(next.map((s, i) => ({ ...s, sort_order: i })))
   }, [onUpdate])
 
   /* ── Pointer-based drag and drop ── */
@@ -197,22 +199,17 @@ export default function CustomizeDashboardSheet({ sections, onClose, onUpdate })
       document.removeEventListener('pointermove', handleMove)
       document.removeEventListener('pointerup', handleEnd)
 
-      setDragIdx(prev => {
-        if (prev === null || dragOverIdx.current === null || prev === dragOverIdx.current) {
-          return null
-        }
+      setDragIdx(null)
 
-        setItems(prevItems => {
-          const next = [...prevItems]
-          const [moved] = next.splice(prev, 1)
-          next.splice(dragOverIdx.current, 0, moved)
-          const reordered = next.map((s, i) => ({ ...s, sort_order: i }))
-          onUpdate(reordered)
-          return reordered
-        })
+      const to = dragOverIdx.current
+      if (to === null || idx === to) return
 
-        return null
-      })
+      const next = [...itemsRef.current]
+      const [moved] = next.splice(idx, 1)
+      next.splice(to, 0, moved)
+      const reordered = next.map((s, i) => ({ ...s, sort_order: i }))
+      setItems(reordered)
+      onUpdate(reordered)
     }
 
     document.addEventListener('pointermove', handleMove)

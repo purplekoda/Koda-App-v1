@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireUser } from '@/lib/dal/require-user'
+import { requireUser, isMockMode } from '@/lib/dal/require-user'
 import { apiLimiter } from '@/lib/rate-limit'
 import { ok, fail } from '@/lib/action-result'
 import { validateProfileUpdate, validateCookingPreferences } from '@/lib/validators'
@@ -377,5 +377,60 @@ export async function saveChatButtonPositionAction(position) {
     return ok(sanitized)
   } catch {
     return fail('Could not save button position.')
+  }
+}
+
+// ── Recipe photo migration ────────────────────────────────────────────────────
+
+export async function migrateRecipePhotosAction() {
+  try {
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    if (isMockMode()) return ok({ migrated: 0, failed: 0, skipped: 0 })
+
+    const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+    const supabase = await getSupabaseServerClient()
+
+    const { data: recipes, error } = await supabase
+      .from('recipes')
+      .select('id, image_url, photo_path')
+      .eq('user_id', user.id)
+      .is('photo_path', null)
+      .not('image_url', 'is', null)
+
+    if (error) return fail('Could not load recipes for migration.')
+
+    const { downloadExternalImageToStorage } = await import('@/lib/storage')
+
+    let migrated = 0
+    let failed = 0
+    let skipped = 0
+
+    for (const recipe of recipes || []) {
+      const url = recipe.image_url
+      if (!url || url.startsWith('data:') || !url.startsWith('http')) {
+        skipped++
+        continue
+      }
+
+      const result = await downloadExternalImageToStorage(url, user.id)
+      if (result) {
+        await supabase
+          .from('recipes')
+          .update({ photo_path: result.storagePath, photo_source: 'supabase', image_url: null })
+          .eq('id', recipe.id)
+          .eq('user_id', user.id)
+        migrated++
+      } else {
+        failed++
+      }
+    }
+
+    revalidatePath('/recipes')
+    return ok({ migrated, failed, skipped })
+  } catch {
+    return fail('Migration failed. Please try again.')
   }
 }
