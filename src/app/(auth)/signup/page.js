@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import styled from 'styled-components'
 import Link from 'next/link'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { sanitizeString, sanitizeEmail } from '@/lib/sanitize'
+import { signUpAction } from '../actions'
 
 const Container = styled.div`
   display: flex;
@@ -118,6 +118,7 @@ export default function SignupPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [accessCode, setAccessCode] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
@@ -148,26 +149,19 @@ export default function SignupPage() {
       return
     }
 
-    try {
-      const supabase = getSupabaseBrowserClient()
-      const { error: authError } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-        options: {
-          data: {
-            display_name: cleanName,
-          },
-        },
-      })
+    if (!accessCode.trim()) {
+      setError('Please enter your access code.')
+      setLoading(false)
+      return
+    }
 
-      if (authError) {
-        // Never expose raw Supabase errors — prevents user enumeration
-        console.error('Signup error:', authError.message)
-        setError('Account creation failed. Please check your details and try again.')
+    try {
+      const res = await signUpAction({ name: cleanName, email: cleanEmail, password, accessCode })
+      if (!res.success) {
+        setError(res.error)
         return
       }
-
-      setSuccess('Account created! Check your email to confirm, then sign in.')
+      setSuccess(res.data?.message || 'Account created — check your email to confirm, then sign in.')
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -181,6 +175,18 @@ export default function SignupPage() {
         <Logo>Koda</Logo>
         <Tagline>Create your account</Tagline>
         <Form onSubmit={handleSubmit}>
+          <div>
+            <Label htmlFor="accessCode">Access code</Label>
+            <InputField
+              id="accessCode"
+              type="text"
+              autoComplete="off"
+              placeholder="Enter your invite code"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+              required
+            />
+          </div>
           <div>
             <Label htmlFor="name">Your name</Label>
             <InputField
