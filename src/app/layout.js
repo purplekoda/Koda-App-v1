@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { Inter } from 'next/font/google'
 import StyledComponentsRegistry from '@/lib/registry'
 import ThemeWrapper from '@/styles/ThemeWrapper'
+import PWARegister from '@/components/PWARegister'
 import './globals.css'
 
 const inter = Inter({
@@ -13,16 +14,24 @@ const inter = Inter({
 export const metadata = {
   title: 'Koda',
   description: 'Koda-powered meal planning, family scheduling & event planning',
+  applicationName: 'Koda',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Koda' },
   icons: {
     icon: [
       { url: '/favicon.ico' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
   },
-  manifest: '/manifest.json',
+}
+
+export const viewport = {
   themeColor: '#1D9E75',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default async function RootLayout({ children }) {
@@ -38,6 +47,7 @@ export default async function RootLayout({ children }) {
         <StyledComponentsRegistry>
           <ThemeWrapper>{children}</ThemeWrapper>
         </StyledComponentsRegistry>
+        <PWARegister />
       </body>
     </html>
   )

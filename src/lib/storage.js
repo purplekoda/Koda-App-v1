@@ -69,8 +69,29 @@ export async function uploadRecipeImage(buffer, contentType, userId, suffix = ''
  * Download an external image URL and upload it to the recipe-images bucket.
  * Returns { storagePath, signedUrl } or null on any failure.
  */
+// Rejects non-HTTPS and RFC-1918 / link-local hosts to prevent SSRF.
+function isSafeExternalImageUrl(imageUrl) {
+  let parsed
+  try { parsed = new URL(imageUrl) } catch { return false }
+  if (parsed.protocol !== 'https:') return false
+  const h = parsed.hostname
+  if (
+    h === 'localhost' ||
+    h === '127.0.0.1' ||
+    h === '::1' ||
+    /^10\./.test(h) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+    /^192\.168\./.test(h) ||
+    /^169\.254\./.test(h) ||
+    /^fc00:/i.test(h) ||
+    /^fe80:/i.test(h)
+  ) return false
+  return true
+}
+
 export async function downloadExternalImageToStorage(imageUrl, userId) {
   if (!imageUrl || !userId || isMockMode()) return null
+  if (!isSafeExternalImageUrl(imageUrl)) return null
   try {
     const res = await fetch(imageUrl, {
       headers: {

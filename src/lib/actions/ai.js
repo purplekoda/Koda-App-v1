@@ -541,10 +541,16 @@ export async function parseReceiptAction(imageSource, mimeType = 'image/jpeg') {
       imageMimeType = match[1]
       imageData = match[2]
     } else {
-      // Remote URL (Supabase signed URL): fetch and convert to base64
+      // Remote URL: must be a Supabase Storage signed URL on our own project.
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      if (!supabaseUrl || !imageSource.startsWith(supabaseUrl + '/')) {
+        return fail('Invalid image source.')
+      }
       const response = await fetch(imageSource)
       if (!response.ok) return fail('Could not fetch receipt image.')
-      imageMimeType = response.headers.get('content-type') || mimeType
+      const ct = (response.headers.get('content-type') || '').split(';')[0].trim()
+      if (!ct.startsWith('image/')) return fail('Invalid image type.')
+      imageMimeType = ct || mimeType
       const buffer = await response.arrayBuffer()
       imageData = Buffer.from(buffer).toString('base64')
     }
