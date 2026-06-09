@@ -4,7 +4,8 @@ import LandingPage from '@/components/landing/LandingPage'
 
 export default async function Home() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    redirect('/dashboard')
+    return <LandingPage />
+
   }
   const user = await getCurrentUser()
   if (user) redirect('/dashboard')
