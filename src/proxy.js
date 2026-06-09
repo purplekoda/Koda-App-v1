@@ -1,3 +1,4 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
 // Routes that don't require authentication
@@ -19,7 +20,7 @@ function sanitizeRedirectPath(pathname) {
   return ALLOWED_REDIRECT_PATHS.has(clean) ? clean : '/dashboard'
 }
 
-export function proxy(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl
 
   // ── Security Headers ──
@@ -137,7 +138,43 @@ export function proxy(request) {
     return response
   }
 
-  // Check for Supabase auth cookie — verify name pattern and non-empty value
+  // ── Supabase Session Refresh ──
+  // Validate/refresh the session before reading auth cookies for redirect logic.
+  // If the refresh token is stale (e.g. Safari held an old cookie), Supabase
+  // throws AuthApiError instead of returning an error object — catch it and clear
+  // the bad sb-* cookies so the page renders as unauthenticated instead of 500ing.
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+
+  try {
+    await supabase.auth.getUser()
+  } catch {
+    request.cookies
+      .getAll()
+      .filter((c) => c.name.startsWith('sb-'))
+      .forEach(({ name }) => {
+        request.cookies.delete(name)
+        response.cookies.delete(name)
+      })
+  }
+
+  // Check for Supabase auth cookie — verify name pattern and non-empty value.
+  // Re-read from request.cookies so we see any deletions from the catch above.
   const hasAuthCookie = request.cookies.getAll().some(
     cookie =>
       cookie.name.startsWith('sb-') &&
