@@ -1,5 +1,3 @@
-import DOMPurify from 'isomorphic-dompurify'
-
 // Keys that must never appear in sanitized objects — prevents prototype pollution
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
@@ -11,7 +9,7 @@ const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
  */
 export function sanitizeString(input, maxLength = 500) {
   if (typeof input !== 'string') return ''
-  const cleaned = DOMPurify.sanitize(input, { ALLOWED_TAGS: [] })
+  const cleaned = input.replace(/<[^>]*>/g, '')
   return cleaned.trim().slice(0, maxLength)
 }
 
