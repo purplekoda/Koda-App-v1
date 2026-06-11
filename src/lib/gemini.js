@@ -2088,6 +2088,27 @@ const FULL_RECIPES_FOR_SLOTS_SCHEMA = {
   required: ['slots'],
 }
 
+export async function generateRecipeFromName(mealName) {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-lite',
+    contents: `Generate a complete home-kitchen recipe for: "${mealName}". Use that exact name.`,
+    config: {
+      systemInstruction: RECIPE_SYSTEM_PROMPT,
+      responseMimeType: 'application/json',
+      responseSchema: RECIPE_SCHEMA,
+    },
+  })
+
+  const recipe = JSON.parse(response.text)
+  recipe.instructions = formatStepsForStorage(recipe.instructions)
+  return recipe
+}
+
 export async function generateFullMealPlanRecipes(slotsToGenerate, context = {}) {
   const apiKey = process.env.GOOGLE_AI_API_KEY
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')

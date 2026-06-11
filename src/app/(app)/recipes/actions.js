@@ -875,3 +875,81 @@ export async function removeRecipeFromCollectionAction(recipeId, collectionId) {
     return fail('Could not remove recipe from collection.')
   }
 }
+
+export async function batchDeleteRecipesAction(recipeIds) {
+  try {
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    if (!Array.isArray(recipeIds) || recipeIds.length === 0) return fail('No recipes selected.')
+    if (recipeIds.length > 50) return fail('Maximum 50 recipes at a time.')
+
+    const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+    const supabase = await getSupabaseServerClient()
+
+    const { error } = await supabase
+      .from('recipes')
+      .delete()
+      .eq('user_id', user.id)
+      .in('id', recipeIds)
+
+    if (error) return fail('Failed to delete recipes.')
+
+    revalidatePath('/recipes')
+    return ok({ deletedCount: recipeIds.length })
+  } catch {
+    return fail('Could not delete recipes.')
+  }
+}
+
+export async function batchSaveKodaMealsAction(mealNames) {
+  try {
+    const user = await requireUser()
+    const rate = aiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many Koda requests. Please wait a moment.')
+
+    if (!Array.isArray(mealNames) || mealNames.length === 0) return fail('No meals selected.')
+    if (mealNames.length > 20) return fail('Maximum 20 meals at a time.')
+
+    const { generateRecipeFromName } = await import('@/lib/gemini')
+    const saved = []
+    const errors = []
+
+    for (const mealName of mealNames) {
+      try {
+        const cleanName = sanitizeString(mealName, 200)
+        if (!cleanName) continue
+
+        const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+        const supabase = await getSupabaseServerClient()
+        const { data: existing } = await supabase
+          .from('recipes')
+          .select('id')
+          .eq('user_id', user.id)
+          .ilike('name', cleanName)
+          .limit(1)
+          .single()
+
+        if (existing) {
+          saved.push({ name: cleanName, id: existing.id, alreadyExisted: true })
+          continue
+        }
+
+        const raw = await generateRecipeFromName(cleanName)
+        const validation = validateRecipe(raw)
+        if (!validation.valid) { errors.push(cleanName); continue }
+
+        const recipe = await createRecipe(user.id, { ...validation.data, source: 'gemini' })
+        saved.push({ name: cleanName, id: recipe.id })
+      } catch {
+        errors.push(mealName)
+      }
+    }
+
+    revalidatePath('/recipes')
+    return ok({ saved, errors })
+  } catch {
+    return fail('Could not save recipes.')
+  }
+}

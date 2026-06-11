@@ -3,6 +3,7 @@ import { getUserRecipes } from '@/lib/dal/recipes'
 import { getUserCollections, getRecipeCollectionLinks } from '@/lib/dal/collections'
 import { getHouseholdFaithPractices } from '@/lib/dal/faith-practices'
 import { getRecipeCardSettings } from '@/lib/dal/profile'
+import { getUnsavedKodaMeals } from '@/lib/dal/unsaved-meals'
 import RecipesPageClient from './RecipesPageClient'
 
 export default async function RecipesPage() {
@@ -13,13 +14,15 @@ export default async function RecipesPage() {
   let cardSettings = null
   let collections = []
   let collectionLinks = []
+  let unsavedMeals = []
   try {
-    ;[recipes, faithPractices, cardSettings, collections, collectionLinks] = await Promise.all([
+    ;[recipes, faithPractices, cardSettings, collections, collectionLinks, unsavedMeals] = await Promise.all([
       getUserRecipes(user.id),
       getHouseholdFaithPractices(user.id).catch(() => ({ follows_faith_based_diet: false })),
       getRecipeCardSettings(user.id).catch(() => null),
       getUserCollections(user.id).catch(() => []),
       getRecipeCollectionLinks(user.id).catch(() => []),
+      getUnsavedKodaMeals(user.id).catch(() => []),
     ])
   } catch (err) {
     console.error('[RecipesPage] Failed to load recipes:', err?.message)
@@ -32,6 +35,7 @@ export default async function RecipesPage() {
       cardSettings={cardSettings}
       initialCollections={collections}
       initialCollectionLinks={collectionLinks}
+      unsavedMeals={unsavedMeals}
     />
   )
 }

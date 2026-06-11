@@ -23,6 +23,8 @@ import {
   deleteCollectionAction,
   addRecipeToCollectionAction,
   removeRecipeFromCollectionAction,
+  batchDeleteRecipesAction,
+  batchSaveKodaMealsAction,
 } from './actions'
 
 const SORT_OPTIONS = [
@@ -1765,6 +1767,259 @@ const ColCheck = styled.span`
   flex-shrink: 0;
 `
 
+// ── Edit Mode & Koda Suggestions ────────────────────────
+
+const ActionRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.sm};
+  flex-wrap: wrap;
+`
+
+const EditBtn = styled.button`
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: ${({ theme }) => theme.radii.md};
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
+  color: ${({ theme, $active }) => $active ? theme.colors.teal : theme.colors.textPrimary};
+  cursor: pointer;
+  min-height: 36px;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.teal};
+    color: ${({ theme }) => theme.colors.teal};
+  }
+`
+
+const KodaSuggestionsBtn = styled.button`
+  background: #E1F5EE;
+  color: #085041;
+  border: 1px solid #B7EBD8;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #c8edde;
+  }
+`
+
+const EditToolbar = styled.div`
+  display: flex;
+  align-items: center;
+  background: #F9FAFB;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  gap: ${({ theme }) => theme.spacing.sm};
+`
+
+const SelectAllRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`
+
+const SelectAllCheck = styled.input`
+  accent-color: #1D9E75;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+`
+
+const SelectAllLabel = styled.span`
+  font-size: 14px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const SelectedInfo = styled.span`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  flex: 1;
+  text-align: center;
+`
+
+const DeleteBtn = styled.button`
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: #fee2e2;
+  }
+`
+
+const CardCheckbox = styled.input`
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  accent-color: #1D9E75;
+  cursor: pointer;
+  z-index: 2;
+`
+
+const ConfirmTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0 0 8px;
+`
+
+const ConfirmSub = styled.p`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin: 0 0 20px;
+  line-height: 1.5;
+`
+
+const ConfirmActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+  justify-content: flex-end;
+`
+
+const CancelBtn = styled.button`
+  padding: 10px 20px;
+  border-radius: ${({ theme }) => theme.radii.md};
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.borderLight};
+  }
+`
+
+const ConfirmDeleteBtn = styled.button`
+  padding: 10px 20px;
+  background: #DC2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: #b91c1c;
+  }
+`
+
+const SuggestionsTitle = styled.h3`
+  font-size: 20px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0 0 8px;
+`
+
+const SuggestionsSub = styled.p`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin: 0 0 16px;
+  line-height: 1.5;
+`
+
+const MealList = styled.div`
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+`
+
+const MealItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid #F3F4F6;
+  border-radius: 10px;
+`
+
+const MealCheck = styled.input`
+  accent-color: #1D9E75;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+`
+
+const MealName = styled.span`
+  font-size: 15px;
+  font-weight: 500;
+  flex: 1;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const MealTypeBadge = styled.span`
+  background: #E1F5EE;
+  color: #085041;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+`
+
+const ResultBanner = styled.div`
+  background: #E1F5EE;
+  color: #085041;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 0 0 12px;
+`
+
+const SaveBtn = styled.button`
+  background: #1D9E75;
+  color: white;
+  border-radius: 10px;
+  padding: 12px;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: #187a5c;
+  }
+`
+
 const CARD_DEFAULTS = {
   show_photo: true,
   show_description: true,
@@ -1797,7 +2052,7 @@ const COLLECTION_EMOJIS = [
   '\uD83E\uDD5A', '\uD83C\uDF4E', '\uD83E\uDD51', '\uD83D\uDD25', '\uD83C\uDFE0', '\uD83C\uDF89',
 ]
 
-export default function RecipesPageClient({ initialRecipes, faithPractices, cardSettings: initialCardSettings, initialCollections, initialCollectionLinks }) {
+export default function RecipesPageClient({ initialRecipes, faithPractices, cardSettings: initialCardSettings, initialCollections, initialCollectionLinks, unsavedMeals }) {
   const [recipes, setRecipes] = useState(initialRecipes || [])
   const [modalOpen, setModalOpen] = useState(false)
   const [formInitial, setFormInitial] = useState(null)
@@ -1875,6 +2130,18 @@ export default function RecipesPageClient({ initialRecipes, faithPractices, card
   const [newColEmoji, setNewColEmoji] = useState('\uD83C\uDF19')
   const [isCreatingCol, setIsCreatingCol] = useState(false)
   const [colMenuRecipeId, setColMenuRecipeId] = useState(null)
+
+  // Edit mode state
+  const [editMode, setEditMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  // Koda suggestions state
+  const [showKodaSuggestions, setShowKodaSuggestions] = useState(false)
+  const [selectedMeals, setSelectedMeals] = useState(new Set())
+  const [savingMeals, setSavingMeals] = useState(false)
+  const [saveResult, setSaveResult] = useState(null)
 
   const cs = { ...CARD_DEFAULTS, ...initialCardSettings }
 
@@ -3036,6 +3303,59 @@ export default function RecipesPageClient({ initialRecipes, faithPractices, card
         </FilterBar>
       )}
 
+      {recipes.length > 0 && (
+        <>
+          <ActionRow>
+            <div>
+              {unsavedMeals?.length > 0 && (
+                <KodaSuggestionsBtn type="button" onClick={() => setShowKodaSuggestions(true)}>
+                  {'\u2728'} {unsavedMeals.length} Koda meal{unsavedMeals.length !== 1 ? 's' : ''} to save
+                </KodaSuggestionsBtn>
+              )}
+            </div>
+            <EditBtn
+              type="button"
+              $active={editMode}
+              onClick={() => {
+                setEditMode(p => !p)
+                setSelectedIds(new Set())
+              }}
+            >
+              {editMode ? 'Done' : 'Edit'}
+            </EditBtn>
+          </ActionRow>
+
+          {editMode && (
+            <EditToolbar>
+              <SelectAllRow>
+                <SelectAllCheck
+                  type="checkbox"
+                  checked={filteredRecipes.length > 0 && selectedIds.size === filteredRecipes.length}
+                  onChange={() => {
+                    if (selectedIds.size === filteredRecipes.length) {
+                      setSelectedIds(new Set())
+                    } else {
+                      setSelectedIds(new Set(filteredRecipes.map(r => r.id)))
+                    }
+                  }}
+                />
+                <SelectAllLabel>
+                  {selectedIds.size === filteredRecipes.length && filteredRecipes.length > 0 ? 'Deselect all' : 'Select all'}
+                </SelectAllLabel>
+              </SelectAllRow>
+              <SelectedInfo>{selectedIds.size} selected</SelectedInfo>
+              <DeleteBtn
+                type="button"
+                disabled={selectedIds.size === 0 || deleting}
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                {'\uD83D\uDDD1'} Delete selected
+              </DeleteBtn>
+            </EditToolbar>
+          )}
+        </>
+      )}
+
       {recipes.length === 0 ? (
         <EmptyState>
           <EmptyIcon>{'\uD83D\uDCD6'}</EmptyIcon>
@@ -3065,6 +3385,18 @@ export default function RecipesPageClient({ initialRecipes, faithPractices, card
             const n = recipe.nutrition
             return (
               <CardWrapper key={recipe.id} $photoTop={photoTop}>
+                {editMode && (
+                  <CardCheckbox
+                    type="checkbox"
+                    checked={selectedIds.has(recipe.id)}
+                    onChange={() => {
+                      const next = new Set(selectedIds)
+                      if (next.has(recipe.id)) next.delete(recipe.id)
+                      else next.add(recipe.id)
+                      setSelectedIds(next)
+                    }}
+                  />
+                )}
                 <Card href={`/recipes/${recipe.id}`} $photoTop={photoTop}>
                   {cs.show_photo && photoTop && recipe.image_url && (
                     <CardThumb
@@ -3851,6 +4183,103 @@ export default function RecipesPageClient({ initialRecipes, faithPractices, card
               </PromptPrimary>
             </PromptActions>
           </NewColForm>
+        </Modal>
+      )}
+
+      {showDeleteConfirm && (
+        <Modal onClose={() => setShowDeleteConfirm(false)}>
+          <ConfirmTitle>Delete {selectedIds.size} recipe{selectedIds.size !== 1 ? 's' : ''}?</ConfirmTitle>
+          <ConfirmSub>This can&apos;t be undone. These recipes will be removed from your Recipe Box and any collections.</ConfirmSub>
+          <ConfirmActions>
+            <CancelBtn type="button" onClick={() => setShowDeleteConfirm(false)}>Cancel</CancelBtn>
+            <ConfirmDeleteBtn
+              type="button"
+              disabled={deleting}
+              onClick={async () => {
+                setDeleting(true)
+                const res = await batchDeleteRecipesAction(Array.from(selectedIds))
+                setDeleting(false)
+                setShowDeleteConfirm(false)
+                if (res.success) {
+                  setRecipes(prev => prev.filter(r => !selectedIds.has(r.id)))
+                  setSelectedIds(new Set())
+                  setEditMode(false)
+                }
+              }}
+            >
+              {deleting ? 'Deleting...' : `Delete ${selectedIds.size} recipe${selectedIds.size !== 1 ? 's' : ''}`}
+            </ConfirmDeleteBtn>
+          </ConfirmActions>
+        </Modal>
+      )}
+
+      {showKodaSuggestions && (
+        <Modal onClose={() => { setShowKodaSuggestions(false); setSaveResult(null) }}>
+          <SuggestionsTitle>Koda Suggestions</SuggestionsTitle>
+          <SuggestionsSub>
+            These meals were planned by Koda but aren&apos;t saved as recipes yet.
+            Select the ones you&apos;d like to save — Koda will generate full recipes.
+          </SuggestionsSub>
+
+          <SelectAllRow style={{ marginBottom: 12 }}>
+            <SelectAllCheck
+              type="checkbox"
+              checked={selectedMeals.size === unsavedMeals.length && unsavedMeals.length > 0}
+              onChange={() => {
+                if (selectedMeals.size === unsavedMeals.length) setSelectedMeals(new Set())
+                else setSelectedMeals(new Set(unsavedMeals.map(m => m.name)))
+              }}
+            />
+            <SelectAllLabel>
+              {selectedMeals.size === unsavedMeals.length && unsavedMeals.length > 0 ? 'Deselect all' : 'Select all'}
+            </SelectAllLabel>
+            <SelectedInfo>{selectedMeals.size} selected</SelectedInfo>
+          </SelectAllRow>
+
+          <MealList>
+            {(unsavedMeals || []).map(meal => (
+              <MealItem key={meal.name}>
+                <MealCheck
+                  type="checkbox"
+                  checked={selectedMeals.has(meal.name)}
+                  onChange={() => {
+                    const next = new Set(selectedMeals)
+                    if (next.has(meal.name)) next.delete(meal.name)
+                    else next.add(meal.name)
+                    setSelectedMeals(next)
+                  }}
+                />
+                <MealName>{meal.name}</MealName>
+                {meal.meal_type && <MealTypeBadge>{meal.meal_type}</MealTypeBadge>}
+              </MealItem>
+            ))}
+          </MealList>
+
+          {saveResult && (
+            <ResultBanner>
+              {'✓'} {saveResult.saved?.length} saved
+              {saveResult.errors?.length > 0 && ` · ${saveResult.errors.length} failed`}
+            </ResultBanner>
+          )}
+
+          <SaveBtn
+            type="button"
+            disabled={selectedMeals.size === 0 || savingMeals}
+            onClick={async () => {
+              setSavingMeals(true)
+              setSaveResult(null)
+              const res = await batchSaveKodaMealsAction(Array.from(selectedMeals))
+              setSavingMeals(false)
+              if (res.success) {
+                setSaveResult(res.data)
+                setTimeout(() => window.location.reload(), 1500)
+              }
+            }}
+          >
+            {savingMeals
+              ? `Generating ${selectedMeals.size} recipe${selectedMeals.size !== 1 ? 's' : ''}...`
+              : `Save ${selectedMeals.size} to Recipe Box`}
+          </SaveBtn>
         </Modal>
       )}
 
