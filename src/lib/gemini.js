@@ -217,7 +217,7 @@ export async function normalizeInstructions(instructions) {
 
   // Call Gemini to intelligently split unstructured text
   try {
-    const apiKey = process.env.GOOGLE_AI_API_KEY
+    const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
     if (!apiKey) throw new Error('no key')
 
     const ai = new GoogleGenAI({ apiKey })
@@ -265,7 +265,7 @@ export async function normalizeInstructions(instructions) {
  * @returns {Promise<string>} The model's text response.
  */
 export async function callGemini(history) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
   }
@@ -296,7 +296,7 @@ export async function callGemini(history) {
  * @returns {Promise<{ message: string, action: null }>}
  */
 export async function callGeminiWithActions(history, householdContext) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
   }
@@ -333,7 +333,7 @@ export async function callGeminiWithActions(history, householdContext) {
  * @returns {Promise<string>} The model's text response.
  */
 export async function callCookingAssistant(message, recipe, currentStep, history = []) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
   }
@@ -390,7 +390,7 @@ export async function callCookingAssistant(message, recipe, currentStep, history
  * @returns {Promise<{name: string, description?: string, ingredients: Array<{name: string, quantity: string}>, instructions: string, prep_time_minutes: number, cook_time_minutes: number, servings: number, tags?: string[]}>}
  */
 export async function generateRecipe(prompt, context = null) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
   }
@@ -423,7 +423,7 @@ export async function generateRecipe(prompt, context = null) {
  * @returns {Promise<object>} Parsed recipe matching RECIPE_SCHEMA.
  */
 export async function scanRecipeFromImages(images) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
   }
@@ -518,7 +518,7 @@ const DINNER_IDEAS_SCHEMA = {
  * @returns {Promise<Array<{ name: string, category: string, freshness: string, daysLeft: number|null }>>}
  */
 export async function scanPantryFromImage(images) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -552,7 +552,7 @@ export async function scanPantryFromImage(images) {
  * @returns {Promise<Array<object>>}
  */
 export async function generateDinnerIdeas(pantryItems) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -600,7 +600,7 @@ const RECIPE_IDEAS_SCHEMA = {
 }
 
 export async function generateRecipeIdeas(mode, context) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -668,7 +668,7 @@ export async function generateRecipeIdeas(mode, context) {
  * @returns {Promise<{ imageBytes: string, mimeType: string }>} Base64 image data.
  */
 export async function generateRecipeImage(recipeName, description) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
   }
@@ -729,7 +729,7 @@ const MEAL_PLAN_SCHEMA = {
  * @returns {Promise<{ slots: Array<{ day_of_week: number, meal_type: string, meal_name: string, recipe_id: string|null }> }>}
  */
 export async function generateMealPlan(emptySlots, context = {}) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -890,7 +890,7 @@ const WEB_RECIPE_SEARCH_SCHEMA = {
  * @returns {Promise<Array>} Up to 2 recipe result objects.
  */
 export async function searchWebRecipes(query) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -983,7 +983,7 @@ const SURPRISE_RECIPE_SCHEMA = {
  * @returns {Promise<object>} A single trending recipe.
  */
 export async function searchSurpriseMeRecipe(context = {}) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1059,7 +1059,7 @@ const SURPRISE_BATCH_SCHEMA = {
  * @returns {Promise<object[]>} Array of trending recipes, each tagged with a `mealType`.
  */
 export async function searchSurpriseMeRecipes(context = {}) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1218,7 +1218,7 @@ export function isSideDishName(name = '', description = '') {
  * @returns {Promise<Array<{ name, description, prep_time_minutes, cook_time_minutes, key_ingredients }>>}
  */
 export async function generateSideSuggestions(mainDishName, context = {}) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1264,7 +1264,7 @@ export async function generateSideSuggestions(mainDishName, context = {}) {
  * @returns {Promise<Array<{ name, description, prep_time_minutes, cook_time_minutes, key_ingredients }>>}
  */
 export async function generateDessertSuggestions(mainDishName, context = {}) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1310,7 +1310,7 @@ export async function generateDessertSuggestions(mainDishName, context = {}) {
  * @returns {Promise<Array>} Up to 3 recipe results with 4.8+ stars, 100+ reviews.
  */
 export async function searchRecipeSuggestionsForMeal(mealName, context = {}) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1468,7 +1468,7 @@ const DISH_PHOTO_SCHEMA = {
  * @returns {Promise<object>} Parsed recipe-like object with a confidence field.
  */
 export async function identifyDishFromPhoto(images) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1530,7 +1530,7 @@ const NUTRITION_SCHEMA = {
  * @returns {Promise<object>} Nutrition values matching NUTRITION_SCHEMA.
  */
 export async function estimateNutrition(ingredients, servings = 4) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1560,7 +1560,7 @@ export async function estimateNutrition(ingredients, servings = 4) {
  * @returns {Promise<object>} Parsed recipe matching RECIPE_SCHEMA.
  */
 export async function extractRecipeFromHtml(html, url) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
   }
@@ -1661,7 +1661,7 @@ const MEAL_SWAP_SCHEMA = {
  * @returns {Promise<{ message: string, step: number, needs_clarification: boolean, suggestion?: object, confirmed: boolean }>}
  */
 export async function generateMealSwapSuggestion(history, systemContext, swapContext) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1764,7 +1764,7 @@ const SURPRISE_ME_CHAT_SCHEMA = {
  * Handle Surprise Me chat flow — asks user to choose Path A or B, then suggests.
  */
 export async function generateSurpriseMeSuggestion(history, systemContext) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1836,7 +1836,7 @@ const PLAN_WEEK_CHAT_SCHEMA = {
  * Handle "plan my week" conversational flow — asks three questions one at a time.
  */
 export async function generatePlanWeekConversation(history, systemContext) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -1928,7 +1928,7 @@ const MEAL_EDIT_SUGGESTION_SCHEMA = {
  * @returns {Promise<{ message: string, needs_clarification: boolean, suggestion?: object }>}
  */
 export async function generateMealEditSuggestion(history, systemContext, mealEditContext) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) {
     throw new Error('GOOGLE_AI_API_KEY is not configured')
   }
@@ -2016,7 +2016,7 @@ const FOOD_ANALYSIS_SCHEMA = {
  * @returns {Promise<{ food_name: string, label_found: boolean, serving_size: string, calories: number, protein: number, carbs: number, fat: number, confidence: string, notes: string }>}
  */
 export async function analyzeFood(image) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -2089,7 +2089,7 @@ const FULL_RECIPES_FOR_SLOTS_SCHEMA = {
 }
 
 export async function generateRecipeFromName(mealName) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
@@ -2110,7 +2110,7 @@ export async function generateRecipeFromName(mealName) {
 }
 
 export async function generateFullMealPlanRecipes(slotsToGenerate, context = {}) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
+  const apiKey = process.env.GOOGLE_AI_API_KEY; console.log('[GEMINI DEBUG] key length:', apiKey?.length, 'starts:', apiKey?.slice(0, 4), 'ends:', apiKey?.slice(-4))
   if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
 
   const ai = new GoogleGenAI({ apiKey })
