@@ -465,7 +465,7 @@ export async function askAI(prompt, context) {
       actionExecuted,
     })
   } catch (err) {
-    console.error('[askAI] error:', err)
+    console.error('[KEY CHECK]', process.env.GOOGLE_AI_API_KEY?.length, process.env.GOOGLE_AI_API_KEY?.slice(0,6), process.env.GOOGLE_AI_API_KEY?.slice(-4)); console.error('[askAI] error:', err)
     return fail('Koda couldn\u2019t respond. Please try again.')
   }
 }
