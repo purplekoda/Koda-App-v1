@@ -465,7 +465,7 @@ export async function askAI(prompt, context) {
       actionExecuted,
     })
   } catch (err) {
-    try { const _r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GOOGLE_AI_API_KEY }, body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] }) }); console.error('[RAW CHECK]', _r.status, (await _r.text()).slice(0, 300)) } catch (_e) { console.error('[RAW CHECK] failed', _e?.message) }; console.error('[KEY CHECK]', process.env.GOOGLE_AI_API_KEY?.length, process.env.GOOGLE_AI_API_KEY?.slice(0,6), process.env.GOOGLE_AI_API_KEY?.slice(-4)); console.error('[askAI] error:', err)
+    try { const _r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GOOGLE_AI_API_KEY }, body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] }) }); console.error('[RAW CHECK]', _r.status, (await _r.text()).slice(0, 300)) } catch (_e) { console.error('[RAW CHECK] failed', _e?.message) }; console.error('[ENV CHECK]', Object.keys(process.env).filter(k => ['GOOGLE','GEMINI','VERTEX'].some(s => k.includes(s))).join(',')); console.error('[KEY CHECK]', process.env.GOOGLE_AI_API_KEY?.length, process.env.GOOGLE_AI_API_KEY?.slice(0,6), process.env.GOOGLE_AI_API_KEY?.slice(-4)); console.error('[askAI] error:', err)
     return fail('Koda couldn\u2019t respond. Please try again.')
   }
 }
