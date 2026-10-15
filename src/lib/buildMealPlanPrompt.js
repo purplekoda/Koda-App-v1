@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { isMockMode } from '@/lib/dal/require-user'
+import { getHouseholdRole } from '@/lib/chat-permissions'
 
 // ── Section 1: Foundation instructions (static) ──────────
 const FOUNDATION_INSTRUCTIONS = `You are Koda's meal planning assistant. Your top priority is to build meal plans that use ingredients the user already has in their pantry. Always check the pantry list and any pantry photo analysis before suggesting any meal. Prioritize ingredients that are expiring soonest by scheduling meals that use them at the beginning of the week.
@@ -508,51 +509,46 @@ export async function buildMealPlanPrompt(userId) {
   }
 
   // ── User role and access control context ────────────
+  // Advisory only — real authorization happens server-side in chat-permissions.
   let userRoleLines = []
   try {
+    let displayName = 'the user'
     if (isMockMode()) {
       const { getMockOnboardingProfile } = await import('@/lib/dal/mock-store')
       const profile = getMockOnboardingProfile()
-      userRoleLines.push(
-        '',
-        'CURRENT USER ROLE:',
-        `The current user is the ACCOUNT OWNER (${profile.display_name || 'the primary user'}).`,
-        'As the account owner, they have full access to all app functions via chat including managing all household members, updating any profile, and changing all settings.',
-      )
+      displayName = profile.display_name || 'the primary user'
     } else {
       const { getSupabaseServerClient } = await import('@/lib/supabase/server')
       const supabase = await getSupabaseServerClient()
-
-      // Check if this user is the account owner or a linked household member
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('display_name, household_role')
+        .select('display_name')
         .eq('id', userId)
         .single()
+      displayName = profileData?.display_name || 'the user'
+    }
 
-      const role = profileData?.household_role || 'owner'
-      const displayName = profileData?.display_name || 'the user'
+    const role = await getHouseholdRole(userId)
 
-      if (role === 'owner') {
-        userRoleLines.push(
-          '',
-          'CURRENT USER ROLE:',
-          `The current user is the ACCOUNT OWNER (${displayName}).`,
-          'As the account owner, they have full access to all app functions via chat including managing all household members, updating any profile, and changing all settings.',
-        )
-      } else {
-        userRoleLines.push(
-          '',
-          'CURRENT USER ROLE:',
-          `The current user is a HOUSEHOLD MEMBER (${displayName}), NOT the account owner.`,
-          `As a household member, ${displayName} can ONLY change their own individual profile fields — their own macro targets, dietary restrictions, picky eater notes, and health goals.`,
-          `${displayName} CANNOT change other members' profiles, household-wide settings, or permissions.`,
-          `If ${displayName} asks to change another member's settings, politely decline and explain that only the account owner can make changes to other members' profiles.`,
-        )
-      }
+    if (role === 'member') {
+      userRoleLines.push(
+        '',
+        'CURRENT USER ROLE:',
+        `The current user is a HOUSEHOLD MEMBER (${displayName}), NOT the account owner.`,
+        `As a household member, ${displayName} can ONLY change their own individual profile fields — their own macro targets, dietary restrictions, picky eater notes, and health goals.`,
+        `${displayName} CANNOT change other members' profiles, household-wide settings, or permissions.`,
+        `If ${displayName} asks to change another member's settings, politely decline and explain that only the account owner can make changes to other members' profiles.`,
+      )
+    } else {
+      // Neutral: do not promise elevated access via the prompt. Server-side
+      // gating is authoritative.
+      userRoleLines.push(
+        '',
+        `CURRENT USER: ${displayName} (authenticated).`,
+      )
     }
   } catch {
-    // User role data is best-effort — default to owner access
+    // Role data is best-effort — emit nothing rather than fail-opening to owner.
   }
 
   // ── Build the final prompt ─────────────────────────

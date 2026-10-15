@@ -7,6 +7,11 @@ import { sanitizeString, sanitizeEnum } from '@/lib/sanitize'
 import { apiLimiter, aiLimiter, uploadLimiter } from '@/lib/rate-limit'
 import { ok, fail } from '@/lib/action-result'
 import { classifyChatIntent } from '@/lib/chat-intent'
+import {
+  assertCanExecuteChatAction,
+  CHAT_ACTION_FORBIDDEN,
+  CHAT_ACTION_UNKNOWN,
+} from '@/lib/chat-permissions'
 
 const VALID_CONTEXTS = [
   'dashboard', 'meals', 'grocery', 'pantry', 'recipes', 'events', 'general',
@@ -63,6 +68,8 @@ function resolveTargetSlot(itemType, mealType, currentDayMeals) {
  * @param {{ type: string, confirmed: boolean, [key: string]: any }} action
  */
 async function executeChatAction(userId, action) {
+  await assertCanExecuteChatAction(userId, action?.type)
+
   const {
     fillMealPlan,
     swapMeal,
@@ -435,9 +442,9 @@ export async function askAI(prompt, context) {
 
     // 3. Call Gemini with structured output (message + optional action)
     const result = await callGeminiWithActions(updatedHistory, householdContext)
-    const responseText = result.message
+    let responseText = result.message
 
-    // 4. Execute confirmed action if present
+    // 4. Execute confirmed action if present (server-side authz, not model's say-so)
     let actionExecuted = null
     if (result.action?.confirmed && result.action?.type) {
       try {
@@ -445,7 +452,11 @@ export async function askAI(prompt, context) {
         actionExecuted = result.action.type
         revalidatePath('/(app)', 'layout')
       } catch (err) {
-        console.error('[askAI] Action execution failed:', err)
+        if (err?.code === CHAT_ACTION_FORBIDDEN || err?.code === CHAT_ACTION_UNKNOWN) {
+          responseText = err.message
+        } else {
+          console.error('[askAI] Action execution failed:', err)
+        }
       }
     }
 

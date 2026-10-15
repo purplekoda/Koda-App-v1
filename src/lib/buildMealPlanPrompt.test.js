@@ -382,14 +382,15 @@ describe('buildMealPlanPrompt', () => {
     expect(systemPromptPrefix).toContain('NON-ALCOHOLIC SUBSTITUTION');
   });
 
-  it('renders user role as account owner in mock mode', async () => {
+  it('renders a neutral authenticated-user line in mock mode (no owner fail-open)', async () => {
     mockGetMockOnboardingProfile.mockReturnValue({
       display_name: 'Captain',
       preferred_stores: [],
       store_category_assignments: {},
     });
     const { systemPromptPrefix } = await buildMealPlanPrompt('u');
-    expect(systemPromptPrefix).toContain('ACCOUNT OWNER (Captain)');
+    expect(systemPromptPrefix).toContain('CURRENT USER: Captain');
+    expect(systemPromptPrefix).not.toContain('The current user is the ACCOUNT OWNER');
   });
 
   it('gracefully handles DAL errors (best-effort sections)', async () => {
