@@ -12,6 +12,7 @@ SET photo_source = 'external'
 WHERE image_url IS NOT NULL
   AND photo_source IS NULL;
 
+-- Superseded by 20260515_storage_private_buckets.sql — do not rely on the storage.* comments below as applied.
 -- ── Supabase Storage bucket security ─────────────────────────────────────────
 -- Run the statements below in the Supabase SQL editor (they touch storage.*
 -- which requires service-role privileges and cannot run via the JS migration

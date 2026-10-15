@@ -272,15 +272,18 @@ CREATE INDEX IF NOT EXISTS idx_pantry_scans_user ON pantry_scans(user_id);
 --   DELETE: bucket_id = 'pantry-scans' AND auth.uid()::text = (storage.foldername(name))[1]
 
 -- 12b. Recipe Images (storage bucket)
--- Create the bucket (idempotent)
+-- Create the bucket (idempotent) — private; images are served via signed URLs.
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('recipe-images', 'recipe-images', true)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('recipe-images', 'recipe-images', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
 
--- Public read (food photos are non-sensitive)
-CREATE POLICY "Public read recipe images"
+-- Owner-only read (served via signed URLs from src/lib/storage.js)
+CREATE POLICY "Users view own recipe images"
   ON storage.objects FOR SELECT
-  USING (bucket_id = 'recipe-images');
+  USING (
+    bucket_id = 'recipe-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
 
 -- Only the owning user can upload to their folder
 CREATE POLICY "Users upload own recipe images"
