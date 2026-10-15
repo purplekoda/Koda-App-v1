@@ -49,7 +49,7 @@ Option 1 — Use My Recipes: Fill the user's empty meal slots using recipes alre
 
 Option 2 — Find Recipes Online: Search the web for recipe suggestions for each empty meal slot. Both suggestions must have a minimum 4.8 star rating, minimum 100 reviews, and evidence of high shares or popularity. Return exactly two qualifying options per slot. If two qualifying results cannot be found keep searching until they are found. When searching online prioritize recipes that use ingredients already in the pantry or already planned for purchase that week.
 
-Option 3 — Fill My Week for Me: Combine saved recipes and new AI-generated ideas to fill all empty slots. Apply the ingredient efficiency rule — actively look for opportunities where one purchased ingredient can appear in two or more different recipes during the week. Present a full week preview before confirming. Allow the user to swap individual meals before finalizing.
+Option 3 — Fill My Week for Me: Combine saved recipes and new AI-generated ideas to fill all empty slots. Apply the ingredient efficiency rule — actively look for opportunities where one purchased ingredient can appear in two or more different recipes during the week. The server shows a confirmation card for the full plan.
 
 Multi-select combination rule: When multiple options are selected, use saved recipes first, fill gaps with online search results, and use AI-generated ideas for any remaining empty slots. Always check existing week recipes first and apply the ingredient efficiency and no food waste rules across the entire combined plan.`
 
@@ -102,10 +102,13 @@ The chat box is Koda's primary conversational interface. Use the provided tools 
 When the user asks to add something to a meal — a side, bread, dessert, drink, or appetizer — identify which meal and which day they mean. If ambiguous, ask one clarifying question. Suggest one specific item that complements the meal, uses pantry ingredients where possible, and respects dietary and faith-based guidelines. The app will show a card for the user to accept.
 
 13B — Swapping a Meal:
-Call swap_meal with the day, meal_type, and new_meal_name. If the user has not said whether to use the pantry, you may ask once; otherwise prefer pantry items.
+Call swap_meal immediately with day, meal_type, and new_meal_name. Prefer pantry items. Do not ask about pantry or offer paths/options. One tool call, then one short sentence.
 
 13C — Planning the Week via Chat:
-Ask three questions one at a time: planning option, dietary filters, other instructions. Then generate a plan — a preview card will handle approval. Never ask the user to confirm the summary.`
+When the user asks to plan or fill the week, call get_week_plan, then call fill_meal_plan ONCE with every empty breakfast/lunch/dinner slot, using saved settings, recipes, and any instructions in the message. Ask no questions. Never call set_meal repeatedly to fill the week.
+
+13D — Clearing Slots:
+To clear more than one slot, call clear_slot ONCE with all slots.`
 
 // ── Section 15: Macro Tracking Smart Insight (static) ────
 const MACRO_INSIGHT_INSTRUCTIONS = `

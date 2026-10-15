@@ -15,8 +15,26 @@ const DAYS = [
 ]
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'sides']
 
+const DEFAULT_TZ = 'America/Denver'
+
+// Day-of-week (Mon=1..Sun=7) in the household timezone. UTC on the server
+// otherwise flips "today" late each evening in Mountain Time.
+export function getLocalDayOfWeek(tz = DEFAULT_TZ, now = new Date()) {
+  const name = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: tz }).format(now)
+  const map = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 }
+  return map[name] || 7
+}
+
+function getLocalParts(tz = DEFAULT_TZ, now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: tz,
+  }).formatToParts(now)
+  const get = t => parts.find(p => p.type === t)?.value
+  return { year: Number(get('year')), month: Number(get('month')), day: Number(get('day')) }
+}
+
 export function buildWeekScaffold(rows = [], weekOffset = 0) {
-  const todayDow = new Date().getDay() || 7 // Sun=0→7, Mon=1, …, Fri=5
+  const todayDow = getLocalDayOfWeek()
 
   const EXTRA_SIDES = ['sides2', 'sides3', 'sides4', 'breakfast_side', 'lunch_side', 'dinner_dessert']
 
@@ -56,14 +74,17 @@ export function buildWeekScaffold(rows = [], weekOffset = 0) {
   })
 }
 
-// Returns the ISO Monday date string (YYYY-MM-DD) for a given week offset.
-export function getWeekMonday(weekOffset = 0) {
+// Returns the ISO Monday date string (YYYY-MM-DD) for a given week offset,
+// computed in the household timezone (defaults to America/Denver).
+export function getWeekMonday(weekOffset = 0, tz = DEFAULT_TZ) {
   const now = new Date()
-  const dow = now.getDay() || 7 // Sun=0 → 7
-  const monday = new Date(now)
-  monday.setDate(now.getDate() - (dow - 1) + weekOffset * 7)
-  monday.setHours(0, 0, 0, 0)
-  return monday.toISOString().slice(0, 10)
+  const dow = getLocalDayOfWeek(tz, now)
+  const { year, month, day } = getLocalParts(tz, now)
+  // Build a UTC date for midnight of the local calendar day, then shift by
+  // (dow-1) days backward to the local Monday, then by weekOffset weeks.
+  const localMidnight = new Date(Date.UTC(year, month - 1, day))
+  localMidnight.setUTCDate(localMidnight.getUTCDate() - (dow - 1) + weekOffset * 7)
+  return localMidnight.toISOString().slice(0, 10)
 }
 
 // Returns the ISO Monday date string (YYYY-MM-DD) for the current week.
@@ -159,7 +180,7 @@ export async function getTodayMeals(userId) {
 
   const { getSupabaseServerClient } = await import('@/lib/supabase/server')
   const supabase = await getSupabaseServerClient()
-  const today = new Date().getDay() || 7 // Convert Sunday=0 to 7
+  const today = getLocalDayOfWeek()
   const weekStart = getCurrentWeekMonday()
 
   // Scope to the current week's meal plan to avoid returning slots from past weeks

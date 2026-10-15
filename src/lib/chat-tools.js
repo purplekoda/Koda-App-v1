@@ -284,6 +284,51 @@ export function validateToolArgs(name, rawArgs) {
   }
 }
 
+// ── Slot tracking / pending-merge helpers ──────────────────────────────────
+
+/**
+ * Return a canonical list of "day:meal_type" keys for the slots this call
+ * touches. Non-slot tools return []. Used to detect cross-step slot writes
+ * so the second one is promoted to pending instead of executing.
+ */
+export function getTouchedSlots(name, args) {
+  if (name === 'set_meal' || name === 'swap_meal') {
+    if (args?.day && args?.meal_type) return [`${args.day}:${args.meal_type}`]
+    return []
+  }
+  if (name === 'clear_slot') {
+    return (args?.slots || []).map(s => `${s.day}:${s.meal_type}`)
+  }
+  return []
+}
+
+export const MERGEABLE_PENDING = Object.freeze(new Set([
+  'clear_slot', 'add_to_grocery', 'fill_meal_plan',
+]))
+
+/**
+ * Merge two argument objects for a mergeable pending tool. For clear_slot the
+ * slot list is de-duplicated by (day, meal_type).
+ */
+export function mergePendingArgs(name, existing, incoming) {
+  if (name === 'clear_slot') {
+    const seen = new Set()
+    const slots = [...(existing?.slots || []), ...(incoming?.slots || [])].filter(s => {
+      const k = `${s.day}:${s.meal_type}`
+      if (seen.has(k)) return false
+      seen.add(k); return true
+    })
+    return { slots }
+  }
+  if (name === 'add_to_grocery') {
+    return { items: [...(existing?.items || []), ...(incoming?.items || [])] }
+  }
+  if (name === 'fill_meal_plan') {
+    return { slots: [...(existing?.slots || []), ...(incoming?.slots || [])] }
+  }
+  return incoming
+}
+
 // ── Snapshots for undo (small writes only) ─────────────────────────────────
 
 export async function snapshotBefore(userId, name, args) {
@@ -482,8 +527,11 @@ export async function claimPendingAction(userId, pendingId) {
     console.error('[claimPendingAction] rpc error:', error.message)
     return null
   }
-  if (!data) return null
-  return Array.isArray(data) ? data[0] || null : data
+  const row = Array.isArray(data) ? data[0] : data
+  // A composite-returning plpgsql function can return a row with every column
+  // null when no row matched. Treat that (and mismatched owner) as "no claim".
+  if (!row?.id || !row?.action_type || row.user_id !== userId) return null
+  return row
 }
 
 // Test-only helper: reset the mock pending map between tests.

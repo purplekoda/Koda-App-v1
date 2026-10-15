@@ -599,7 +599,7 @@ export default function RecipeImportReview({
       {/* Partial recipe banner */}
       {isPartial && (
         <PartialBanner>
-          We found a partial recipe \u2014 please fill in the missing details before saving.
+          We found a partial recipe — please fill in the missing details before saving.
         </PartialBanner>
       )}
 

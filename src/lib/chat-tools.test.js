@@ -5,6 +5,9 @@ import {
   validateToolArgs,
   ToolArgError,
   _resetMockPendingForTests,
+  getTouchedSlots,
+  MERGEABLE_PENDING,
+  mergePendingArgs,
 } from './chat-tools'
 
 describe('validateToolArgs', () => {
@@ -59,5 +62,63 @@ describe('pending action lifecycle (mock mode)', () => {
 
   it('rejects an unknown id', async () => {
     expect(await claimPendingAction(user, 'does-not-exist')).toBeNull()
+  })
+})
+
+describe('cross-step slot write promotion (test 4c)', () => {
+  // Simulates the ai.js loop: three sequential steps, each one single-slot
+  // clear_slot. The first step executes, the next two are promoted to a
+  // single merged pending — never three executions.
+  it('executes one and collapses the rest into exactly one pending', () => {
+    const steps = [
+      { name: 'clear_slot', args: { slots: [{ day: 'Mon', meal_type: 'dinner' }] } },
+      { name: 'clear_slot', args: { slots: [{ day: 'Tue', meal_type: 'dinner' }] } },
+      { name: 'clear_slot', args: { slots: [{ day: 'Wed', meal_type: 'dinner' }] } },
+    ]
+    const slotsWrittenInPriorSteps = new Set()
+    const promotedPendingByName = new Map()
+    const executed = []
+
+    for (const call of steps) {
+      const touched = getTouchedSlots(call.name, call.args)
+      const crossStepSlot = touched.length > 0 && slotsWrittenInPriorSteps.size > 0
+      if (crossStepSlot) {
+        const existing = promotedPendingByName.get(call.name)
+        if (existing && MERGEABLE_PENDING.has(call.name)) {
+          existing.args = mergePendingArgs(call.name, existing.args, call.args)
+        } else {
+          promotedPendingByName.set(call.name, { name: call.name, args: call.args })
+        }
+      } else {
+        executed.push(call)
+        touched.forEach(s => slotsWrittenInPriorSteps.add(s))
+      }
+    }
+
+    expect(executed).toHaveLength(1)
+    expect(executed[0].args.slots).toEqual([{ day: 'Mon', meal_type: 'dinner' }])
+    expect(promotedPendingByName.size).toBe(1)
+    const pending = promotedPendingByName.get('clear_slot')
+    expect(pending.args.slots).toEqual([
+      { day: 'Tue', meal_type: 'dinner' },
+      { day: 'Wed', meal_type: 'dinner' },
+    ])
+  })
+
+  it('mergePendingArgs dedupes repeated clear_slot entries', () => {
+    const merged = mergePendingArgs(
+      'clear_slot',
+      { slots: [{ day: 'Mon', meal_type: 'dinner' }] },
+      { slots: [{ day: 'Mon', meal_type: 'dinner' }, { day: 'Tue', meal_type: 'dinner' }] }
+    )
+    expect(merged.slots).toEqual([
+      { day: 'Mon', meal_type: 'dinner' },
+      { day: 'Tue', meal_type: 'dinner' },
+    ])
+  })
+
+  it('getTouchedSlots returns [] for non-slot tools', () => {
+    expect(getTouchedSlots('add_to_grocery', { items: [{ name: 'x' }] })).toEqual([])
+    expect(getTouchedSlots('update_pantry', { item_name: 'eggs', is_out_of_stock: true })).toEqual([])
   })
 })

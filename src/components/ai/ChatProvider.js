@@ -69,6 +69,7 @@ export function ChatProvider({ children, voiceSettings: initialVoiceSettings }) 
   }, [])
 
   const confirmSuggestion = useCallback((card) => {
+    if (card?.type !== 'meal_suggestion') return
     startTransition(async () => {
       const result = await confirmMealEditAction(card)
       if (result.success && result.data) {

@@ -803,7 +803,7 @@ export default function FloatingChat() {
                     </Bubble>
                   </BubbleRow>
                 )}
-                {m.card && (
+                {m.card?.type === 'meal_suggestion' && (
                   <SuggestionCard
                     card={m.card}
                     onConfirm={confirmSuggestion}
