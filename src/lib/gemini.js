@@ -295,6 +295,37 @@ export async function callGemini(history) {
  * @param {string} householdContext  Household context string from buildMealPlanPrompt + buildChatContext.
  * @returns {Promise<{ message: string, action: null }>}
  */
+/**
+ * Single-step Gemini call with function-calling tools. Returns the raw response
+ * so the caller can decide whether to execute the tool calls or ask the user.
+ *
+ * @param {Array<{ role: 'user'|'model'|'tool', parts: Array }>} contents
+ * @param {string} systemInstruction
+ * @param {Array<{ functionDeclarations: Array }>} tools
+ * @returns {Promise<{ text: string, functionCalls: Array, content: object|null }>}
+ */
+export async function callGeminiWithTools(contents, systemInstruction, tools) {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
+
+  const ai = new GoogleGenAI({ apiKey })
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents,
+    config: {
+      systemInstruction,
+      tools,
+    },
+  })
+
+  const content = response.candidates?.[0]?.content ?? null
+  return {
+    text: response.text || '',
+    functionCalls: response.functionCalls || [],
+    content,
+  }
+}
+
 export async function callGeminiWithActions(history, householdContext) {
   const apiKey = process.env.GOOGLE_AI_API_KEY
   if (!apiKey) {
@@ -1602,118 +1633,6 @@ export async function extractRecipeFromHtml(html, url) {
   return recipe
 }
 
-// ── Meal Swap via Chat ──────────────────────────────────────────────────
-
-const MEAL_SWAP_SYSTEM_PROMPT =
-  'You are Koda\'s meal planning assistant handling a meal swap request. Follow this exact conversational flow ONE question at a time:\n' +
-  'Step 1 — Ask: "Would you like to use ingredients you already have in your pantry, or are you open to purchasing new ingredients for this swap?" Wait for the user\'s answer before proceeding.\n' +
-  'Step 2 — Based on their answer, generate one specific swap suggestion. If they chose pantry ingredients, find a recipe that uses what is already available. If they chose new ingredients, search for a highly rated recipe that fits their taste profile and dietary settings.\n' +
-  'Step 3 — Ask: "Would you like to swap [current meal] for [suggested meal] on [day]? This will replace the existing meal." Wait for explicit confirmation.\n' +
-  'Step 4 — Ask a SECOND confirmation: "Just to confirm — replace [current meal] with [new meal]? This cannot be undone." Only execute after this second confirmation.\n' +
-  'IMPORTANT: Ask only ONE question at a time. Never combine steps. Never swap without two confirmations.'
-
-const MEAL_SWAP_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    message: {
-      type: Type.STRING,
-      description: 'Conversational response text to show in chat — one question at a time',
-    },
-    step: {
-      type: Type.INTEGER,
-      description: 'Current swap flow step (1=asking pantry/new, 2=presenting suggestion, 3=first confirm, 4=second confirm, 5=executing)',
-    },
-    needs_clarification: {
-      type: Type.BOOLEAN,
-      description: 'True if the request is ambiguous and you need to ask a clarifying question',
-    },
-    suggestion: {
-      type: Type.OBJECT,
-      description: 'The swap suggestion. Only present at step 2 or later.',
-      nullable: true,
-      properties: {
-        recipe_name: { type: Type.STRING, description: 'Name of the suggested replacement meal' },
-        description: { type: Type.STRING, description: 'One sentence describing why this is a good swap' },
-        cook_time: { type: Type.STRING, description: 'Estimated cook time' },
-        pantry_match: { type: Type.BOOLEAN, description: 'True if most ingredients are in the pantry' },
-        ingredients_needed: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: 'Ingredients NOT in the pantry that need purchasing',
-        },
-      },
-      required: ['recipe_name', 'description', 'cook_time', 'pantry_match', 'ingredients_needed'],
-    },
-    confirmed: {
-      type: Type.BOOLEAN,
-      description: 'True only after both confirmations have been received and the swap should be executed',
-    },
-  },
-  required: ['message', 'step', 'needs_clarification', 'confirmed'],
-}
-
-/**
- * Handle a meal swap conversation with multi-step confirmation.
- *
- * @param {Array} history - Full chat history in Gemini format
- * @param {string} systemContext - Output from buildMealPlanPrompt
- * @param {object} swapContext - { day, mealType, currentMeals }
- * @returns {Promise<{ message: string, step: number, needs_clarification: boolean, suggestion?: object, confirmed: boolean }>}
- */
-export async function generateMealSwapSuggestion(history, systemContext, swapContext) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
-  if (!apiKey) throw new Error('GOOGLE_AI_API_KEY is not configured')
-
-  const ai = new GoogleGenAI({ apiKey })
-
-  const mealContextLines = []
-  if (swapContext.currentMeals) {
-    mealContextLines.push('', 'CURRENT WEEKLY MEAL PLAN:')
-    for (const dayData of swapContext.currentMeals) {
-      const filledMeals = dayData.meals
-        .filter(m => m.name)
-        .map(m => `${m.type}: ${m.name}`)
-      if (filledMeals.length > 0) {
-        mealContextLines.push(`${dayData.day}: ${filledMeals.join(', ')}`)
-      }
-    }
-  }
-
-  if (swapContext.day && swapContext.mealType) {
-    const dayMeals = swapContext.currentMeals?.find(d => d.day === swapContext.day)
-    const currentMeal = dayMeals?.meals?.find(m => m.type === swapContext.mealType)
-    const currentName = currentMeal?.name || 'the current meal'
-    mealContextLines.push(
-      '',
-      `USER REQUEST CONTEXT: The user wants to swap ${currentName} on ${swapContext.day}'s ${swapContext.mealType}.`
-    )
-  }
-
-  const fullSystemPrompt = [
-    MEAL_SWAP_SYSTEM_PROMPT,
-    systemContext,
-    mealContextLines.join('\n'),
-  ].filter(Boolean).join('\n\n')
-
-  const currentMessage = history[history.length - 1]
-  const priorHistory = history.slice(0, -1)
-
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: [
-      ...priorHistory.map(h => ({ role: h.role, parts: h.parts })),
-      { role: currentMessage.role, parts: currentMessage.parts },
-    ],
-    config: {
-      systemInstruction: fullSystemPrompt,
-      responseMimeType: 'application/json',
-      responseSchema: MEAL_SWAP_SCHEMA,
-    },
-  })
-
-  return JSON.parse(response.text)
-}
-
 // ── Surprise Me via Chat ───────────────────────────────────────────────
 
 const SURPRISE_ME_CHAT_SCHEMA = {
@@ -1849,8 +1768,8 @@ export async function generatePlanWeekConversation(history, systemContext) {
     'Wait for the user\'s answer.\n\n' +
     'Question 3: "Any other instructions for this week — for example a specific cuisine, a budget limit, or meals that need to be extra quick?"\n' +
     'Wait for the user\'s answer.\n\n' +
-    'After all three answers: Summarize the plan instructions back to the user and ask "Does that sound right? I\'ll start planning your week." Only set ready_to_plan to true after the user confirms the summary.\n\n' +
-    'IMPORTANT: Ask only ONE question per response. Never ask multiple questions at once. Never begin planning until the user confirms the summary.',
+    'After all three answers: set ready_to_plan to true and populate plan_config. Do not ask another confirmation; the app will show the generated plan on a card for the user to approve.\n\n' +
+    'IMPORTANT: Ask only ONE question per response. Never ask multiple questions at once.',
     systemContext,
   ].filter(Boolean).join('\n\n')
 
@@ -1881,7 +1800,7 @@ const MEAL_EDIT_SYSTEM_PROMPT =
   'First identify which meal and which day they are referring to. If it is ambiguous ask one clarifying question to confirm before proceeding. ' +
   'Second suggest one specific item that complements the existing meal, uses pantry ingredients where possible, respects all dietary restrictions and faith-based guidelines, and fits within the household\'s weekly budget. ' +
   'Third present the suggestion clearly with the item name, a one sentence description of why it pairs well, the estimated cook time, and whether the ingredients are already in the pantry or need to be purchased. ' +
-  'Fourth ask the user to confirm before adding it to the meal plan. Only add it after receiving explicit confirmation. Never add anything to the meal plan without confirmation.'
+  'The app shows a card for the user to accept the suggestion; do not ask for confirmation in text.'
 
 const MEAL_EDIT_SUGGESTION_SCHEMA = {
   type: Type.OBJECT,

@@ -73,6 +73,7 @@ async function executeChatAction(userId, action) {
   const {
     fillMealPlan,
     swapMeal,
+    clearMealSlots,
     addRecipeFromChat,
     logReceiptFromChat,
     addToGroceryList,
@@ -81,10 +82,16 @@ async function executeChatAction(userId, action) {
 
   switch (action.type) {
     case 'fill_meal_plan':
-      return fillMealPlan(userId, action.meal_plan_slots || [])
+      return fillMealPlan(userId, action.meal_plan_slots || action.slots || [])
 
     case 'swap_meal':
-      return swapMeal(userId, action.swap_day, action.swap_meal_type, action.swap_new_meal_name)
+      return swapMeal(userId, action.swap_day || action.day, action.swap_meal_type || action.meal_type, action.swap_new_meal_name || action.new_meal_name)
+
+    case 'set_meal':
+      return swapMeal(userId, action.day, action.meal_type, action.meal_name)
+
+    case 'clear_slot':
+      return clearMealSlots(userId, action.slots || [])
 
     case 'add_recipe':
       return addRecipeFromChat(userId, action.recipe || {})
@@ -93,11 +100,11 @@ async function executeChatAction(userId, action) {
       return logReceiptFromChat(userId, action.receipt || {})
 
     case 'add_to_grocery':
-      return addToGroceryList(userId, action.grocery_items || [])
+      return addToGroceryList(userId, action.grocery_items || action.items || [])
 
     case 'update_pantry':
     case 'mark_staple_out_of_stock':
-      return updatePantryFromChat(userId, action.pantry_item_name, action.pantry_is_out_of_stock ?? true)
+      return updatePantryFromChat(userId, action.pantry_item_name || action.item_name, action.pantry_is_out_of_stock ?? action.is_out_of_stock ?? true)
 
     default:
       console.warn('[executeChatAction] Unknown action type:', action.type)
@@ -158,73 +165,6 @@ async function handleMealEditIntent(user, cleanPrompt, intent) {
       suggestion: result.suggestion,
     },
   })
-}
-
-/**
- * Handle swap intent — multi-step conversational swap flow with two confirmations.
- */
-async function handleSwapIntent(user, cleanPrompt, cleanContext, intent) {
-  const { buildMealPlanPrompt } = await import('@/lib/buildMealPlanPrompt')
-  const { getWeeklyMeals } = await import('@/lib/dal/meals')
-  const { getHistory, saveHistory } = await import('@/lib/dal/ai-history')
-  const { generateMealSwapSuggestion } = await import('@/lib/gemini')
-
-  const [{ systemPromptPrefix }, currentMeals, history] = await Promise.all([
-    buildMealPlanPrompt(user.id),
-    getWeeklyMeals(user.id, 0),
-    getHistory(user.id, cleanContext),
-  ])
-
-  const updatedHistory = [
-    ...history,
-    { role: 'user', parts: [{ text: cleanPrompt }] },
-  ]
-
-  const result = await generateMealSwapSuggestion(updatedHistory, systemPromptPrefix, {
-    day: intent.day,
-    mealType: intent.mealType,
-    currentMeals,
-  })
-
-  // Save history for multi-turn swap conversation
-  const finalHistory = [
-    ...updatedHistory,
-    { role: 'model', parts: [{ text: result.message }] },
-  ]
-  saveHistory(user.id, cleanContext, finalHistory).catch((err) =>
-    console.error('[handleSwapIntent] Failed to save history:', err)
-  )
-
-  const response = { text: result.message, chips: [] }
-
-  // Execute the swap when both confirmations are received
-  if (result.confirmed && result.suggestion) {
-    try {
-      const { swapMeal } = await import('@/lib/actions/chat-actions')
-      await swapMeal(user.id, intent.day, intent.mealType, result.suggestion.recipe_name)
-      response.chips = ['View meal plan', 'Swap another meal', 'Make grocery list']
-    } catch (err) {
-      console.error('[handleSwapIntent] Swap execution failed:', err)
-      response.chips = ['Try again', 'Never mind']
-    }
-    return ok(response)
-  }
-
-  // If swap has a suggestion pending confirmation, present it as a card
-  if (result.suggestion && !result.confirmed) {
-    response.card = {
-      type: 'swap_suggestion',
-      day: intent.day,
-      mealType: intent.mealType,
-      suggestion: result.suggestion,
-      step: result.step,
-    }
-    response.chips = ['Confirm swap', 'Suggest something else', 'Never mind']
-  } else if (!result.suggestion) {
-    response.chips = ['Use pantry ingredients', 'Open to new ingredients', 'Never mind']
-  }
-
-  return ok(response)
 }
 
 /**
@@ -372,7 +312,7 @@ async function handlePlanWeekIntent(user, cleanPrompt, cleanContext) {
   return ok(response)
 }
 
-export async function askAI(prompt, context) {
+export async function askAI(prompt, context, opts = {}) {
   try {
     const user = await requireUser()
     const rate = aiLimiter.check(user.id)
@@ -397,12 +337,7 @@ export async function askAI(prompt, context) {
       return await handleMealEditIntent(user, cleanPrompt, intent)
     }
 
-    // --- Swap intent routes to multi-step swap flow ---
-    if (intent.intent === 'swap_item') {
-      return await handleSwapIntent(user, cleanPrompt, cleanContext, intent)
-    }
-
-    // --- Surprise Me intent routes to path-choice flow ---
+// --- Surprise Me intent routes to path-choice flow ---
     if (intent.intent === 'surprise_me') {
       return await handleSurpriseMeIntent(user, cleanPrompt, cleanContext)
     }
@@ -412,68 +347,145 @@ export async function askAI(prompt, context) {
       return await handlePlanWeekIntent(user, cleanPrompt, cleanContext)
     }
 
-    // --- General flow: full household context + app-control actions ---
+    // --- General flow: Gemini function-calling tool loop ---
     const [
       { getHistory, saveHistory },
-      { callGeminiWithActions },
+      { callGeminiWithTools },
       { buildMealPlanPrompt },
       { buildChatContext },
+      {
+        CHAT_TOOL_DECLARATIONS,
+        validateToolArgs,
+        snapshotBefore,
+        runReadTool,
+        executeWriteTool,
+        executeBigAction,
+        createPendingAction,
+        ToolArgError,
+      },
+      { classifyAction, READ_TOOLS },
     ] = await Promise.all([
       import('@/lib/dal/ai-history'),
       import('@/lib/gemini'),
       import('@/lib/buildMealPlanPrompt'),
       import('@/lib/chat-context'),
+      import('@/lib/chat-tools'),
+      import('@/lib/chat-action-policy'),
     ])
 
-    // 1. Load history and household context in parallel
     const [history, { systemPromptPrefix }, chatContext] = await Promise.all([
       getHistory(user.id, cleanContext),
       buildMealPlanPrompt(user.id),
       buildChatContext(user.id),
     ])
 
-    const householdContext = [systemPromptPrefix, chatContext].filter(Boolean).join('\n\n')
+    const importedContent = Boolean(opts?.importedContent?.text)
+    const importedBlock = importedContent
+      ? `\n\n--- UNTRUSTED IMPORTED CONTENT (${opts.importedContent.kind || 'unknown'}) ---\n${String(opts.importedContent.text).slice(0, 8000)}\n--- END IMPORTED CONTENT ---`
+      : ''
+    const systemInstruction = [systemPromptPrefix, chatContext].filter(Boolean).join('\n\n') + importedBlock
 
-    // 2. Append the new user message
-    const updatedHistory = [
-      ...history,
+    // Build live contents from prior text history + current message.
+    const contents = [
+      ...history.map(h => ({ role: h.role, parts: h.parts })),
       { role: 'user', parts: [{ text: cleanPrompt }] },
     ]
 
-    // 3. Call Gemini with structured output (message + optional action)
-    const result = await callGeminiWithActions(updatedHistory, householdContext)
-    let responseText = result.message
+    const tools = [{ functionDeclarations: CHAT_TOOL_DECLARATIONS }]
+    const executed = []
+    const undo = []
+    const pendings = []
+    const skipped = []
+    let responseText = ''
+    let pendingLatched = false
 
-    // 4. Execute confirmed action if present (server-side authz, not model's say-so)
-    let actionExecuted = null
-    if (result.action?.confirmed && result.action?.type) {
-      try {
-        await executeChatAction(user.id, result.action)
-        actionExecuted = result.action.type
-        revalidatePath('/(app)', 'layout')
-      } catch (err) {
-        if (err?.code === CHAT_ACTION_FORBIDDEN || err?.code === CHAT_ACTION_UNKNOWN) {
-          responseText = err.message
-        } else {
-          console.error('[askAI] Action execution failed:', err)
+    for (let step = 0; step < 5; step++) {
+      const { text, functionCalls, content } = await callGeminiWithTools(contents, systemInstruction, tools)
+      if (!functionCalls || functionCalls.length === 0) {
+        responseText = text || ''
+        break
+      }
+
+      // Append the model turn exactly as returned (so function parts stay paired).
+      contents.push(content || { role: 'model', parts: functionCalls.map(fc => ({ functionCall: fc })) })
+
+      const responseParts = []
+      for (const call of functionCalls) {
+        const name = call.name
+        let toolResult
+        try {
+          if (READ_TOOLS.has(name)) {
+            toolResult = await runReadTool(user.id, name)
+          } else {
+            await assertCanExecuteChatAction(user.id, name)
+            const args = validateToolArgs(name, call.args || {})
+            const tier = classifyAction(name, args, { importedContent })
+
+            if (pendingLatched && tier === 'small') {
+              toolResult = { status: 'skipped_pending', reason: 'Waiting on earlier confirmation.' }
+              skipped.push({ type: name })
+            } else if (tier === 'small') {
+              const before = await snapshotBefore(user.id, name, args)
+              const out = await executeWriteTool(user.id, name, args)
+              executed.push({ type: name, args, result: out })
+              undo.push({ type: name, before, ref: out })
+              toolResult = { status: 'ok', ...out }
+            } else {
+              const pending = await createPendingAction(user.id, name, args, { importedContent })
+              pendings.push(pending)
+              pendingLatched = true
+              toolResult = { status: 'pending_confirmation', pending_id: pending.id, summary: pending.summary }
+            }
+          }
+        } catch (err) {
+          if (err?.code === CHAT_ACTION_FORBIDDEN || err?.code === CHAT_ACTION_UNKNOWN) {
+            toolResult = { status: 'error', message: err.message }
+          } else if (err instanceof ToolArgError) {
+            toolResult = { status: 'error', message: err.message }
+          } else {
+            console.error('[askAI] tool call failed:', err)
+            toolResult = { status: 'error', message: 'Tool call failed.' }
+          }
         }
+
+        responseParts.push({ functionResponse: { name, response: toolResult } })
+      }
+
+      contents.push({ role: 'user', parts: responseParts })
+    }
+
+    if (executed.length > 0) {
+      revalidatePath('/(app)', 'layout')
+    }
+
+    if (!responseText) {
+      if (pendings.length > 0) {
+        responseText = pendings.length === 1
+          ? `Ready to go — ${pendings[0].summary} Tap confirm to save.`
+          : `Ready to save ${pendings.length} changes. Tap confirm on each card.`
+      } else if (executed.length > 0) {
+        responseText = `Done — ${executed.length === 1 ? 'change' : `${executed.length} changes`} saved.`
+      } else {
+        responseText = ''
       }
     }
 
-    // 5. Persist history (fire-and-forget)
     const finalHistory = [
-      ...updatedHistory,
+      ...history,
+      { role: 'user', parts: [{ text: cleanPrompt }] },
       { role: 'model', parts: [{ text: responseText }] },
     ]
     saveHistory(user.id, cleanContext, finalHistory).catch((err) =>
       console.error('[askAI] Failed to save history:', err)
     )
 
-    // 6. Return structured response
     return ok({
       text: responseText,
       chips: deriveChips(responseText),
-      actionExecuted,
+      actionExecuted: executed[0]?.type || null,
+      actions: executed,
+      undo,
+      pending: pendings,
     })
   } catch (err) {
     console.error('[askAI] error:', err)
@@ -747,6 +759,18 @@ export async function confirmMealEditAction(cardData) {
       return fail('Invalid suggestion data')
     }
 
+    try {
+      await assertCanExecuteChatAction(user.id, 'set_meal')
+      if (suggestion.ingredients_needed?.length > 0) {
+        await assertCanExecuteChatAction(user.id, 'add_to_grocery')
+      }
+    } catch (err) {
+      if (err?.code === CHAT_ACTION_FORBIDDEN || err?.code === CHAT_ACTION_UNKNOWN) {
+        return fail(err.message)
+      }
+      throw err
+    }
+
     const cleanName = sanitizeString(suggestion.item_name, 200)
     if (!cleanName) return fail('Invalid item name')
 
@@ -798,6 +822,7 @@ export async function confirmMealEditAction(cardData) {
     const { error } = await supabase.from('meal_slots').upsert(
       {
         meal_plan_id: planId,
+        user_id: user.id,
         day_of_week: dayInt,
         meal_type: cleanSlot,
         custom_meal_name: cleanName,
@@ -858,11 +883,64 @@ export async function confirmPlanWeekAction(slots) {
 
     if (!Array.isArray(slots) || slots.length === 0) return fail('No meal slots provided')
 
+    try {
+      await assertCanExecuteChatAction(user.id, 'fill_meal_plan')
+    } catch (err) {
+      if (err?.code === CHAT_ACTION_FORBIDDEN || err?.code === CHAT_ACTION_UNKNOWN) {
+        return fail(err.message)
+      }
+      throw err
+    }
+
     const { fillMealPlan } = await import('@/lib/actions/chat-actions')
     const result = await fillMealPlan(user.id, slots)
     return ok(result)
   } catch (err) {
     console.error('[confirmPlanWeekAction] error:', err)
     return fail('Could not save meal plan')
+  }
+}
+
+/**
+ * Confirm a pending chat action by id. Atomically claims the row via the
+ * SECURITY DEFINER RPC, re-validates the stored payload with the same input
+ * checks as the normal path, and then executes it.
+ */
+export async function confirmChatPendingAction(pendingId) {
+  try {
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    const cleanId = sanitizeString(pendingId, 100)
+    if (!cleanId) return fail('Invalid confirmation id.')
+
+    const { claimPendingAction, validateToolArgs, executeBigAction } = await import('@/lib/chat-tools')
+    const row = await claimPendingAction(user.id, cleanId)
+    if (!row) return fail('This confirmation is no longer available.')
+
+    try {
+      await assertCanExecuteChatAction(user.id, row.action_type)
+    } catch (err) {
+      if (err?.code === CHAT_ACTION_FORBIDDEN || err?.code === CHAT_ACTION_UNKNOWN) {
+        return fail(err.message)
+      }
+      throw err
+    }
+
+    let safeArgs
+    try {
+      safeArgs = validateToolArgs(row.action_type, row.payload || {})
+    } catch (err) {
+      console.error('[confirmChatPendingAction] re-validation failed:', err?.message)
+      return fail('That change can no longer be applied.')
+    }
+
+    const result = await executeBigAction(user.id, row.action_type, safeArgs)
+    revalidatePath('/(app)', 'layout')
+    return ok({ executed: row.action_type, result })
+  } catch (err) {
+    console.error('[confirmChatPendingAction] error:', err)
+    return fail('Could not apply the change.')
   }
 }

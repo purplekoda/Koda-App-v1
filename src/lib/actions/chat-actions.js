@@ -40,6 +40,7 @@ export async function fillMealPlan(userId, slots) {
     .filter(s => s.day_of_week >= 1 && s.day_of_week <= 7 && s.meal_name)
     .map(slot => ({
       meal_plan_id: planId,
+      user_id: userId,
       day_of_week: slot.day_of_week,
       meal_type: slot.meal_type,
       custom_meal_name: sanitizeString(slot.meal_name, 200),
@@ -94,6 +95,7 @@ export async function swapMeal(userId, day, mealType, newMealName) {
     .upsert(
       {
         meal_plan_id: planId,
+        user_id: userId,
         day_of_week: dayInt,
         meal_type: mealType,
         custom_meal_name: cleanName,
@@ -254,11 +256,55 @@ export async function addToGroceryList(userId, items) {
     store_assignment: storeAssignments[item.name] || null,
   }))
 
-  const { error } = await supabase.from('grocery_items').insert(rows)
+  const { data: inserted, error } = await supabase
+    .from('grocery_items')
+    .insert(rows)
+    .select('id')
   if (error) throw new Error('Failed to add grocery items: ' + error.message)
 
   revalidatePath('/grocery')
-  return { added: validItems.length }
+  return { added: validItems.length, ids: (inserted || []).map(r => r.id) }
+}
+
+/**
+ * Clear one or more meal slots in the current week's plan.
+ * @param {string} userId
+ * @param {Array<{ day: string, meal_type: string }>} slots
+ */
+export async function clearMealSlots(userId, slots) {
+  const list = (slots || [])
+    .map(s => ({ day: s.day, meal_type: s.meal_type, dayInt: DAY_TO_INT[s.day] }))
+    .filter(s => s.dayInt && s.meal_type)
+  if (!list.length) return { cleared: 0 }
+
+  if (isMockMode()) {
+    const { updateMockMeal } = await import('@/lib/dal/mock-store')
+    for (const s of list) {
+      await updateMockMeal(s.day, s.meal_type, {
+        name: null, recipeId: null, recipe: null, ingredients: [],
+      })
+    }
+    revalidatePath('/meals')
+    return { cleared: list.length }
+  }
+
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const { getOrCreateMealPlan } = await import('@/lib/dal/meals')
+  const supabase = await getSupabaseServerClient()
+  const planId = await getOrCreateMealPlan(userId, supabase, 0)
+
+  for (const s of list) {
+    await supabase
+      .from('meal_slots')
+      .delete()
+      .eq('meal_plan_id', planId)
+      .eq('user_id', userId)
+      .eq('day_of_week', s.dayInt)
+      .eq('meal_type', s.meal_type)
+  }
+
+  revalidatePath('/meals')
+  return { cleared: list.length }
 }
 
 /**

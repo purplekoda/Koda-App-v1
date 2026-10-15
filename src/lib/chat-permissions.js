@@ -5,6 +5,8 @@ import { isMockMode } from '@/lib/dal/require-user'
 export const WRITE_ACTION_TYPES = Object.freeze([
   'fill_meal_plan',
   'swap_meal',
+  'set_meal',
+  'clear_slot',
   'add_recipe',
   'log_receipt',
   'add_to_grocery',
