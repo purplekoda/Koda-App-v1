@@ -378,7 +378,9 @@ export async function runChatTurn(user, prompt, context, { importedContent = fal
     revalidatePath('/kitchen')
   }
 
-  if (!responseText) {
+  if (pendings.length === 0 && executed.length > 0 && latestLabel) {
+    responseText = latestLabel
+  } else if (!responseText) {
     if (pendings.length > 0) {
       // Waiting changes always have text. The card lives in `pending[0].card`.
       responseText = pendings.length === 1 && pendings[0].type === 'fill_meal_plan'

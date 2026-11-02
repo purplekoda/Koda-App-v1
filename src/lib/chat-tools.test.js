@@ -31,6 +31,21 @@ describe('validateToolArgs', () => {
   it('clear_slot requires at least one slot', () => {
     expect(() => validateToolArgs('clear_slot', { slots: [] })).toThrow(ToolArgError)
   })
+
+  it('fill_meal_plan rejects placeholder meal names', () => {
+    const base = { day_of_week: 1, meal_type: 'dinner' }
+    for (const bad of ['AI Generated Meal', 'ai-generated meal', 'Meal 1', 'meal 12', 'TBD', 'placeholder']) {
+      expect(() => validateToolArgs('fill_meal_plan', { slots: [{ ...base, meal_name: bad }] }),
+        `should reject "${bad}"`).toThrow(ToolArgError)
+    }
+  })
+
+  it('fill_meal_plan accepts real meal names', () => {
+    const out = validateToolArgs('fill_meal_plan', {
+      slots: [{ day_of_week: 1, meal_type: 'dinner', meal_name: 'Lemon Herb Chicken' }],
+    })
+    expect(out.slots[0].meal_name).toBe('Lemon Herb Chicken')
+  })
 })
 
 describe('pending action lifecycle (mock mode)', () => {

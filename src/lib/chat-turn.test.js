@@ -73,7 +73,7 @@ describe('runChatTurn', () => {
     const slots = Array.from({ length: 21 }, (_, i) => ({
       day_of_week: (i % 7) + 1,
       meal_type: ['breakfast', 'lunch', 'dinner'][Math.floor(i / 7)],
-      meal_name: `Meal ${i}`,
+      meal_name: `Pasta ${i}`,
     }))
     geminiScript({ functionCalls: [{ name: 'fill_meal_plan', args: { slots } }], content: null })
 
@@ -315,6 +315,23 @@ describe('runChatTurn', () => {
     const result = await runChatTurn(USER, 'hi', 'general')
     expect(result.text).toContain('—')
     expect(result.text).not.toContain('\\u2014')
+  })
+
+  it('(8) executed swap overrides model text that claims waiting for approval', async () => {
+    geminiScript(
+      {
+        functionCalls: [{ name: 'swap_meal', args: { day: 'Tue', meal_type: 'dinner', new_meal_name: 'Lemon Chicken' } }],
+        content: null,
+      },
+      { text: 'Waiting for your approval.', functionCalls: [] },
+    )
+
+    const result = await runChatTurn(USER, 'swap Tuesday dinner for lemon chicken', 'general')
+
+    expect(result.actions).toHaveLength(1)
+    expect(result.pending).toHaveLength(0)
+    expect(result.text).toBe('Swapped Tuesday dinner to Lemon Chicken.')
+    expect(result.text.toLowerCase()).not.toContain('approval')
   })
 })
 

@@ -52,6 +52,63 @@ describe('chat undo (mock mode)', () => {
     expect(await readSlotName(mockStore, 'Tue', 'dinner')).toBe('Taco Bowls')
   })
 
+  it('undo reply text is an undo message, not the forward swap label', async () => {
+    const { chatTools, ai, mockStore } = await freshImports()
+    await setSlot(mockStore, 'Tue', 'dinner', 'Taco Bowls')
+    const rec = await chatTools.recordUndo(
+      USER,
+      [{ kind: 'slot', meal_plan_id: 'mock-plan', day_of_week: 2, meal_type: 'dinner' }],
+      'Swapped Tuesday dinner to Lemon Chicken.'
+    )
+    await setSlot(mockStore, 'Tue', 'dinner', 'Lemon Chicken')
+
+    const result = await ai.undoChatAction(rec.id)
+    expect(result.success).toBe(true)
+    expect(result.data.text).toMatch(/^Undone/i)
+    expect(result.data.text).not.toMatch(/^Swapped/i)
+    expect(result.data.text).toContain('Taco Bowls')
+  })
+
+  it('end-to-end: swap via runChatTurn then undoChatAction restores the original meal', async () => {
+    const { chatTools, ai, mockStore } = await freshImports()
+    await setSlot(mockStore, 'Tue', 'dinner', 'Taco Bowls')
+
+    vi.doMock('@/lib/gemini', () => ({
+      callGeminiWithTools: vi.fn()
+        .mockResolvedValueOnce({
+          text: '',
+          functionCalls: [{ name: 'swap_meal', args: { day: 'Tue', meal_type: 'dinner', new_meal_name: 'Lemon Chicken' } }],
+          content: null,
+        })
+        .mockResolvedValueOnce({ text: 'done', functionCalls: null, content: null }),
+    }))
+    vi.doMock('@/lib/dal/ai-history', () => ({
+      getHistory: vi.fn(async () => []),
+      saveHistory: vi.fn(async () => {}),
+    }))
+    vi.doMock('@/lib/buildMealPlanPrompt', () => ({ buildMealPlanPrompt: vi.fn(async () => ({ systemPromptPrefix: '' })) }))
+    vi.doMock('@/lib/chat-context', () => ({ buildChatContext: vi.fn(async () => '') }))
+
+    const { runChatTurn } = await import('./chat-turn')
+    const turn = await runChatTurn({ id: USER }, 'swap tuesday dinner to lemon chicken', 'general')
+
+    expect(turn.actions).toHaveLength(1)
+    expect(turn.actions[0].type).toBe('swap_meal')
+    expect(turn.undo?.id).toBeTruthy()
+    expect(await readSlotName(mockStore, 'Tue', 'dinner')).toBe('Lemon Chicken')
+
+    const undo = await ai.undoChatAction(turn.undo.id)
+    expect(undo.success).toBe(true)
+    // The slot must be restored to the original meal, not blanked.
+    expect(await readSlotName(mockStore, 'Tue', 'dinner')).toBe('Taco Bowls')
+    void chatTools
+
+    vi.doUnmock('@/lib/gemini')
+    vi.doUnmock('@/lib/dal/ai-history')
+    vi.doUnmock('@/lib/buildMealPlanPrompt')
+    vi.doUnmock('@/lib/chat-context')
+  })
+
   it('a second undo with the same id fails', async () => {
     const { chatTools, ai, mockStore } = await freshImports()
     await setSlot(mockStore, 'Wed', 'dinner', 'Original')

@@ -1600,6 +1600,27 @@ export default function MealsPageClient({ initialMeals, swapSuggestions, recipes
   const [draftBannerData, setDraftBannerData] = useState(null)
   const [planningModeDraftPromptOpen, setPlanningModeDraftPromptOpen] = useState(false)
 
+  // Resync local meals state when the server sends fresh props (e.g. after a
+  // chat swap triggers router.refresh). Skip while any grid edit is in
+  // progress so we don't clobber an open modal / unsaved selection, and
+  // only sync when initialMeals actually changed — otherwise closing a
+  // modal would snap back a just-saved optimistic edit to stale server
+  // props. (The grid has no drag/drop state today; add any future drag
+  // flag to hasOpenGridEdit.)
+  const hasOpenGridEdit =
+    pickerOpen || aiFillOpen || planningModeOpen || storePickerOpen ||
+    fullWeekPromptOpen || planningModeDraftPromptOpen ||
+    !!selectedMeal || !!previewRecipe || !!savePrompt ||
+    !!surpriseResult || !!surpriseResults ||
+    !!webSearchResults || !!recipeSuggestions
+  const lastSyncedRef = useRef(initialMeals)
+  useEffect(() => {
+    if (hasOpenGridEdit) return
+    if (initialMeals === lastSyncedRef.current) return
+    lastSyncedRef.current = initialMeals
+    setMeals(initialMeals)
+  }, [initialMeals, hasOpenGridEdit])
+
   useEffect(() => () => clearTimeout(toastTimeoutRef.current), [])
 
   // Check for a saved draft on mount

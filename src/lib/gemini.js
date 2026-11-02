@@ -315,6 +315,7 @@ export async function callGeminiWithTools(contents, systemInstruction, tools) {
     config: {
       systemInstruction,
       tools,
+      thinkingConfig: { thinkingBudget: 0 },
     },
   })
 
@@ -342,6 +343,11 @@ export async function callGeminiWithTools(contents, systemInstruction, tools) {
   // triggers the SDK's "non-text parts" warning. Only read .text when there
   // are no function calls to execute.
   const text = functionCalls.length === 0 ? (response.text || '') : ''
+
+  if (process.env.NODE_ENV !== 'production' && !text && functionCalls.length === 0) {
+    const finishReason = response.candidates?.[0]?.finishReason ?? null
+    console.warn('[callGeminiWithTools] empty reply', { finishReason })
+  }
 
   return { text, functionCalls, content }
 }

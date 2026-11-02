@@ -591,7 +591,7 @@ export async function undoChatAction(undoId, ..._ignored) {
     revalidatePath('/grocery')
     revalidatePath('/kitchen')
 
-    const text = row.label || composeUndoLabel(entries)
+    const text = composeUndoLabel(entries) || 'Undone.'
     return ok({ text })
   } catch (err) {
     console.error('[undoChatAction] error:', err)

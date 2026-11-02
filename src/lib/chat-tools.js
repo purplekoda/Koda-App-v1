@@ -29,7 +29,7 @@ export const CHAT_TOOL_DECLARATIONS = [
       properties: {
         day: { type: Type.STRING, enum: DAY_ENUM },
         meal_type: { type: Type.STRING, enum: MEAL_TYPE_ENUM },
-        meal_name: { type: Type.STRING },
+        meal_name: { type: Type.STRING, description: "The actual recipe/meal name, e.g. 'Lemon Herb Chicken'. Must be a specific dish — never a placeholder like 'AI Generated Meal', 'Meal 1', 'TBD', etc." },
       },
       required: ['day', 'meal_type', 'meal_name'],
     },
@@ -42,7 +42,7 @@ export const CHAT_TOOL_DECLARATIONS = [
       properties: {
         day: { type: Type.STRING, enum: DAY_ENUM },
         meal_type: { type: Type.STRING, enum: MEAL_TYPE_ENUM },
-        new_meal_name: { type: Type.STRING },
+        new_meal_name: { type: Type.STRING, description: "The actual recipe/meal name, e.g. 'Lemon Herb Chicken'. Must be a specific dish — never a placeholder like 'AI Generated Meal', 'Meal 1', 'TBD', etc." },
       },
       required: ['day', 'meal_type', 'new_meal_name'],
     },
@@ -117,7 +117,7 @@ export const CHAT_TOOL_DECLARATIONS = [
             properties: {
               day_of_week: { type: Type.INTEGER, description: '1=Mon..7=Sun' },
               meal_type: { type: Type.STRING, enum: MEAL_TYPE_ENUM },
-              meal_name: { type: Type.STRING },
+              meal_name: { type: Type.STRING, description: "The actual recipe/meal name, e.g. 'Lemon Herb Chicken'. Must be a specific dish — never a placeholder like 'AI Generated Meal', 'Meal 1', 'TBD', etc." },
             },
             required: ['day_of_week', 'meal_type', 'meal_name'],
           },
@@ -245,10 +245,14 @@ export function validateToolArgs(name, rawArgs) {
       const slots = args.slots.map(s => {
         const dow = Number(s?.day_of_week)
         if (!(dow >= 1 && dow <= 7)) throw new ToolArgError('day_of_week must be 1..7')
+        const meal_name = requireName(s?.meal_name, 'meal_name')
+        if (/^(ai[\s-]*generated\s*meal|meal\s*\d+|tbd|placeholder)$/i.test(meal_name)) {
+          throw new ToolArgError('meal_name must be a specific dish')
+        }
         return {
           day_of_week: dow,
           meal_type: requireEnum(s?.meal_type, MEAL_TYPE_ENUM, 'meal_type'),
-          meal_name: requireName(s?.meal_name, 'meal_name'),
+          meal_name,
         }
       })
       return { slots }
