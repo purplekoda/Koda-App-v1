@@ -5,6 +5,7 @@ import 'server-only'
 // its own arguments here.
 
 import { revalidatePath } from 'next/cache'
+import { isMockMode } from '@/lib/dal/require-user'
 import {
   assertCanExecuteChatAction,
   CHAT_ACTION_FORBIDDEN,
@@ -12,6 +13,10 @@ import {
 } from '@/lib/chat-permissions'
 
 const DAY_TO_INT = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 }
+const DAY_FULL = {
+  Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday',
+  Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday',
+}
 
 function deriveChips(text) {
   const lower = (text || '').toLowerCase()
@@ -40,6 +45,61 @@ function cleanEscapes(text) {
     .replace(/\\u201d/gi, '”')
 }
 
+async function resolveMealPlanId(userId) {
+  if (isMockMode()) return null
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const { getOrCreateMealPlan } = await import('@/lib/dal/meals')
+  const supabase = await getSupabaseServerClient()
+  return getOrCreateMealPlan(userId, supabase, 0)
+}
+
+async function resolvePantryTarget(userId, itemName) {
+  const name = (itemName || '').toLowerCase()
+  const { getStaples } = await import('@/lib/dal/staples')
+  const staples = await getStaples(userId)
+  const staple = staples.find(s => s.name.toLowerCase() === name)
+  if (staple) return { kind: 'staple', staple_id: staple.id }
+
+  if (isMockMode()) {
+    const { getMockManagedPantry } = await import('@/lib/dal/mock-store')
+    const items = await getMockManagedPantry()
+    const found = items.find(i => i.ingredient_name.toLowerCase() === name)
+    if (found) return { kind: 'pantry', pantry_id: found.id }
+    return null
+  }
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  const { data } = await supabase
+    .from('pantry')
+    .select('id')
+    .eq('user_id', userId)
+    .ilike('ingredient_name', itemName)
+    .maybeSingle()
+  if (data?.id) return { kind: 'pantry', pantry_id: data.id }
+  return null
+}
+
+function composeLabelForWrite(name, args) {
+  switch (name) {
+    case 'set_meal': return `Set ${DAY_FULL[args.day] || args.day} ${args.meal_type} to ${args.meal_name}.`
+    case 'swap_meal': return `Swapped ${DAY_FULL[args.day] || args.day} ${args.meal_type} to ${args.new_meal_name}.`
+    case 'clear_slot': {
+      const s = args.slots?.[0]
+      return s ? `Cleared ${DAY_FULL[s.day] || s.day} ${s.meal_type}.` : 'Cleared slot.'
+    }
+    case 'add_to_grocery': {
+      const n = args.items?.length || 0
+      return n === 1 ? `Added ${args.items[0].name} to your grocery list.` : `Added ${n} items to your grocery list.`
+    }
+    case 'update_pantry':
+    case 'mark_staple_out_of_stock':
+      return args.is_out_of_stock
+        ? `Marked ${args.item_name} out of stock.`
+        : `Marked ${args.item_name} back in stock.`
+    default: return 'Change saved.'
+  }
+}
+
 /**
  * Run one chat turn through the Gemini function-calling loop.
  *
@@ -62,13 +122,15 @@ export async function runChatTurn(user, prompt, context, { importedContent = fal
     {
       CHAT_TOOL_DECLARATIONS,
       validateToolArgs,
-      snapshotBefore,
       runReadTool,
       executeWriteTool,
       createPendingAction,
       ToolArgError,
       getTouchedSlots,
       mergePendingArgs,
+      recordUndo,
+      attachUndoSlotAfter,
+      supersedeUndo,
     },
     { classifyAction, READ_TOOLS },
   ] = await Promise.all([
@@ -95,16 +157,23 @@ export async function runChatTurn(user, prompt, context, { importedContent = fal
 
   const tools = [{ functionDeclarations: CHAT_TOOL_DECLARATIONS }]
   const executed = []
-  const undo = []
   const pendings = []
   const skipped = []
+  // Last recorded undo for the turn ({id, expires_at}). Each recordUndo call
+  // supersedes earlier ones server-side; we expose only the newest to the UI.
+  let undoRef = null
+  let latestLabel = ''
   let responseText = ''
   let pendingLatched = false
+  let mealPlanId = null
+
+  async function getMealPlanId() {
+    if (mealPlanId == null) mealPlanId = await resolveMealPlanId(user.id)
+    return mealPlanId
+  }
 
   // Slot writes committed in a prior step this turn.
   const slotsWrittenInPriorSteps = new Set()
-  // Cross-step and in-step promoted pending intents, keyed by canonical type
-  // ('clear_slot' or 'fill_meal_plan'). Persisted at end of loop.
   const promotedByType = new Map()
 
   function mergePromoted(canonicalType, args) {
@@ -169,15 +238,12 @@ export async function runChatTurn(user, prompt, context, { importedContent = fal
       }
     }
 
-    // Batch rule: if the whole step touches more than one slot in total, OR a
-    // prior step already wrote one, OR this turn is on imported content,
-    // every slot call this step is promoted to a single merged pending.
     const batchSlots =
       stepSlotCount > 1 ||
       (slotIndices.length > 0 && slotsWrittenInPriorSteps.size > 0) ||
       (slotIndices.length > 0 && importedContent)
 
-    // ── Pass 2: execute in original order to emit response parts in order.
+    // ── Pass 2: execute in original order.
     const stepSlotsWritten = new Set()
     const responseParts = []
     for (let i = 0; i < functionCalls.length; i++) {
@@ -196,13 +262,40 @@ export async function runChatTurn(user, prompt, context, { importedContent = fal
           toolResult = { status: 'skipped_pending', reason: 'Waiting on earlier confirmation.' }
           skipped.push({ type: name })
         } else if (tier === 'small') {
+          let preWriteRecordedForThisCall = false
           try {
-            const before = await snapshotBefore(user.id, name, o.args)
+            // Pre-write snapshot for non-slot small writes (pantry/staple).
+            if (name === 'update_pantry' || name === 'mark_staple_out_of_stock') {
+              const pantryTarget = await resolvePantryTarget(user.id, o.args.item_name)
+              if (pantryTarget) {
+                const label = composeLabelForWrite(name, o.args)
+                latestLabel = label
+                const rec = await recordUndo(user.id, [pantryTarget], label)
+                if (rec) { undoRef = rec; preWriteRecordedForThisCall = true }
+              }
+            }
             const out = await executeWriteTool(user.id, name, o.args)
             executed.push({ type: name, args: o.args, result: out })
-            undo.push({ type: name, before, ref: out })
+            // Post-write grocery undo: snapshot the inserted IDs.
+            if (name === 'add_to_grocery' && Array.isArray(out?.ids) && out.ids.length) {
+              const label = composeLabelForWrite(name, o.args)
+              latestLabel = label
+              const rec = await recordUndo(user.id, [{ kind: 'grocery_ids', ids: out.ids }], label)
+              if (rec) undoRef = rec
+            } else if (name === 'add_to_grocery' && isMockMode()) {
+              // Mock-mode grocery adds don't return ids; look up by matching
+              // last-inserted items by name is unreliable, so skip undo in
+              // mock mode for add_to_grocery unless ids are present. Tests
+              // that cover grocery undo construct the undo row directly.
+            }
             toolResult = { status: 'ok', ...out }
-          } catch (err) { toolResult = toolResultFromErr(err) }
+          } catch (err) {
+            if (preWriteRecordedForThisCall) {
+              try { await supersedeUndo(user.id) } catch {}
+              undoRef = null
+            }
+            toolResult = toolResultFromErr(err)
+          }
         } else {
           try {
             const pending = await createPendingAction(user.id, name, o.args, { importedContent })
@@ -220,14 +313,41 @@ export async function runChatTurn(user, prompt, context, { importedContent = fal
           pendingLatched = true
           toolResult = { status: 'pending_confirmation', summary: 'Change held for user confirmation.' }
         } else {
+          let preWriteRecordedForThisCall = false
           try {
-            const before = await snapshotBefore(user.id, name, o.args)
+            // Pre-write snapshot for slot writes.
+            const planId = await getMealPlanId()
+            const targets = []
+            if (name === 'clear_slot') {
+              for (const s of o.args.slots) {
+                targets.push({ kind: 'slot', meal_plan_id: planId, day_of_week: DAY_TO_INT[s.day], meal_type: s.meal_type })
+              }
+            } else {
+              targets.push({ kind: 'slot', meal_plan_id: planId, day_of_week: DAY_TO_INT[o.args.day], meal_type: o.args.meal_type })
+            }
+            const label = composeLabelForWrite(name, o.args)
+            latestLabel = label
+            const rec = await recordUndo(user.id, targets, label)
+            if (rec) { undoRef = rec; preWriteRecordedForThisCall = true }
+
             const out = await executeWriteTool(user.id, name, o.args)
             executed.push({ type: name, args: o.args, result: out })
-            undo.push({ type: name, before, ref: out })
             o.touched.forEach(s => stepSlotsWritten.add(s))
+            // Post-write: stamp the "after" state on each slot entry so undo
+            // can detect concurrent edits.
+            if (undoRef?.id) {
+              for (const t of targets) {
+                await attachUndoSlotAfter(user.id, undoRef.id, t.meal_plan_id, t.day_of_week, t.meal_type)
+              }
+            }
             toolResult = { status: 'ok', ...out }
-          } catch (err) { toolResult = toolResultFromErr(err) }
+          } catch (err) {
+            if (preWriteRecordedForThisCall) {
+              try { await supersedeUndo(user.id) } catch {}
+              undoRef = null
+            }
+            toolResult = toolResultFromErr(err)
+          }
         }
       }
 
@@ -252,18 +372,24 @@ export async function runChatTurn(user, prompt, context, { importedContent = fal
   }
 
   if (executed.length > 0) {
-    revalidatePath('/(app)', 'layout')
+    revalidatePath('/meals')
+    revalidatePath('/dashboard')
+    revalidatePath('/grocery')
+    revalidatePath('/kitchen')
   }
 
   if (!responseText) {
     if (pendings.length > 0) {
-      responseText = pendings.length === 1
-        ? `Ready to go — ${pendings[0].summary} Tap confirm to save.`
-        : `Ready to save ${pendings.length} changes. Tap confirm on each card.`
+      // Waiting changes always have text. The card lives in `pending[0].card`.
+      responseText = pendings.length === 1 && pendings[0].type === 'fill_meal_plan'
+        ? 'Your week is ready. Tap Save my week to keep it.'
+        : pendings.length === 1
+          ? `Ready to go — ${pendings[0].summary} Tap confirm to save.`
+          : `Ready to save ${pendings.length} changes. Tap confirm on each card.`
     } else if (executed.length > 0) {
-      responseText = `Done — ${executed.length === 1 ? 'change' : `${executed.length} changes`} saved.`
+      responseText = latestLabel || `Done — ${executed.length === 1 ? 'change' : `${executed.length} changes`} saved.`
     } else {
-      responseText = ''
+      responseText = "Sorry, I couldn't do that, try again."
     }
   }
 
@@ -280,11 +406,12 @@ export async function runChatTurn(user, prompt, context, { importedContent = fal
 
   return {
     text: responseText,
-    chips: deriveChips(responseText),
+    chips: executed.length > 0 && pendings.length === 0 ? [] : deriveChips(responseText),
     actionExecuted: executed[0]?.type || null,
     actions: executed,
-    undo,
+    undo: undoRef,
     pending: pendings,
+    card: pendings[0]?.card || null,
     skipped,
   }
 }

@@ -2,7 +2,7 @@
 
 import styled from 'styled-components'
 
-const Card = styled.div`
+export const Card = styled.div`
   align-self: flex-start;
   max-width: 90%;
   background: ${({ theme }) => theme.colors.surface};
@@ -12,7 +12,7 @@ const Card = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 `
 
-const ItemName = styled.div`
+export const ItemName = styled.div`
   font-size: 15px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -49,13 +49,13 @@ const PantryBadge = styled.span`
     $match ? theme.colors.teal : theme.colors.amber};
 `
 
-const ButtonRow = styled.div`
+export const ButtonRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
   margin-top: ${({ theme }) => theme.spacing.md};
 `
 
-const ConfirmButton = styled.button`
+export const ConfirmButton = styled.button`
   flex: 1;
   padding: 8px 12px;
   font-size: 13px;
@@ -76,7 +76,7 @@ const ConfirmButton = styled.button`
   }
 `
 
-const RejectButton = styled.button`
+export const RejectButton = styled.button`
   flex: 1;
   padding: 8px 12px;
   font-size: 13px;

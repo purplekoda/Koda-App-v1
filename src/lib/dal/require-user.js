@@ -2,7 +2,15 @@ import 'server-only'
 
 import { getCurrentUser } from '@/lib/dal/auth'
 
-const USE_MOCK = !process.env.NEXT_PUBLIC_SUPABASE_URL
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NODE_ENV === 'production') {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_URL is required in production. ' +
+    'Mock mode is only available in development/test. ' +
+    'Set NEXT_PUBLIC_SUPABASE_URL (and NEXT_PUBLIC_SUPABASE_ANON_KEY) before deploying.'
+  )
+}
+
+const USE_MOCK = !process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NODE_ENV !== 'production'
 
 const MOCK_USER = Object.freeze({
   id: 'mock-user-id',

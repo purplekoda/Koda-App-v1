@@ -319,11 +319,31 @@ export async function callGeminiWithTools(contents, systemInstruction, tools) {
   })
 
   const content = response.candidates?.[0]?.content ?? null
-  return {
-    text: response.text || '',
-    functionCalls: response.functionCalls || [],
-    content,
-  }
+
+  // Extract function calls from BOTH the SDK's helper and the raw candidate
+  // parts. The SDK's `response.functionCalls` getter can be empty when a
+  // response mixes text and functionCall parts (the "non-text parts
+  // functionCall in the response" warning fires in that same case), so we
+  // also parse the parts ourselves. Dedupe by (name, args).
+  const fromHelper = Array.isArray(response.functionCalls) ? response.functionCalls : []
+  const fromParts = Array.isArray(content?.parts)
+    ? content.parts.map(p => p?.functionCall).filter(Boolean)
+    : []
+  const seen = new Set()
+  const functionCalls = [...fromHelper, ...fromParts].filter(fc => {
+    if (!fc || typeof fc.name !== 'string') return false
+    const key = fc.name + '|' + JSON.stringify(fc.args || {})
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
+  // Reading `response.text` on a response that contains functionCall parts
+  // triggers the SDK's "non-text parts" warning. Only read .text when there
+  // are no function calls to execute.
+  const text = functionCalls.length === 0 ? (response.text || '') : ''
+
+  return { text, functionCalls, content }
 }
 
 export async function callGeminiWithActions(history, householdContext) {

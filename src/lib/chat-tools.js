@@ -476,20 +476,34 @@ function summarizePending(name, args) {
 export async function createPendingAction(userId, name, args, { importedContent = false } = {}) {
   const summary = summarizePending(name, args)
   if (isMockMode()) {
+    // Supersede older open pending rows of the same user + action_type so only
+    // the newest can be claimed.
+    for (const row of MOCK_PENDING.values()) {
+      if (row.user_id === userId && row.action_type === name && !row.used_at && !row.cancelled) {
+        row.cancelled = true
+        row.used_at = new Date().toISOString()
+      }
+    }
     const id = makeId()
     const now = Date.now()
-    MOCK_PENDING.set(id, {
+    const row = {
       id, user_id: userId, action_type: name, payload: args, summary,
       imported_content: !!importedContent,
       created_at: new Date(now).toISOString(),
       expires_at: new Date(now + MOCK_TTL_MS).toISOString(),
       used_at: null, cancelled: false,
-    })
-    return { id, type: name, summary, expires_at: new Date(now + MOCK_TTL_MS).toISOString() }
+    }
+    MOCK_PENDING.set(id, row)
+    return { id, type: name, summary, expires_at: row.expires_at, card: buildPendingCard(id, name, args) }
   }
 
   const { getSupabaseServerClient } = await import('@/lib/supabase/server')
   const supabase = await getSupabaseServerClient()
+  // Supersede older open pending rows of the same user+type before inserting.
+  const { error: supersedeErr } = await supabase.rpc('supersede_chat_pending_actions', { p_action_type: name })
+  if (supersedeErr) {
+    console.error('[createPendingAction] supersede failed:', supersedeErr.message)
+  }
   const { data, error } = await supabase
     .from('chat_pending_actions')
     .insert({
@@ -502,7 +516,7 @@ export async function createPendingAction(userId, name, args, { importedContent 
     .select('id, summary, expires_at')
     .single()
   if (error) throw new Error('Failed to create pending action: ' + error.message)
-  return { id: data.id, type: name, summary: data.summary, expires_at: data.expires_at }
+  return { id: data.id, type: name, summary: data.summary, expires_at: data.expires_at, card: buildPendingCard(data.id, name, args) }
 }
 
 /**
@@ -530,11 +544,482 @@ export async function claimPendingAction(userId, pendingId) {
   const row = Array.isArray(data) ? data[0] : data
   // A composite-returning plpgsql function can return a row with every column
   // null when no row matched. Treat that (and mismatched owner) as "no claim".
-  if (!row?.id || !row?.action_type || row.user_id !== userId) return null
+  if (!row?.id || row.user_id !== userId) return null
+  if (!row.action_type) return null
   return row
+}
+
+/**
+ * Cancel a pending action by id. In prod this calls the SECURITY DEFINER
+ * cancel_chat_pending_action RPC; chat_pending_actions has no UPDATE policy.
+ */
+export async function cancelPendingAction(userId, pendingId) {
+  if (isMockMode()) {
+    const row = MOCK_PENDING.get(pendingId)
+    if (!row || row.user_id !== userId) return false
+    if (row.used_at || row.cancelled) return true
+    row.cancelled = true
+    row.used_at = new Date().toISOString()
+    return true
+  }
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  const { data, error } = await supabase.rpc('cancel_chat_pending_action', { p_pending_id: pendingId })
+  if (error) {
+    console.error('[cancelPendingAction] rpc error:', error.message)
+    return false
+  }
+  return !!data
 }
 
 // Test-only helper: reset the mock pending map between tests.
 export function _resetMockPendingForTests() {
   MOCK_PENDING.clear()
+}
+
+// ── Pending card builder ───────────────────────────────────────────────────
+
+const DAY_ABBR = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' }
+const DAY_FULL = {
+  Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday',
+  Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday',
+}
+
+/**
+ * Build the client-rendered card payload for a pending action. For
+ * fill_meal_plan this is the one-tap week card. For other pending types the
+ * card is omitted and the client falls back to the summary text.
+ */
+export function buildPendingCard(pendingId, name, args) {
+  if (name !== 'fill_meal_plan') return null
+  const slots = Array.isArray(args?.slots) ? args.slots : []
+  if (!slots.length) return null
+
+  const allDinner = slots.every(s => s.meal_type === 'dinner')
+  const sorted = [...slots].sort((a, b) => {
+    if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week
+    return String(a.meal_type).localeCompare(String(b.meal_type))
+  })
+  const rows = sorted.map(s => {
+    const day = DAY_ABBR[s.day_of_week] || `Day ${s.day_of_week}`
+    return allDinner
+      ? { day, meal: s.meal_name }
+      : { day, mealType: s.meal_type, meal: s.meal_name }
+  })
+
+  return {
+    type: 'pending_week',
+    pendingId,
+    title: allDinner ? 'Your week of dinners' : 'Your week of meals',
+    rows,
+  }
+}
+
+// ── Undo (small-write snapshots) ───────────────────────────────────────────
+// Mock-mode storage. In prod the RPCs own this state.
+
+const MOCK_UNDO = new Map()
+const MOCK_UNDO_TTL_MS = 30_000
+
+function makeUndoId() {
+  return `uu_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`
+}
+
+async function readSlotRef(userId, meal_plan_id, day_of_week, meal_type) {
+  if (isMockMode()) {
+    const { getMockMeals } = await import('@/lib/dal/mock-store')
+    const meals = await getMockMeals()
+    const day = DAY_ABBR[day_of_week]
+    const d = meals.find(x => x.day === day)
+    const m = d?.meals?.find(x => x.type === meal_type)
+    if (!m || (!m.name && !m.recipeId)) return null
+    return { custom_meal_name: m.name || null, recipe_id: m.recipeId || null }
+  }
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  const { data } = await supabase
+    .from('meal_slots')
+    .select('custom_meal_name, recipe_id')
+    .eq('meal_plan_id', meal_plan_id)
+    .eq('user_id', userId)
+    .eq('day_of_week', day_of_week)
+    .eq('meal_type', meal_type)
+    .maybeSingle()
+  return data || null
+}
+
+/**
+ * Record a chat-undo row. In prod the RPC reads current rows itself; in mock
+ * mode we mirror that by reading mock state here. Supersedes caller's open
+ * undo rows. Returns `{ id, expires_at }` or `null` when no eligible entry.
+ *
+ * `targets` is an array of `{kind, ...natural keys}` — no "before" data.
+ */
+export async function recordUndo(userId, targets, label) {
+  if (!Array.isArray(targets) || !targets.length) return null
+
+  if (isMockMode()) {
+    const entries = []
+    for (const t of targets) {
+      if (t.kind === 'slot') {
+        const before = await readSlotRef(userId, t.meal_plan_id, t.day_of_week, t.meal_type)
+        entries.push({
+          kind: 'slot',
+          ref: { meal_plan_id: t.meal_plan_id, day_of_week: t.day_of_week, meal_type: t.meal_type },
+          before,
+        })
+      } else if (t.kind === 'pantry') {
+        const { getMockManagedPantry } = await import('@/lib/dal/mock-store')
+        const items = await getMockManagedPantry()
+        const found = items.find(i => i.id === t.pantry_id)
+        if (found) {
+          entries.push({
+            kind: 'pantry',
+            ref: { pantry_id: t.pantry_id },
+            before: { is_depleted: !!found.is_depleted, ingredient_name: found.ingredient_name },
+          })
+        }
+      } else if (t.kind === 'staple') {
+        const { getStaples } = await import('@/lib/dal/staples')
+        const staples = await getStaples(userId)
+        const s = staples.find(x => x.id === t.staple_id)
+        if (s) {
+          entries.push({
+            kind: 'staple',
+            ref: { staple_id: t.staple_id },
+            before: {
+              is_out_of_stock: !!s.is_out_of_stock,
+              out_of_stock_since: s.out_of_stock_since || null,
+              name: s.name,
+            },
+          })
+        }
+      } else if (t.kind === 'grocery_ids') {
+        const ids = Array.isArray(t.ids) ? t.ids.filter(Boolean) : []
+        if (ids.length) entries.push({ kind: 'grocery_ids', ids })
+      }
+    }
+    if (!entries.length) return null
+    // Supersede older open rows for this user.
+    for (const r of MOCK_UNDO.values()) {
+      if (r.user_id === userId && !r.used_at && !r.superseded_at) {
+        r.superseded_at = new Date().toISOString()
+      }
+    }
+    const id = makeUndoId()
+    const now = Date.now()
+    const expires_at = new Date(now + MOCK_UNDO_TTL_MS).toISOString()
+    MOCK_UNDO.set(id, {
+      id, user_id: userId, entries, label,
+      created_at: new Date(now).toISOString(),
+      expires_at, used_at: null, superseded_at: null,
+    })
+    return { id, expires_at }
+  }
+
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  // The RPC takes natural-key targets only and reads current rows itself.
+  const { data: id, error } = await supabase.rpc('record_chat_undo', {
+    p_targets: targets.map(t => {
+      if (t.kind === 'slot') return { kind: 'slot', meal_plan_id: t.meal_plan_id, day_of_week: t.day_of_week, meal_type: t.meal_type }
+      if (t.kind === 'pantry') return { kind: 'pantry', pantry_id: t.pantry_id }
+      if (t.kind === 'staple') return { kind: 'staple', staple_id: t.staple_id }
+      if (t.kind === 'grocery_ids') return { kind: 'grocery_ids', ids: t.ids }
+      return null
+    }).filter(Boolean),
+    p_label: label || null,
+  })
+  if (error) {
+    console.error('[recordUndo] rpc error:', error.message)
+    return null
+  }
+  if (!id) return null
+  // Read the row's expires_at (RLS allows own-select).
+  const { data: row } = await supabase
+    .from('chat_undo_actions')
+    .select('expires_at')
+    .eq('id', id)
+    .maybeSingle()
+  return { id, expires_at: row?.expires_at || new Date(Date.now() + MOCK_UNDO_TTL_MS).toISOString() }
+}
+
+/**
+ * Record the post-write "after" state of a slot on an existing undo row.
+ * Takes only the undo id and the slot's natural key — never meal data. The
+ * server reads the current slot itself and only writes when both the undo
+ * row and the slot belong to this user. No-ops otherwise.
+ */
+export async function attachUndoSlotAfter(userId, undoId, meal_plan_id, day_of_week, meal_type) {
+  if (!undoId) return
+  if (isMockMode()) {
+    const row = MOCK_UNDO.get(undoId)
+    if (!row || row.user_id !== userId) return
+    const { getMockMeals } = await import('@/lib/dal/mock-store')
+    const meals = await getMockMeals()
+    const day = DAY_ABBR[day_of_week]
+    const d = meals.find(x => x.day === day)
+    const m = d?.meals?.find(x => x.type === meal_type)
+    const after = (m && (m.name || m.recipeId))
+      ? { custom_meal_name: m.name || null, recipe_id: m.recipeId || null }
+      : null
+    row.entries = row.entries.map(e => (
+      e.kind === 'slot'
+        && String(e.ref?.meal_plan_id) === String(meal_plan_id)
+        && e.ref?.day_of_week === day_of_week
+        && e.ref?.meal_type === meal_type
+          ? { ...e, after }
+          : e
+    ))
+    return
+  }
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  const { error } = await supabase.rpc('attach_chat_undo_slot_after', {
+    p_undo_id: undoId,
+    p_meal_plan_id: meal_plan_id,
+    p_day_of_week: day_of_week,
+    p_meal_type: meal_type,
+  })
+  if (error) console.error('[attachUndoSlotAfter] rpc error:', error.message)
+}
+
+/**
+ * Atomic one-shot claim. Returns the row or null when invalid.
+ */
+export async function claimUndo(userId, undoId) {
+  if (isMockMode()) {
+    const row = MOCK_UNDO.get(undoId)
+    if (!row) return null
+    if (row.user_id !== userId) return null
+    if (row.used_at || row.superseded_at) return null
+    if (new Date(row.expires_at).getTime() <= Date.now()) return null
+    row.used_at = new Date().toISOString()
+    return { ...row }
+  }
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  const { data, error } = await supabase.rpc('claim_chat_undo', { p_undo_id: undoId })
+  if (error) {
+    console.error('[claimUndo] rpc error:', error.message)
+    return null
+  }
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row?.id || row.user_id !== userId) return null
+  return row
+}
+
+/**
+ * Supersede the caller's open undo rows. Called after a confirmed pending
+ * action because that counts as "the next change".
+ */
+export async function supersedeUndo(userId) {
+  if (isMockMode()) {
+    for (const r of MOCK_UNDO.values()) {
+      if (r.user_id === userId && !r.used_at && !r.superseded_at) {
+        r.superseded_at = new Date().toISOString()
+      }
+    }
+    return
+  }
+  const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+  const supabase = await getSupabaseServerClient()
+  const { error } = await supabase.rpc('supersede_chat_undo')
+  if (error) console.error('[supersedeUndo] rpc error:', error.message)
+}
+
+/**
+ * Restore a single undo entry. Writes always use `userId` from the session
+ * and `.eq('user_id', userId)` on every mutation. Returns a short descriptor
+ * of what happened, including an `after_mismatch` flag when the row changed
+ * since the undo was recorded (we leave it alone).
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v)
+const isUuidOrNull = (v) => v === null || v === undefined || isUuid(v)
+
+function validateEntry(entry) {
+  if (!entry || typeof entry !== 'object') return false
+  if (entry.kind === 'slot') {
+    const ref = entry.ref
+    if (!ref) return false
+    const dow = Number(ref.day_of_week)
+    if (!(dow >= 1 && dow <= 7)) return false
+    if (!MEAL_TYPE_ENUM.includes(ref.meal_type)) return false
+    // meal_plan_id must be a UUID in prod. In mock mode we allow non-UUID
+    // placeholders because mock plans don't have real UUIDs.
+    if (!isMockMode() && !isUuid(ref.meal_plan_id)) return false
+    const before = entry.before
+    if (before !== null && before !== undefined) {
+      if (typeof before !== 'object') return false
+      if (!isUuidOrNull(before.recipe_id)) return false
+      // Sanitize the name in place so the restored write uses the clean form.
+      const cleaned = before.custom_meal_name == null
+        ? null
+        : sanitizeString(String(before.custom_meal_name), 200) || null
+      before.custom_meal_name = cleaned
+    }
+    return true
+  }
+  if (entry.kind === 'pantry') {
+    if (!entry.ref || !isUuid(entry.ref.pantry_id)) return false
+    if (typeof entry.before?.is_depleted !== 'boolean') return false
+    return true
+  }
+  if (entry.kind === 'staple') {
+    if (!entry.ref || !isUuid(entry.ref.staple_id)) return false
+    if (typeof entry.before?.is_out_of_stock !== 'boolean') return false
+    return true
+  }
+  if (entry.kind === 'grocery_ids') {
+    if (!Array.isArray(entry.ids)) return false
+    return entry.ids.every(isUuid)
+  }
+  return false
+}
+
+export async function restoreUndoEntry(userId, entry) {
+  if (!validateEntry(entry)) {
+    return { kind: entry?.kind || 'unknown', skipped: true, invalid: true }
+  }
+  if (entry.kind === 'slot') {
+    const { meal_plan_id, day_of_week, meal_type } = entry.ref
+    const before = entry.before
+    const day = DAY_ABBR[day_of_week]
+    if (!day) return { kind: 'slot', skipped: true }
+
+    // Optional after-check: if the stored "after" state doesn't match the
+    // current row (someone else edited it in the 30s window), leave it alone.
+    if (entry.after !== undefined) {
+      const current = await readSlotRef(userId, meal_plan_id, day_of_week, meal_type)
+      const sameName = (current?.custom_meal_name || null) === (entry.after?.custom_meal_name || null)
+      const sameRecipe = (current?.recipe_id || null) === (entry.after?.recipe_id || null)
+      if (!(sameName && sameRecipe)) {
+        return { kind: 'slot', day, meal_type, after_mismatch: true }
+      }
+    }
+
+    if (isMockMode()) {
+      const { updateMockMeal } = await import('@/lib/dal/mock-store')
+      if (before && before.custom_meal_name) {
+        await updateMockMeal(day, meal_type, {
+          name: before.custom_meal_name,
+          recipeId: before.recipe_id,
+          recipe: null,
+          ingredients: [],
+        })
+      } else {
+        await updateMockMeal(day, meal_type, { name: null, recipeId: null, recipe: null, ingredients: [] })
+      }
+      return { kind: 'slot', day, meal_type, restored: before }
+    }
+
+    const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+    const supabase = await getSupabaseServerClient()
+    if (before && (before.custom_meal_name || before.recipe_id)) {
+      const { error } = await supabase
+        .from('meal_slots')
+        .upsert({
+          meal_plan_id,
+          user_id: userId,
+          day_of_week,
+          meal_type,
+          custom_meal_name: before.custom_meal_name,
+          recipe_id: before.recipe_id,
+        }, { onConflict: 'meal_plan_id,day_of_week,meal_type' })
+      if (error) return { kind: 'slot', day, meal_type, error: error.message }
+    } else {
+      const { error } = await supabase
+        .from('meal_slots')
+        .delete()
+        .eq('meal_plan_id', meal_plan_id)
+        .eq('user_id', userId)
+        .eq('day_of_week', day_of_week)
+        .eq('meal_type', meal_type)
+      if (error) return { kind: 'slot', day, meal_type, error: error.message }
+    }
+    return { kind: 'slot', day, meal_type, restored: before }
+  }
+
+  if (entry.kind === 'pantry') {
+    if (isMockMode()) {
+      const { updateMockPantryItem } = await import('@/lib/dal/mock-store')
+      await updateMockPantryItem(entry.ref.pantry_id, { is_depleted: entry.before.is_depleted })
+      return { kind: 'pantry', restored: entry.before }
+    }
+    const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+    const supabase = await getSupabaseServerClient()
+    const { error } = await supabase
+      .from('pantry')
+      .update({ is_depleted: entry.before.is_depleted })
+      .eq('id', entry.ref.pantry_id)
+      .eq('user_id', userId)
+    if (error) return { kind: 'pantry', error: error.message }
+    return { kind: 'pantry', restored: entry.before }
+  }
+
+  if (entry.kind === 'staple') {
+    const { toggleStapleStock } = await import('@/lib/dal/staples')
+    await toggleStapleStock(userId, entry.ref.staple_id, entry.before.is_out_of_stock)
+    return { kind: 'staple', restored: entry.before }
+  }
+
+  if (entry.kind === 'grocery_ids') {
+    const ids = Array.isArray(entry.ids) ? entry.ids : []
+    if (!ids.length) return { kind: 'grocery_ids', deleted: 0 }
+    if (isMockMode()) {
+      const { getMockGrocery } = await import('@/lib/dal/mock-store')
+      const items = await getMockGrocery()
+      let deleted = 0
+      for (const id of ids) {
+        const idx = items.findIndex(i => i.id === id)
+        if (idx >= 0) { items.splice(idx, 1); deleted++ }
+      }
+      return { kind: 'grocery_ids', deleted }
+    }
+    const { getSupabaseServerClient } = await import('@/lib/supabase/server')
+    const supabase = await getSupabaseServerClient()
+    const { error } = await supabase
+      .from('grocery_items')
+      .delete()
+      .in('id', ids)
+      .eq('user_id', userId)
+    if (error) return { kind: 'grocery_ids', error: error.message }
+    return { kind: 'grocery_ids', deleted: ids.length }
+  }
+
+  return { kind: entry.kind || 'unknown', skipped: true }
+}
+
+/**
+ * Compose the undo reply text from the stored label (if present) or from the
+ * entries. The label is composed at record time; this is used when the stored
+ * label is empty.
+ */
+export function composeUndoLabel(entries) {
+  const slot = (entries || []).find(e => e.kind === 'slot')
+  if (slot) {
+    const day = DAY_FULL[DAY_ABBR[slot.ref?.day_of_week]] || 'that slot'
+    const slotType = slot.ref?.meal_type || ''
+    if (slot.before && slot.before.custom_meal_name) {
+      return `Undone, ${day} ${slotType ? slotType + ' ' : ''}is back to ${slot.before.custom_meal_name}.`
+    }
+    return `Undone, ${day} ${slotType || ''} is empty again.`.replace(/\s+/g, ' ').trim() + ''
+  }
+  const grocery = (entries || []).find(e => e.kind === 'grocery_ids')
+  if (grocery) return 'Undone, removed those items from your grocery list.'
+  const pantry = (entries || []).find(e => e.kind === 'pantry' || e.kind === 'staple')
+  if (pantry) {
+    const name = pantry.before?.ingredient_name || pantry.before?.name || 'the item'
+    return `Undone, ${name} is back to its previous status.`
+  }
+  return 'Undone.'
+}
+
+// Test-only helpers.
+export function _resetMockUndoForTests() { MOCK_UNDO.clear() }
+export function _getMockUndoRowForTests(id) { return MOCK_UNDO.get(id) }
+export function _setMockUndoExpiryForTests(id, expiresAt) {
+  const row = MOCK_UNDO.get(id)
+  if (row) row.expires_at = new Date(expiresAt).toISOString()
 }

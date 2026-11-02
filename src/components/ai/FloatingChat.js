@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import styled, { keyframes, css } from 'styled-components'
 import { useChat } from './ChatProvider'
 import SuggestionCard from './SuggestionCard'
+import WeekPlanCard from './WeekPlanCard'
 import { useVoiceInput } from '@/lib/voice/useVoiceInput'
 import { useVoiceOutput } from '@/lib/voice/useVoiceOutput'
 import { stopSpeaking } from '@/lib/voice/tts'
@@ -218,6 +219,42 @@ const Bubble = styled.div`
   border-bottom-left-radius: ${({ $role }) => ($role === 'model' ? '4px' : undefined)};
   flex: 1;
   min-width: 0;
+  opacity: ${({ $muted }) => ($muted ? 0.55 : 1)};
+  transition: opacity 0.3s ease;
+`
+
+const UndoRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -4px;
+  align-self: flex-start;
+`
+
+const UndoChip = styled.button`
+  padding: 5px 12px;
+  min-height: 28px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.surface};
+  border: 0.5px solid ${({ theme }) => theme.colors.purpleMid};
+  color: ${({ theme }) => theme.colors.purple};
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.purpleLight};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const UndoNote = styled.span`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.textMuted};
 `
 
 const SpeakerButton = styled.button`
@@ -490,9 +527,27 @@ export default function FloatingChat() {
   const {
     messages, isOpen, setIsOpen, sendMessage, isPending,
     confirmSuggestion, rejectSuggestion,
+    undoChange, confirmPending, dismissPending,
     voiceResponsesEnabled, setVoiceResponsesEnabled,
     handsFreeChatEnabled, setHandsFreeChatEnabled,
   } = useChat()
+
+  // Re-render tick so the Undo chip disappears exactly when its expires_at
+  // passes. The server is still authoritative — a stale click fails with
+  // "That undo is no longer available."
+  const [, setNowTick] = useState(0)
+  useEffect(() => {
+    const soonest = messages.reduce((min, m) => {
+      if (!m?.undo?.expires_at || m.undone) return min
+      const t = Date.parse(m.undo.expires_at)
+      if (Number.isNaN(t)) return min
+      return min == null || t < min ? t : min
+    }, null)
+    if (soonest == null) return
+    const delay = Math.max(0, soonest - Date.now())
+    const timer = setTimeout(() => setNowTick(t => t + 1), delay + 50)
+    return () => clearTimeout(timer)
+  }, [messages])
 
   const [draft, setDraft] = useState('')
   const [handsFreeMode, setHandsFreeMode] = useState(false)
@@ -777,42 +832,68 @@ export default function FloatingChat() {
                 Hey! I&apos;m Koda, your meal planning assistant. Ask me to plan your week, suggest recipes, swap a meal, or help with anything in the kitchen.
               </WelcomeBubble>
             )}
-            {messages.map((m, i) => (
-              <React.Fragment key={i}>
-                {m.role === 'model' && !m.isError && ttsSupported ? (
-                  <BubbleRow $role="model">
-                    <Bubble $role="model" $error={m.isError}>
-                      {m.text}
-                    </Bubble>
-                    {!handsFreeMode && (
-                      <SpeakerButton
+            {messages.map((m, i) => {
+              const undoLive = m.undo?.expires_at && Date.now() < Date.parse(m.undo.expires_at) && !m.undone
+              const skipBubble = m.role === 'model' && !m.text && m.card
+              return (
+                <React.Fragment key={i}>
+                  {!skipBubble && (
+                    m.role === 'model' && !m.isError && ttsSupported ? (
+                      <BubbleRow $role="model">
+                        <Bubble $role="model" $error={m.isError} $muted={m.undone}>
+                          {m.text}
+                        </Bubble>
+                        {!handsFreeMode && (
+                          <SpeakerButton
+                            type="button"
+                            $speaking={speakingMessageIndex === i}
+                            onClick={() => handleSpeakerClick(i, m.text)}
+                            aria-label={speakingMessageIndex === i ? 'Stop speaking' : 'Read aloud'}
+                            title={speakingMessageIndex === i ? 'Stop' : 'Read aloud'}
+                          >
+                            {speakingMessageIndex === i ? '\u23F9' : '\uD83D\uDD0A'}
+                          </SpeakerButton>
+                        )}
+                      </BubbleRow>
+                    ) : (
+                      <BubbleRow $role={m.role}>
+                        <Bubble $role={m.role} $error={m.isError} $muted={m.undone}>
+                          {m.text}
+                        </Bubble>
+                      </BubbleRow>
+                    )
+                  )}
+                  {undoLive && (
+                    <UndoRow>
+                      <UndoChip
                         type="button"
-                        $speaking={speakingMessageIndex === i}
-                        onClick={() => handleSpeakerClick(i, m.text)}
-                        aria-label={speakingMessageIndex === i ? 'Stop speaking' : 'Read aloud'}
-                        title={speakingMessageIndex === i ? 'Stop' : 'Read aloud'}
+                        onClick={() => undoChange(i)}
+                        disabled={isPending}
                       >
-                        {speakingMessageIndex === i ? '\u23F9' : '\uD83D\uDD0A'}
-                      </SpeakerButton>
-                    )}
-                  </BubbleRow>
-                ) : (
-                  <BubbleRow $role={m.role}>
-                    <Bubble $role={m.role} $error={m.isError}>
-                      {m.text}
-                    </Bubble>
-                  </BubbleRow>
-                )}
-                {m.card?.type === 'meal_suggestion' && (
-                  <SuggestionCard
-                    card={m.card}
-                    onConfirm={confirmSuggestion}
-                    onReject={rejectSuggestion}
-                    disabled={isPending}
-                  />
-                )}
-              </React.Fragment>
-            ))}
+                        {'\u21B6 Undo'}
+                      </UndoChip>
+                      <UndoNote>Available for 30s or until your next change</UndoNote>
+                    </UndoRow>
+                  )}
+                  {m.card?.type === 'meal_suggestion' && (
+                    <SuggestionCard
+                      card={m.card}
+                      onConfirm={confirmSuggestion}
+                      onReject={rejectSuggestion}
+                      disabled={isPending}
+                    />
+                  )}
+                  {m.card?.type === 'pending_week' && (
+                    <WeekPlanCard
+                      card={m.card}
+                      onConfirm={() => confirmPending(i)}
+                      onReject={() => dismissPending(i)}
+                      disabled={isPending || !!m.card.status}
+                    />
+                  )}
+                </React.Fragment>
+              )
+            })}
 
             {/* Hands-free transcript bubble */}
             {handsFreeMode && hfListening && hfTranscript && (

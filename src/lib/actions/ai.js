@@ -491,10 +491,110 @@ export async function confirmChatPendingAction(pendingId) {
     }
 
     const result = await executeBigAction(user.id, row.action_type, safeArgs)
-    revalidatePath('/(app)', 'layout')
-    return ok({ executed: row.action_type, result })
+    // A confirmed big change counts as "the next change" — supersede any
+    // open undo so the stale chip disappears everywhere.
+    const { supersedeUndo } = await import('@/lib/chat-tools')
+    await supersedeUndo(user.id).catch(() => {})
+
+    revalidatePath('/meals')
+    revalidatePath('/dashboard')
+    revalidatePath('/grocery')
+    revalidatePath('/kitchen')
+
+    let text = 'Saved.'
+    if (row.action_type === 'fill_meal_plan') text = 'Saved. Your week is on the meal plan.'
+    else if (row.action_type === 'add_recipe') text = 'Saved to your Recipe Box.'
+    else if (row.action_type === 'log_receipt') text = 'Logged that receipt.'
+    else if (row.action_type === 'clear_slot') text = 'Those slots are clear now.'
+    else if (row.action_type === 'add_to_grocery') text = 'Added to your grocery list.'
+
+    return ok({ executed: row.action_type, result, text })
   } catch (err) {
     console.error('[confirmChatPendingAction] error:', err)
     return fail('Could not apply the change.')
+  }
+}
+
+/**
+ * Cancel a pending chat action by id. Uses a SECURITY DEFINER RPC because
+ * chat_pending_actions has no UPDATE/DELETE policy. Idempotent — a repeat
+ * cancel or an already-claimed row simply returns the same reply.
+ */
+export async function cancelChatPendingAction(pendingId) {
+  try {
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    const cleanId = sanitizeString(pendingId, 100)
+    if (!cleanId) return fail('Invalid confirmation id.')
+
+    const { cancelPendingAction } = await import('@/lib/chat-tools')
+    await cancelPendingAction(user.id, cleanId)
+    return ok({ text: 'No problem, I left your week as it was.' })
+  } catch (err) {
+    console.error('[cancelChatPendingAction] error:', err)
+    return fail('Could not cancel that change.')
+  }
+}
+
+/**
+ * Undo a small chat change. Takes only `undoId` from the browser; every
+ * decision — ownership, expiry, re-validation, and the user_id used for
+ * every write — is made server-side from `auth.uid()`.
+ */
+export async function undoChatAction(undoId, ..._ignored) {
+  try {
+    void _ignored
+    const user = await requireUser()
+    const rate = apiLimiter.check(user.id)
+    if (!rate.success) return fail('Too many requests. Please wait a moment.')
+
+    const cleanId = sanitizeString(undoId, 100)
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const okShape = cleanId && (
+      UUID_RE.test(cleanId) || (isMockMode() && /^uu_[a-z0-9]{6,}$/i.test(cleanId))
+    )
+    if (!okShape) return fail('That undo is no longer available.')
+
+    const { claimUndo, restoreUndoEntry, composeUndoLabel } = await import('@/lib/chat-tools')
+    const row = await claimUndo(user.id, cleanId)
+    if (!row) return fail('That undo is no longer available.')
+
+    const entries = Array.isArray(row.entries) ? row.entries : []
+
+    // Re-check per-entry permissions server-side.
+    const ENTRY_TO_ACTION = {
+      slot: 'swap_meal',
+      pantry: 'update_pantry',
+      staple: 'mark_staple_out_of_stock',
+      grocery_ids: 'add_to_grocery',
+    }
+    for (const e of entries) {
+      try {
+        await assertCanExecuteChatAction(user.id, ENTRY_TO_ACTION[e.kind] || 'swap_meal')
+      } catch (err) {
+        if (err?.code === CHAT_ACTION_FORBIDDEN || err?.code === CHAT_ACTION_UNKNOWN) {
+          return fail(err.message)
+        }
+        throw err
+      }
+    }
+
+    // Restore in reverse order.
+    for (let i = entries.length - 1; i >= 0; i--) {
+      await restoreUndoEntry(user.id, entries[i])
+    }
+
+    revalidatePath('/meals')
+    revalidatePath('/dashboard')
+    revalidatePath('/grocery')
+    revalidatePath('/kitchen')
+
+    const text = row.label || composeUndoLabel(entries)
+    return ok({ text })
+  } catch (err) {
+    console.error('[undoChatAction] error:', err)
+    return fail('That undo is no longer available.')
   }
 }
